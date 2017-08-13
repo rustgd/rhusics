@@ -1,0 +1,11 @@
+[package]
+name = "rhusics"
+version = "0.1.0"
+authors = ["Simon Rönnberg <simon.ronnberg@codemill.se>"]
+
+[dependencies]
+cgmath = "*"
+collision = { path = "../collision-rs/"}
+specs = "*"
+"specs-derive" = "*"
+log = "*"
