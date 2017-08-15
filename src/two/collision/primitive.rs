@@ -48,11 +48,7 @@ impl Primitive for Circle {
         body_offset: &Vector2<f32>,
         pose: &BodyPose,
     ) -> Point2<f32> {
-        let p = direction.normalize_to(self.radius);
-        Point2::new(
-            p.x + pose.position.x + body_offset.x,
-            p.y + pose.position.y + body_offset.y,
-        )
+        pose.position + (pose.rotation * (direction.normalize_to(self.radius) + body_offset))
     }
 
     fn get_bound(&self) -> Aabb2<f32> {
@@ -124,5 +120,5 @@ fn get_max_point(
                 (max_p, max_dot)
             }
         });
-    Point2::new(p.x + pose.position.x, p.y + pose.position.y)
+    pose.position + (pose.rotation * p)
 }

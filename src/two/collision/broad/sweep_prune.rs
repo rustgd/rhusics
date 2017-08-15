@@ -95,82 +95,70 @@ fn variance_sum(csum: &mut [f32; 2], csumsq: &mut [f32; 2], aabb: Aabb2<f32>) {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use cgmath::Point2;
-//     use super::*;
-//
-//     #[test]
-//     fn no_intersection_for_miss() {
-//         let mut left = CollisionShape::new(1, Vec::default());
-//         left.transformed_bound.min = Point2::new(8., 8.);
-//         left.transformed_bound.max = Point2::new(10., 11.);
-//
-//         let mut right = CollisionShape::new(2, Vec::default());
-//         right.transformed_bound.min = Point2::new(12., 13.);
-//         right.transformed_bound.max = Point2::new(18., 18.);
-//
-//         left.enabled = true;
-//         right.enabled = true;
-//
-//         let mut sweep = SweepAndPrune::new();
-//         let potentials = sweep.compute(&mut vec![left, right]);
-//         assert_eq!(0, potentials.len());
-//     }
-//
-//     #[test]
-//     fn no_intersection_for_miss_unsorted() {
-//         let mut left = CollisionShape::new(1, Vec::default());
-//         left.transformed_bound.min = Point2::new(8., 8.);
-//         left.transformed_bound.max = Point2::new(10., 11.);
-//
-//         let mut right = CollisionShape::new(2, Vec::default());
-//         right.transformed_bound.min = Point2::new(12., 13.);
-//         right.transformed_bound.max = Point2::new(18., 18.);
-//
-//         left.enabled = true;
-//         right.enabled = true;
-//
-//         let mut sweep = SweepAndPrune::new();
-//         let potentials = sweep.compute(&mut vec![right, left]);
-//         assert_eq!(0, potentials.len());
-//     }
-//
-//     #[test]
-//     fn intersection_for_hit() {
-//         let mut left = CollisionShape::new(1, Vec::default());
-//         left.transformed_bound.min = Point2::new(8., 8.);
-//         left.transformed_bound.max = Point2::new(10., 11.);
-//
-//         let mut right = CollisionShape::new(2, Vec::default());
-//         right.transformed_bound.min = Point2::new(9., 10.);
-//         right.transformed_bound.max = Point2::new(18., 18.);
-//
-//         left.enabled = true;
-//         right.enabled = true;
-//
-//         let mut sweep = SweepAndPrune::new();
-//         let potentials = sweep.compute(&mut vec![left, right]);
-//         assert_eq!(1, potentials.len());
-//         assert_eq!((0, 1), potentials[0]);
-//     }
-//
-//     #[test]
-//     fn intersection_for_hit_unsorted() {
-//         let mut left = CollisionShape::new(23, Vec::default());
-//         left.transformed_bound.min = Point2::new(8., 8.);
-//         left.transformed_bound.max = Point2::new(10., 11.);
-//
-//         let mut right = CollisionShape::new(245, Vec::default());
-//         right.transformed_bound.min = Point2::new(9., 10.);
-//         right.transformed_bound.max = Point2::new(18., 18.);
-//
-//         left.enabled = true;
-//         right.enabled = true;
-//
-//         let mut sweep = SweepAndPrune::new();
-//         let potentials = sweep.compute(&mut vec![right, left]);
-//         assert_eq!(1, potentials.len());
-//         assert_eq!((0, 1), potentials[0]);
-//     }
-// }
+#[cfg(test)]
+mod tests {
+    use cgmath::Point2;
+    use super::*;
+
+    #[test]
+    fn no_intersection_for_miss() {
+        let left =
+            BroadCollisionInfo::new_impl(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+
+        let right = BroadCollisionInfo::new_impl(
+            2,
+            Aabb2::new(Point2::new(12., 13.), Point2::new(18., 18.)),
+        );
+
+        let mut sweep = SweepAndPrune::new();
+        let potentials = sweep.compute(&mut vec![left, right]);
+        assert_eq!(0, potentials.len());
+    }
+
+    #[test]
+    fn no_intersection_for_miss_unsorted() {
+        let left =
+            BroadCollisionInfo::new_impl(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+
+        let right = BroadCollisionInfo::new_impl(
+            2,
+            Aabb2::new(Point2::new(12., 13.), Point2::new(18., 18.)),
+        );
+
+        let mut sweep = SweepAndPrune::new();
+        let potentials = sweep.compute(&mut vec![right, left]);
+        assert_eq!(0, potentials.len());
+    }
+
+    #[test]
+    fn intersection_for_hit() {
+        let left =
+            BroadCollisionInfo::new_impl(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+
+        let right = BroadCollisionInfo::new_impl(
+            2,
+            Aabb2::new(Point2::new(9., 10.), Point2::new(18., 18.)),
+        );
+
+        let mut sweep = SweepAndPrune::new();
+        let potentials = sweep.compute(&mut vec![left, right]);
+        assert_eq!(1, potentials.len());
+        assert_eq!((1, 2), potentials[0]);
+    }
+
+    #[test]
+    fn intersection_for_hit_unsorted() {
+        let left =
+            BroadCollisionInfo::new_impl(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+
+        let right = BroadCollisionInfo::new_impl(
+            222,
+            Aabb2::new(Point2::new(9., 10.), Point2::new(18., 18.)),
+        );
+
+        let mut sweep = SweepAndPrune::new();
+        let potentials = sweep.compute(&mut vec![right, left]);
+        assert_eq!(1, potentials.len());
+        assert_eq!((1, 222), potentials[0]);
+    }
+}

@@ -4,6 +4,7 @@ pub mod impulse;
 use cgmath::{Point2, Array, Rotation2, Rad, Matrix2, Basis2, Matrix};
 
 #[derive(Debug, Component)]
+
 pub struct BodyPose {
     pub dirty: bool,
     pub position: Point2<f32>,
