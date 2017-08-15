@@ -1,27 +1,22 @@
 pub mod collision;
 
 use cgmath::{Vector2, Zero, Point2, Array, Rotation2, Rad, Matrix2, Basis2, Matrix};
-use collision::Aabb2;
 
-#[derive(Debug)]
+use std::ops::{Add, AddAssign};
+
+#[derive(Debug, Component)]
 pub struct BodyPose {
-    pub dirty : bool,
+    pub dirty: bool,
     pub position: Point2<f32>,
     pub rotation: Matrix2<f32>,
-    pub inverse_rotation: Matrix2<f32>
-}
-
-#[derive(Debug)]
-pub struct Spatial {
-    pub current : BodyPose,
-    pub next : BodyPose,
+    pub inverse_rotation: Matrix2<f32>,
 }
 
 impl Default for BodyPose {
     fn default() -> Self {
         let rot: Basis2<f32> = Rotation2::from_angle(Rad(0.));
         BodyPose {
-            dirty: false,
+            dirty: true,
             position: Point2::from_value(0.),
             rotation: rot.into(),
             inverse_rotation: rot.into(),
@@ -48,17 +43,17 @@ impl BodyPose {
 
 #[derive(Debug)]
 pub struct BodyMass {
-    pub density : f32,
-    pub volume : f32,
-    pub inertia_tensor : f32
+    pub density: f32,
+    pub volume: f32,
+    pub inertia_tensor: f32,
 }
 
 impl Default for BodyMass {
     fn default() -> Self {
         BodyMass {
-            density : 0.,
-            volume : 0.,
-            inertia_tensor : 0.
+            density: 0.,
+            volume: 0.,
+            inertia_tensor: 0.,
         }
     }
 }
@@ -71,70 +66,84 @@ impl BodyMass {
 
 #[derive(Debug)]
 pub struct Velocity {
-    pub linear : Vector2<f32>,
-    pub angular : Vector2<f32>
+    pub linear: Vector2<f32>,
+    pub angular: Vector2<f32>,
 }
 
 impl Default for Velocity {
     fn default() -> Velocity {
         Velocity {
-            linear : Vector2::zero(),
-            angular : Vector2::zero()
+            linear: Vector2::zero(),
+            angular: Vector2::zero(),
         }
     }
 }
 
 #[derive(Debug)]
-pub struct Force {
-    pub linear : Vector2<f32>,
-    pub angular : Vector2<f32>
+pub struct Impulse {
+    pub linear: Vector2<f32>,
+    pub angular: Vector2<f32>,
 }
 
-impl Default for Force {
+impl Impulse {
+    pub fn new(linear: Vector2<f32>, angular: Vector2<f32>) -> Self {
+        Impulse { linear, angular }
+    }
+
+    pub fn zero(&mut self) {
+        *self = Impulse::default();
+    }
+}
+impl Default for Impulse {
     fn default() -> Self {
-        Force {
-            linear : Vector2::zero(),
-            angular : Vector2::zero(),
+        Impulse::new(Vector2::zero(), Vector2::zero())
+    }
+}
+
+impl Add for Impulse {
+    type Output = Impulse;
+
+    fn add(self, other: Impulse) -> Impulse {
+        Impulse {
+            linear: self.linear + other.linear,
+            angular: self.angular + other.angular,
         }
     }
 }
 
-#[derive(Debug)]
+impl AddAssign for Impulse {
+    fn add_assign(&mut self, other: Impulse) {
+        *self = Impulse {
+            linear: self.linear + other.linear,
+            angular: self.angular + other.angular,
+        };
+    }
+}
+
+
+#[derive(Debug, Component)]
 pub struct Body {
-    pub enabled : bool,
-    pub restitution : f32,
-    pub velocity : Velocity,
-    pub mass : BodyMass,
-    pub force : Force
+    pub enabled: bool,
+    pub restitution: f32,
+    pub velocity: Velocity,
+    pub mass: BodyMass,
+    pub impulse_accumulator: Impulse,
 }
 
 impl Default for Body {
     fn default() -> Body {
         Body {
-            enabled : true,
-            restitution : 0.,
-            velocity : Velocity::default(),
-            mass : BodyMass::default(),
-            force : Force::default(),
+            enabled: true,
+            restitution: 0.,
+            velocity: Velocity::default(),
+            mass: BodyMass::default(),
+            impulse_accumulator: Impulse::default(),
         }
     }
 }
 
-#[derive(Component, Debug)]
-pub struct Shape {
-    pub enabled : bool,
-    pub bounding : Aabb2<f32>,
-    pub offset : Vector2<f32>,
-    pub primitives : Vec<self::collision::CollisionPrimitive>
-}
-
-impl Default for Shape {
-    fn default() -> Shape {
-        Shape {
-            enabled : false,
-            offset : Vector2::zero(),
-            bounding : Aabb2::new(Point2::from_value(0.), Point2::from_value(0.)),
-            primitives : Vec::default(),
-        }
+impl Body {
+    pub fn add_impulse(&mut self, impulse: Impulse) {
+        self.impulse_accumulator += impulse;
     }
 }

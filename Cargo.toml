@@ -4,8 +4,8 @@ version = "0.1.0"
 authors = ["Simon Rönnberg <simon.ronnberg@codemill.se>"]
 
 [dependencies]
-cgmath = "*"
-collision = { path = "../collision-rs/"}
+cgmath = "0.14"
+collision = { git = "https://github.com/kvark/collision-rs" }
 specs = "*"
 "specs-derive" = "*"
 log = "*"
