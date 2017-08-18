@@ -1,4 +1,3 @@
-pub mod broad;
 pub mod narrow;
 pub mod primitive;
 
@@ -18,7 +17,7 @@ pub struct CollisionEvent {
 
 impl CollisionEvent {
     pub fn new(mode: CollisionMode, bodies: (usize, usize)) -> CollisionEvent {
-        Self::new_impl(mode, bodies, Vector2::new(0., 0.), 0.)
+        Self::new_impl(mode, bodies, Vector2::zero(), 0.)
     }
 
     pub fn new_impl(
@@ -113,12 +112,13 @@ impl CollisionShape {
         mode: CollisionMode,
         primitives: Vec<CollisionPrimitive>,
     ) -> CollisionShape {
+        let bound = get_bound(&primitives);
         CollisionShape {
-            base_bound: get_bound(&primitives),
+            base_bound: bound.clone(),
             id,
             primitives,
             enabled: false,
-            transformed_bound: Aabb2::new(Point2::from_value(0.), Point2::from_value(0.)),
+            transformed_bound: bound,
             mode,
         }
     }
@@ -128,7 +128,7 @@ impl CollisionShape {
             return;
         }
         self.transformed_bound = transform_bound(&self.base_bound, pose);
-        for primitive in &mut self.primitives {
+        for mut primitive in &mut self.primitives {
             primitive.update_bound(pose);
         }
     }

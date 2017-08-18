@@ -1,5 +1,5 @@
-use two::collision::{CollisionShape, CollisionEvent};
-use two::BodyPose;
+use experiment::collision::{CollisionShape, CollisionEvent};
+use experiment::BodyPose;
 
 pub mod gjk;
 

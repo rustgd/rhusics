@@ -1,9 +1,9 @@
 use cgmath::{Vector2, InnerSpace};
 use cgmath;
 use std::ops::Neg;
-use two::collision::{CollisionPrimitive, CollisionShape, CollisionEvent, CollisionMode};
-use two::BodyPose;
-use two::collision::narrow::NarrowPhase;
+use experiment::collision::{CollisionPrimitive, CollisionShape, CollisionEvent, CollisionMode};
+use experiment::BodyPose;
+use experiment::collision::narrow::NarrowPhase;
 use collision::Discrete;
 
 use std;
@@ -180,7 +180,7 @@ impl NarrowPhase for GJK {
 
         for left_primitive in &left.primitives {
             for right_primitive in &right.primitives {
-                if (left.transformed_bound, right.transformed_bound).intersects() {
+                if left.transformed_bound.intersects(&right.transformed_bound) {
                     match Self::gjk(&left_primitive, left_pose, &right_primitive, right_pose) {
                         Some(simplex) => {
                             if left.mode == CollisionMode::CollisionOnly ||
