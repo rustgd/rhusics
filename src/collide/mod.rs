@@ -2,7 +2,8 @@ pub mod broad;
 pub mod narrow;
 pub mod primitive2d;
 
-use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, EuclideanSpace, Transform, Zero};
+use cgmath::prelude::*;
+use cgmath::{Decomposed, BaseFloat};
 use collision::{Aabb, Discrete, MinMax};
 
 use std::fmt::Debug;
@@ -50,54 +51,54 @@ impl <ID, S, V> Contact<ID, S, V> where
     }
 }
 
-pub trait Primitive<S, V, P, T, A>: Debug + Send + Sync
+pub trait Primitive<S, V, P, R, A>: Debug + Send + Sync
     where
         S: BaseFloat,
         V: VectorSpace<Scalar=S>
         + ElementWise
         + Array<Element=S>,
         P: EuclideanSpace<Scalar=S, Diff=V> + MinMax,
-        T: Transform<P>,
+        R: Rotation<P>,
         A: Aabb<S, V, P> + Discrete<A>,
 {
     fn get_far_point(&self,
                      direction: &V,
-                     transform: &T) -> P;
+                     transform: &Decomposed<V, R>) -> P;
     fn get_bound(&self) -> A;
 }
 
 #[derive(Debug)]
-pub struct CollisionPrimitive<S, V, P, T, A>
+pub struct CollisionPrimitive<S, V, P, R, A>
 where
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
     P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    T: Transform<P>,
+    R: Rotation<P>,
     A: Aabb<S, V, P> + Discrete<A>,
 {
-    local_transform: T,
+    local_transform: Decomposed<V, R>,
     base_bound: A,
     transformed_bound: A,
-    primitive: Box<Primitive<S, V, P, T, A>>,
+    primitive: Box<Primitive<S, V, P, R, A>>,
 }
 
-impl<S, V, P, T, A> CollisionPrimitive<S, V, P, T, A>
+impl<S, V, P, R, A> CollisionPrimitive<S, V, P, R, A>
     where
         S: BaseFloat,
         V: VectorSpace<Scalar=S>
         + ElementWise
         + Array<Element=S>,
         P: EuclideanSpace<Scalar=S, Diff=V> + MinMax,
-        T: Transform<P>,
+        R: Rotation<P>,
         A: Aabb<S, V, P> + Discrete<A> + Clone,
 {
-    pub fn new<PRIM: Primitive<S, V, P, T, A> + 'static>(primitive: PRIM) -> Self {
-        Self::new_impl(primitive, T::one())
+    pub fn new<PRIM: Primitive<S, V, P, R, A> + 'static>(primitive: PRIM) -> Self {
+        Self::new_impl(primitive, Decomposed::one())
     }
 
-    pub fn new_impl<PRIM: Primitive<S, V, P, T, A> + 'static>(
+    pub fn new_impl<PRIM: Primitive<S, V, P, R, A> + 'static>(
         primitive: PRIM,
-        local_transform: T
+        local_transform: Decomposed<V, R>
     ) -> Self {
         let bound = primitive.get_bound().transform(&local_transform);
         Self {
@@ -108,35 +109,35 @@ impl<S, V, P, T, A> CollisionPrimitive<S, V, P, T, A>
         }
     }
 
-    pub fn update(&mut self, transform: &T) {
+    pub fn update(&mut self, transform: &Decomposed<V, R>) {
         self.transformed_bound = self.base_bound.transform(transform)
     }
 
-    pub fn get_far_point(&self, direction: &V, transform: &T) -> P {
+    pub fn get_far_point(&self, direction: &V, transform: &Decomposed<V, R>) -> P {
         let t = transform.concat(&self.local_transform);
         self.primitive.get_far_point(direction, &t)
     }
 }
 
 #[derive(Debug)]
-pub struct CollisionShape<ID, S, V, P, T, A>
+pub struct CollisionShape<ID, S, V, P, R, A>
 where
     ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
     P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    T: Transform<P>,
+    R: Rotation<P>,
     A: Aabb<S, V, P> + Discrete<A>,
 {
     pub id: ID,
     pub enabled: bool,
     pub base_bound: A,
     pub transformed_bound: A,
-    pub primitives: Vec<CollisionPrimitive<S, V, P, T, A>>,
+    pub primitives: Vec<CollisionPrimitive<S, V, P, R, A>>,
     pub strategy: CollisionStrategy,
 }
 
-impl<ID, S, V, P, T, A> CollisionShape<ID, S, V, P, T, A>
+impl<ID, S, V, P, R, A> CollisionShape<ID, S, V, P, R, A>
 where
     ID: Clone + Debug,
     S: BaseFloat,
@@ -146,13 +147,13 @@ where
     P: EuclideanSpace<Scalar = S, Diff = V>
         + MinMax
         + Zero,
-    T: Transform<P> + Zero,
+    R: Rotation<P>,
     A: Aabb<S, V, P> + Clone + Discrete<A>,
 {
     pub fn new(
         id: ID,
         strategy: CollisionStrategy,
-        primitives: Vec<CollisionPrimitive<S, V, P, T, A>>,
+        primitives: Vec<CollisionPrimitive<S, V, P, R, A>>,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
@@ -165,7 +166,7 @@ where
         }
     }
 
-    pub fn update(&mut self, transform: &T) {
+    pub fn update(&mut self, transform: &Decomposed<V, R>) {
         self.transformed_bound = self.base_bound.transform(transform);
         for mut primitive in &mut self.primitives {
             primitive.update(transform)
@@ -173,12 +174,12 @@ where
     }
 }
 
-fn get_bound<S, V, P, T, A>(primitives: &Vec<CollisionPrimitive<S, V, P, T, A>>) -> A
+fn get_bound<S, V, P, R, A>(primitives: &Vec<CollisionPrimitive<S, V, P, R, A>>) -> A
 where
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
     P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Zero,
-    T: Transform<P>,
+    R: Rotation<P>,
     A: Aabb<S, V, P> + Clone + Discrete<A>,
 {
     primitives.iter().map(|p| &p.base_bound).fold(

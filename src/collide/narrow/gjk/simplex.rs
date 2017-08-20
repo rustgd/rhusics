@@ -1,5 +1,5 @@
-use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, InnerSpace, Vector2, Vector3};
-use cgmath;
+use cgmath::prelude::*;
+use cgmath::{BaseFloat, Vector2, Vector3};
 use std::ops::Neg;
 
 pub trait SimplexProcessor<S, V>
@@ -11,6 +11,7 @@ where
         + InnerSpace,
 {
     fn process(&self, simplex: &mut Vec<V>, d: &mut V) -> bool;
+    fn new() -> Self;
 }
 
 pub struct SimplexProcessor2D;
@@ -30,12 +31,12 @@ where
             let ab = b - a;
             let ac = c - a;
             let ab_perp = ::util::triple_product(&ac, &ab, &ab);
-            if cgmath::dot(ab_perp, ao) > S::zero() {
+            if ab_perp.dot(ao) > S::zero() {
                 simplex.remove(0);
                 *d = ab_perp;
             } else {
                 let ac_perp = ::util::triple_product(&ab, &ac, &ac);
-                if cgmath::dot(ac_perp, ao) > S::zero() {
+                if ac_perp.dot(ao) > S::zero() {
                     simplex.remove(1);
                     *d = ac_perp;
                 } else {
@@ -54,20 +55,24 @@ where
         // 0-1 point means we can't really do anything
         false
     }
+
+    fn new() -> Self {
+        Self {}
+    }
 }
 
 impl<S> SimplexProcessor<S, Vector3<S>> for SimplexProcessor3D
 where
     S: BaseFloat,
 {
-    fn process(&self, simplex: &mut Vec<Vector3<S>>, d: &mut Vector3<S>) -> bool {
+    fn  process(&self, simplex: &mut Vec<Vector3<S>>, d: &mut Vector3<S>) -> bool {
         // 4 points
         if simplex.len() == 4 {
-
+            //TODO
         }
         // 3 points
         else if simplex.len() == 3 {
-
+            //TODO
         }
         // 2 points
         else if simplex.len() == 3 {
@@ -75,7 +80,7 @@ where
             let ao = a.neg();
             let b = simplex[0];
             let ab = b - a;
-            if cgmath::dot(ab, ao) > S::zero() {
+            if ab.dot(ao) > S::zero() {
                 *d = ab.cross(ao).cross(ab);
             } else {
                 simplex.remove(0);
@@ -83,6 +88,10 @@ where
             }
         }
         // 0-1 points
-        false // TODO
+        false
+    }
+
+    fn new() -> Self {
+        Self {}
     }
 }

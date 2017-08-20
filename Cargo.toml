@@ -6,6 +6,6 @@ authors = ["Simon Rönnberg <simon.ronnberg@codemill.se>"]
 [dependencies]
 cgmath = "0.14"
 collision = { path = "../collision-rs" }
-specs = "*"
-"specs-derive" = "*"
+specs = { git = "https://github.com/slide-rs/specs/"}
+"specs-derive" = { git = "https://github.com/slide-rs/specs/"}
 log = "*"

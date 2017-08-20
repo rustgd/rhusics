@@ -5,14 +5,12 @@ extern crate specs;
 #[macro_use]
 extern crate log;
 
-#[macro_use]
-extern crate specs_derive;
-
 pub mod util;
-pub mod experiment;
 pub mod collide;
+pub mod collide2d;
 
-use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, EuclideanSpace, Rotation, Decomposed};
+use cgmath::prelude::*;
+use cgmath::{BaseFloat, Decomposed};
 
 #[derive(Clone)]
 pub struct BodyPose<S, V, P, R>

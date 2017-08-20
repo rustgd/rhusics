@@ -1,6 +1,6 @@
-use cgmath::{Vector2, Point2, InnerSpace, BaseFloat, Decomposed, Transform, Basis2,
-             EuclideanSpace, Array};
-use collision::{Aabb2, Aabb};
+use cgmath::prelude::*;
+use cgmath::{BaseFloat, Vector2, Point2, Basis2, Decomposed};
+use collision::Aabb2;
 use super::Primitive;
 
 #[derive(Debug)]
@@ -41,7 +41,7 @@ pub struct ConvexPolygon<S: BaseFloat> {
     pub vertices: Vec<Vector2<S>>,
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Decomposed<Vector2<S>, Basis2<S>>, Aabb2<S>>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
     for Circle<S>
 where
     S: BaseFloat + Send + Sync,
@@ -51,9 +51,8 @@ where
         direction: &Vector2<S>,
         transform: &Decomposed<Vector2<S>, Basis2<S>>,
     ) -> Point2<S> {
-        Point2::from_vec(transform.transform_vector(
-            direction.normalize_to(self.radius),
-        ))
+        let direction = transform.rot.invert().rotate_vector(*direction);
+        Point2::from_vec(transform.disp + direction.normalize_to(self.radius))
     }
 
     fn get_bound(&self) -> Aabb2<S> {
@@ -64,7 +63,7 @@ where
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Decomposed<Vector2<S>, Basis2<S>>, Aabb2<S>>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
     for Rectangle<S>
 where
     S: BaseFloat + Send + Sync,
@@ -85,7 +84,7 @@ where
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Decomposed<Vector2<S>, Basis2<S>>, Aabb2<S>>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
     for ConvexPolygon<S>
 where
     S: BaseFloat + Send + Sync,
@@ -99,9 +98,6 @@ where
     }
 
     fn get_bound(&self) -> Aabb2<S> {
-        self.vertices.iter().fold(
-            Aabb2::new(Point2::from_value(S::zero()), Point2::from_value(S::zero())),
-            |bound, p| bound.grow(Point2::from_vec(*p))
-        )
+        ::util::get_bound(&self.vertices)
     }
 }

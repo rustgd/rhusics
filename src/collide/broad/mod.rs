@@ -1,5 +1,7 @@
 use collision::{Aabb, Discrete, MinMax};
-use cgmath::{Array, BaseFloat, EuclideanSpace, VectorSpace, ElementWise};
+use cgmath::prelude::*;
+use cgmath::BaseFloat;
+use collide::CollisionShape;
 
 pub mod sweep_prune;
 pub mod brute_force;
@@ -38,6 +40,21 @@ where
             bound,
             m: std::marker::PhantomData,
         }
+    }
+}
+
+impl<ID, S, V, P, R, A> From<CollisionShape<ID, S, V, P, R, A>>
+    for BroadCollisionInfo<ID, S, V, P, A>
+where
+    ID: Clone + Debug,
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
+    R: Rotation<P>,
+    A: Aabb<S, V, P> + Discrete<A> + Clone,
+{
+    fn from(shape: CollisionShape<ID, S, V, P, R, A>) -> Self {
+        Self::new(shape.id.clone(), shape.transformed_bound.clone())
     }
 }
 

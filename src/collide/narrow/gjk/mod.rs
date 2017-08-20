@@ -5,9 +5,8 @@ use super::NarrowPhase;
 
 use collide::{Contact, CollisionShape, CollisionStrategy, CollisionPrimitive};
 
-use cgmath;
-use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, EuclideanSpace, Transform, Decomposed,
-             Rotation, MetricSpace, InnerSpace};
+use cgmath::prelude::*;
+use cgmath::{BaseFloat, Decomposed};
 use collision::{Aabb, Discrete, MinMax};
 
 use std;
@@ -29,7 +28,21 @@ where
     marker: std::marker::PhantomData<(S, V)>,
 }
 
-impl<ID, S, V, P, A, R, SP> NarrowPhase<ID, S, V, P, Decomposed<V, R>, A, R> for GJK<S, V, SP>
+impl <S, V, P> GJK<S, V, P>
+    where
+        S: BaseFloat,
+        V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
+        P: SimplexProcessor<S, V>,
+{
+    pub fn new() -> Self {
+        Self {
+            simplex_processor : P::new(),
+            marker : std::marker::PhantomData,
+        }
+    }
+}
+
+impl<ID, S, V, P, A, R, SP> NarrowPhase<ID, S, V, P, R, A> for GJK<S, V, SP>
 where
     ID: Clone + Debug,
     S: BaseFloat,
@@ -50,9 +63,9 @@ where
 {
     fn collide(
         &mut self,
-        &mut (ref mut left, ref left_transform): &mut (CollisionShape<ID, S, V, P, Decomposed<V, R>, A>,
+        &mut (ref mut left, ref left_transform): &mut (CollisionShape<ID, S, V, P, R, A>,
                                                        Decomposed<V, R>),
-        &mut (ref mut right, ref right_transform): &mut (CollisionShape<ID, S, V, P, Decomposed<V, R>, A>,
+        &mut (ref mut right, ref right_transform): &mut (CollisionShape<ID, S, V, P, R, A>,
                                                          Decomposed<V, R>),
     ) -> Option<Contact<ID, S, V>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
@@ -118,7 +131,7 @@ where
                                                             &left_primitive,
                                                             left_transform,
                                                             &right_primitive,
-                                                            right_transform)); // TODO: EPA
+right_transform)); // TODO: EPA
                             }
                         }
                         None => (),
@@ -132,9 +145,9 @@ where
 }
 
 fn gjk<S, V, P, A, R, SP>(
-    left: &CollisionPrimitive<S, V, P, Decomposed<V, R>, A>,
+    left: &CollisionPrimitive<S, V, P, R, A>,
     left_transform: &Decomposed<V, R>,
-    right: &CollisionPrimitive<S, V, P, Decomposed<V, R>, A>,
+    right: &CollisionPrimitive<S, V, P, R, A>,
     right_transform: &Decomposed<V, R>,
     simplex_processor: &SP,
 ) -> Option<Vec<V>>
@@ -147,16 +160,17 @@ where
     SP: SimplexProcessor<S, V>,
 {
     let mut d = right_transform.disp - left_transform.disp;
-    let mut simplex: Vec<V> = Vec::default();
-    simplex.push(support(left, left_transform, right, right_transform, &d));
-    if cgmath::dot(*simplex.last().unwrap(), d) <= S::zero() {
+    let a = support(left, left_transform, right, right_transform, &d);
+    if a.dot(d) <= S::zero() {
         return None;
     }
+    let mut simplex: Vec<V> = Vec::default();
+    simplex.push(a);
     d = d.neg();
     let mut i = 0;
     loop {
         let a = support(left, left_transform, right, right_transform, &d);
-        if cgmath::dot(a, d) <= S::zero() {
+        if a.dot(d) <= S::zero() {
             return None;
         } else {
             simplex.push(a);
@@ -172,9 +186,9 @@ where
 }
 
 fn support<S, V, P, A, R>(
-    left: &CollisionPrimitive<S, V, P, Decomposed<V, R>, A>,
+    left: &CollisionPrimitive<S, V, P, R, A>,
     left_transform: &Decomposed<V, R>,
-    right: &CollisionPrimitive<S, V, P, Decomposed<V, R>, A>,
+    right: &CollisionPrimitive<S, V, P, R, A>,
     right_transform: &Decomposed<V, R>,
     direction: &V,
 ) -> V
