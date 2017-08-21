@@ -43,7 +43,7 @@ where
     }
 }
 
-impl<ID, S, V, P, R, A> From<CollisionShape<ID, S, V, P, R, A>>
+impl<ID, S, V, P, R, A> From<(ID, CollisionShape<S, V, P, R, A>)>
     for BroadCollisionInfo<ID, S, V, P, A>
 where
     ID: Clone + Debug,
@@ -53,8 +53,8 @@ where
     R: Rotation<P>,
     A: Aabb<S, V, P> + Discrete<A> + Clone,
 {
-    fn from(shape: CollisionShape<ID, S, V, P, R, A>) -> Self {
-        Self::new(shape.id.clone(), shape.transformed_bound.clone())
+    fn from((id, shape): (ID, CollisionShape<S, V, P, R, A>)) -> Self {
+        Self::new(id.clone(), shape.transformed_bound.clone())
     }
 }
 

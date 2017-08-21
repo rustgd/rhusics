@@ -16,6 +16,7 @@ where
     R: Rotation<P>,
 {
     fn collide(&mut self,
-               left: &mut (CollisionShape<ID, S, V, P, R, A>, Decomposed<V, R>),
-               right: &mut (CollisionShape<ID, S, V, P, R, A>, Decomposed<V, R>), ) -> Option<Contact<ID, S, V>>;
+               left: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
+               right: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>), )
+        -> Vec<Contact<ID, S, V>>;
 }

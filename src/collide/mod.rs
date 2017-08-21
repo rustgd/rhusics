@@ -1,7 +1,7 @@
 pub mod broad;
 pub mod narrow;
 pub mod primitive2d;
-pub mod system;
+pub mod ecs;
 
 use cgmath::prelude::*;
 use cgmath::{Decomposed, BaseFloat};
@@ -28,7 +28,8 @@ where
     pub penetration_depth: S,
 }
 
-impl <ID, S, V> Contact<ID, S, V> where
+impl<ID, S, V> Contact<ID, S, V>
+where
     ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + Zero,
@@ -121,16 +122,14 @@ impl<S, V, P, R, A> CollisionPrimitive<S, V, P, R, A>
 }
 
 #[derive(Debug)]
-pub struct CollisionShape<ID, S, V, P, R, A>
+pub struct CollisionShape<S, V, P, R, A>
 where
-    ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
     P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
     R: Rotation<P>,
     A: Aabb<S, V, P> + Discrete<A>,
 {
-    pub id: ID,
     pub enabled: bool,
     pub base_bound: A,
     pub transformed_bound: A,
@@ -138,33 +137,46 @@ where
     pub strategy: CollisionStrategy,
 }
 
-impl<ID, S, V, P, R, A> CollisionShape<ID, S, V, P, R, A>
+impl<S, V, P, R, A> CollisionShape<S, V, P, R, A>
 where
-    ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S>
         + ElementWise
         + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V>
-        + MinMax
-        + Zero,
+    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
     R: Rotation<P>,
     A: Aabb<S, V, P> + Clone + Discrete<A>,
 {
-    pub fn new(
-        id: ID,
+    pub fn new_complex(
         strategy: CollisionStrategy,
         primitives: Vec<CollisionPrimitive<S, V, P, R, A>>,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
-            id,
             primitives,
-            enabled: false,
+            enabled: true,
             transformed_bound: bound,
             strategy,
         }
+    }
+
+    pub fn new_simple<PRIM: Primitive<S, V, P, R, A> + 'static>(
+        strategy: CollisionStrategy,
+        primitive: PRIM,
+    ) -> Self {
+        Self::new_complex(strategy, vec![CollisionPrimitive::new(primitive)])
+    }
+
+    pub fn new_simple_offset<PRIM: Primitive<S, V, P, R, A> + 'static>(
+        strategy: CollisionStrategy,
+        primitive: PRIM,
+        transform: Decomposed<V, R>,
+    ) -> Self {
+        Self::new_complex(
+            strategy,
+            vec![CollisionPrimitive::new_impl(primitive, transform)],
+        )
     }
 
     pub fn update(&mut self, transform: &Decomposed<V, R>) {
@@ -179,17 +191,15 @@ fn get_bound<S, V, P, R, A>(primitives: &Vec<CollisionPrimitive<S, V, P, R, A>>)
 where
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Zero,
+    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
     R: Rotation<P>,
     A: Aabb<S, V, P> + Clone + Discrete<A>,
 {
     primitives.iter().map(|p| &p.base_bound).fold(
         A::new(
-            P::zero(),
-            P::zero(),
+            P::from_value(S::zero()),
+            P::from_value(S::zero()),
         ),
-        |bound, b| {
-            bound.union(b)
-        },
+        |bound, b| bound.union(b),
     )
 }

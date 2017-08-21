@@ -10,7 +10,6 @@ use cgmath::{BaseFloat, Decomposed};
 use collision::{Aabb, Discrete, MinMax};
 
 use std;
-use std::cmp::Ordering;
 use std::ops::Neg;
 use std::fmt::Debug;
 
@@ -28,16 +27,16 @@ where
     marker: std::marker::PhantomData<(S, V)>,
 }
 
-impl <S, V, P> GJK<S, V, P>
-    where
-        S: BaseFloat,
-        V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
-        P: SimplexProcessor<S, V>,
+impl<S, V, P> GJK<S, V, P>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
+    P: SimplexProcessor<S, V>,
 {
     pub fn new() -> Self {
         Self {
-            simplex_processor : P::new(),
-            marker : std::marker::PhantomData,
+            simplex_processor: P::new(),
+            marker: std::marker::PhantomData,
         }
     }
 }
@@ -56,55 +55,23 @@ where
         Scalar = S,
         Diff = V,
     >
-        + MinMax,
+        + MinMax + Debug,
     A: Aabb<S, V, P> + Discrete<A>,
     R: Rotation<P>,
     SP: SimplexProcessor<S, V>
 {
     fn collide(
         &mut self,
-        &mut (ref mut left, ref left_transform): &mut (CollisionShape<ID, S, V, P, R, A>,
-                                                       Decomposed<V, R>),
-        &mut (ref mut right, ref right_transform): &mut (CollisionShape<ID, S, V, P, R, A>,
-                                                         Decomposed<V, R>),
-    ) -> Option<Contact<ID, S, V>> {
+        (ref left_id, ref mut left, ref left_transform):
+            (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
+        (ref right_id, ref mut right, ref right_transform):
+            (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
+    ) -> Vec<Contact<ID, S, V>> {
+        let mut contacts = Vec::default();
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
         {
-            return None;
-        }
-
-        let v_zero = V::zero();
-        if left.primitives.len() > 1 {
-            left.primitives.sort_by(|a, b| {
-                right_transform
-                    .disp
-                    .distance2(
-                        left_transform.disp + a.local_transform.transform_vector(v_zero),
-                    )
-                    .partial_cmp(&right_transform.disp.distance2(
-                        left_transform.disp +
-                            b.local_transform
-                                .transform_vector(v_zero),
-                    ))
-                    .unwrap_or(Ordering::Equal)
-            });
-        }
-        if right.primitives.len() > 1 {
-            right.primitives.sort_by(|a, b| {
-                left_transform
-                    .disp
-                    .distance2(
-                        right_transform.disp + a.local_transform.transform_vector(v_zero),
-                    )
-                    .partial_cmp(&left_transform.disp.distance2(
-                        right_transform.disp +
-                            b.local_transform.transform_vector(
-                                v_zero,
-                            ),
-                    ))
-                    .unwrap_or(Ordering::Equal)
-            });
+            return contacts;
         }
 
         for left_primitive in &left.primitives {
@@ -121,17 +88,17 @@ where
                             if left.strategy == CollisionStrategy::CollisionOnly ||
                                 right.strategy == CollisionStrategy::CollisionOnly
                             {
-                                return Some(Contact::new(CollisionStrategy::CollisionOnly, (
-                                    left.id.clone(),
-                                    right.id.clone(),
-                                )));
+                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly, (
+                                    left_id.clone(),
+                                    right_id.clone(),
+                                ))));
                             } else {
-                                return Some(self::epa::epa((left.id.clone(), right.id.clone()),
-                                                            &mut simplex,
-                                                            &left_primitive,
-                                                            left_transform,
-                                                            &right_primitive,
-right_transform)); // TODO: EPA
+                                contacts.push(self::epa::epa((left_id.clone(), right_id.clone()),
+                                                             &mut simplex,
+                                                             &left_primitive,
+                                                             left_transform,
+                                                             &right_primitive,
+                                                             right_transform));
                             }
                         }
                         None => (),
@@ -140,7 +107,7 @@ right_transform)); // TODO: EPA
             }
         }
 
-        None
+        contacts
     }
 }
 
@@ -154,7 +121,7 @@ fn gjk<S, V, P, A, R, SP>(
 where
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace + Neg<Output = V>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
+    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Debug,
     A: Aabb<S, V, P> + Discrete<A>,
     R: Rotation<P>,
     SP: SimplexProcessor<S, V>,
@@ -195,13 +162,44 @@ fn support<S, V, P, A, R>(
 where
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + Neg<Output = V>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
+    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Debug,
     A: Aabb<S, V, P> + Discrete<A>,
     R: Rotation<P>,
 {
-    left.primitive.get_far_point(direction, left_transform) -
-        right.primitive.get_far_point(
-            &direction.neg(),
-            right_transform,
-        )
+    let l = left.primitive.get_far_point(direction, left_transform);
+    let r = right.primitive.get_far_point(
+        &direction.neg(),
+        right_transform,
+    );
+    l - r
+}
+
+#[cfg(test)]
+mod tests {
+    use super::GJK;
+    use super::support;
+    use cgmath::{Vector2, Decomposed, Rotation2, Rad, Basis2};
+    use collide2d::*;
+
+    #[test]
+    fn test_support() {
+        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
+            disp: Vector2::new(15., 0.),
+            rot: Rotation2::from_angle(Rad(0.)),
+            scale: 1.,
+        };
+        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
+            disp: Vector2::new(-15., 0.),
+            rot: Rotation2::from_angle(Rad(0.)),
+            scale: 1.,
+        };
+        let direction = Vector2::new(1., 0.);
+        assert_eq!(
+            Vector2::new(40., 0.),
+            support(&left, &left_transform, &right, &right_transform, &direction)
+        );
+    }
+
 }

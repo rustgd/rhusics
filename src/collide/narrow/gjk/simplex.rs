@@ -65,7 +65,7 @@ impl<S> SimplexProcessor<S, Vector3<S>> for SimplexProcessor3D
 where
     S: BaseFloat,
 {
-    fn  process(&self, simplex: &mut Vec<Vector3<S>>, d: &mut Vector3<S>) -> bool {
+    fn process(&self, simplex: &mut Vec<Vector3<S>>, d: &mut Vector3<S>) -> bool {
         // 4 points
         if simplex.len() == 4 {
             //TODO

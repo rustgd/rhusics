@@ -8,6 +8,12 @@ pub struct Circle<S: BaseFloat> {
     pub radius: S,
 }
 
+impl<S: BaseFloat> Circle<S> {
+    pub fn new(radius: S) -> Self {
+        Self { radius }
+    }
+}
+
 #[derive(Debug)]
 pub struct Rectangle<S: BaseFloat> {
     pub dim: Vector2<S>,
@@ -16,7 +22,11 @@ pub struct Rectangle<S: BaseFloat> {
 }
 
 impl<S: BaseFloat> Rectangle<S> {
-    pub fn new(dim: Vector2<S>) -> Rectangle<S> {
+    pub fn new(dim_x: S, dim_y: S) -> Self {
+        Self::new_impl(Vector2::new(dim_x, dim_y))
+    }
+
+    pub fn new_impl(dim: Vector2<S>) -> Self {
         let two = S::one() + S::one();
         Rectangle {
             dim,
@@ -41,10 +51,11 @@ pub struct ConvexPolygon<S: BaseFloat> {
     pub vertices: Vec<Vector2<S>>,
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
-    for Circle<S>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for Circle<S>
 where
-    S: BaseFloat + Send + Sync,
+    S: BaseFloat
+        + Send
+        + Sync,
 {
     fn get_far_point(
         &self,
@@ -63,10 +74,11 @@ where
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
-    for Rectangle<S>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for Rectangle<S>
 where
-    S: BaseFloat + Send + Sync,
+    S: BaseFloat
+        + Send
+        + Sync,
 {
     fn get_far_point(
         &self,
@@ -84,10 +96,11 @@ where
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>>
-    for ConvexPolygon<S>
+impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for ConvexPolygon<S>
 where
-    S: BaseFloat + Send + Sync,
+    S: BaseFloat
+        + Send
+        + Sync,
 {
     fn get_far_point(
         &self,
