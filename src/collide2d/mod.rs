@@ -2,7 +2,6 @@ use cgmath::{Vector2, Point2, Basis2};
 use collision::Aabb2;
 
 use collide::{CollisionPrimitive, CollisionShape};
-use collide::ecs::CollisionSystem;
 
 use collide::broad::BroadCollisionInfo;
 use collide::broad::brute_force::BruteForce;
@@ -11,7 +10,8 @@ use collide::broad::sweep_prune::SweepAndPrune;
 use collide::narrow::gjk::GJK;
 use collide::narrow::gjk::simplex::SimplexProcessor2D;
 
-use collide::ecs::Contacts;
+use collide::ecs::resources::Contacts;
+use collide::ecs::system::CollisionSystem;
 
 pub use collide::CollisionStrategy;
 pub use collide::primitive2d::*;

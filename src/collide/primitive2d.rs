@@ -154,10 +154,7 @@ mod tests {
     #[test]
     fn test_circle_bound() {
         let circle = Circle::new(10.);
-        assert_eq!(
-            bound(-10., -10., 10., 10.),
-            circle.get_bound()
-        )
+        assert_eq!(bound(-10., -10., 10., 10.), circle.get_bound())
     }
 
     fn test_circle(dx: f32, dy: f32, px: f32, py: f32, rot: f32) {
@@ -177,10 +174,7 @@ mod tests {
     #[test]
     fn test_rectangle_bound() {
         let r = Rectangle::new(10., 10.);
-        assert_eq!(
-            bound(-5., -5., 5., 5.),
-            r.get_bound()
-        )
+        assert_eq!(bound(-5., -5., 5., 5.), r.get_bound())
     }
 
     // convex polygon
@@ -188,7 +182,7 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
 
     // util
-    fn bound(min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> Aabb2<f32> {
+    fn bound(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Aabb2<f32> {
         Aabb2::new(Point2::new(min_x, min_y), Point2::new(max_x, max_y))
     }
 }

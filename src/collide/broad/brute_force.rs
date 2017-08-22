@@ -49,11 +49,9 @@ mod tests {
 
     #[test]
     fn no_intersection_for_miss() {
-        let left =
-            coll(1, 8., 8., 10., 11.);
+        let left = coll(1, 8., 8., 10., 11.);
 
-        let right =
-            coll(2, 12., 13., 18., 18.);
+        let right = coll(2, 12., 13., 18., 18.);
 
         let mut brute = BruteForce::default();
         let potentials = brute.compute(&mut vec![left, right]);
@@ -62,11 +60,9 @@ mod tests {
 
     #[test]
     fn no_intersection_for_miss_unsorted() {
-        let left =
-            coll(1, 8., 8., 10., 11.);
+        let left = coll(1, 8., 8., 10., 11.);
 
-        let right =
-            coll(2, 12., 13., 18., 18.);
+        let right = coll(2, 12., 13., 18., 18.);
 
         let mut brute = BruteForce::default();
         let potentials = brute.compute(&mut vec![right, left]);
@@ -75,11 +71,9 @@ mod tests {
 
     #[test]
     fn intersection_for_hit() {
-        let left =
-            coll(1, 8., 8., 10., 11.);
+        let left = coll(1, 8., 8., 10., 11.);
 
-        let right =
-            coll(2, 9., 10., 18., 18.);
+        let right = coll(2, 9., 10., 18., 18.);
 
         let mut brute = BruteForce::default();
         let potentials = brute.compute(&mut vec![left, right]);
@@ -89,11 +83,9 @@ mod tests {
 
     #[test]
     fn intersection_for_hit_unsorted() {
-        let left =
-            coll(1, 8., 8., 10., 11.);
+        let left = coll(1, 8., 8., 10., 11.);
 
-        let right =
-            coll(222, 9., 10., 18., 18.);
+        let right = coll(222, 9., 10., 18., 18.);
 
         let mut brute = BruteForce::default();
         let potentials = brute.compute(&mut vec![right, left]);
@@ -102,11 +94,17 @@ mod tests {
     }
 
     // util
-    fn coll(id : u32, min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> BroadCollisionInfo2D<u32, f32> {
+    fn coll(
+        id: u32,
+        min_x: f32,
+        min_y: f32,
+        max_x: f32,
+        max_y: f32,
+    ) -> BroadCollisionInfo2D<u32, f32> {
         BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
-    fn bound(min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> Aabb2<f32> {
+    fn bound(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Aabb2<f32> {
         Aabb2::new(Point2::new(min_x, min_y), Point2::new(max_x, max_y))
     }
 }
