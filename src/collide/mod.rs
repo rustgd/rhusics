@@ -16,37 +16,54 @@ pub enum CollisionStrategy {
 }
 
 #[derive(Debug)]
-pub struct Contact<ID, S, V>
+pub struct ContactSet<ID, S, V>
 where
     ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
 {
+    bodies: (ID, ID),
+    contacts: Vec<Contact<S, V>>,
+}
+
+impl<ID, S, V> ContactSet<ID, S, V>
+where
+    ID: Clone + Debug,
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
+    pub fn new(bodies: (ID, ID), contacts: Vec<Contact<S, V>>) -> Self {
+        Self { bodies, contacts }
+    }
+
+    pub fn new_single(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
+        Self::new(bodies, vec![Contact::new(strategy)])
+    }
+}
+
+#[derive(Debug)]
+pub struct Contact<S, V>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
     pub strategy: CollisionStrategy,
-    pub bodies: (ID, ID),
     pub normal: V,
     pub penetration_depth: S,
 }
 
-impl<ID, S, V> Contact<ID, S, V>
+impl<S, V> Contact<S, V>
 where
-    ID: Clone + Debug,
     S: BaseFloat,
     V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + Zero,
 {
-    pub fn new(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
-        Self::new_impl(strategy, bodies, V::zero(), S::zero())
+    pub fn new(strategy: CollisionStrategy) -> Self {
+        Self::new_impl(strategy, V::zero(), S::zero())
     }
 
-    pub fn new_impl(
-        strategy: CollisionStrategy,
-        bodies: (ID, ID),
-        normal: V,
-        penetration_depth: S,
-    ) -> Self {
+    pub fn new_impl(strategy: CollisionStrategy, normal: V, penetration_depth: S) -> Self {
         Self {
             strategy,
-            bodies,
             normal,
             penetration_depth,
         }

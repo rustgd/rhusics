@@ -113,15 +113,16 @@ where
 mod tests {
     use cgmath::Point2;
     use collision::Aabb2;
+    use collide2d::BroadCollisionInfo2D;
     use super::*;
 
     #[test]
     fn no_intersection_for_miss() {
         let left =
-            BroadCollisionInfo::new(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+            coll(1, 8., 8., 10., 11.);
 
         let right =
-            BroadCollisionInfo::new(2, Aabb2::new(Point2::new(12., 13.), Point2::new(18., 18.)));
+            coll(2, 12., 13., 18., 18.);
 
         let mut sweep = SweepAndPrune::new();
         let potentials = sweep.compute(&mut vec![left, right]);
@@ -131,10 +132,10 @@ mod tests {
     #[test]
     fn no_intersection_for_miss_unsorted() {
         let left =
-            BroadCollisionInfo::new(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+            coll(1, 8., 8., 10., 11.);
 
         let right =
-            BroadCollisionInfo::new(2, Aabb2::new(Point2::new(12., 13.), Point2::new(18., 18.)));
+            coll(2, 12., 13., 18., 18.);
 
         let mut sweep = SweepAndPrune::new();
         let potentials = sweep.compute(&mut vec![right, left]);
@@ -144,10 +145,10 @@ mod tests {
     #[test]
     fn intersection_for_hit() {
         let left =
-            BroadCollisionInfo::new(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+            coll(1, 8., 8., 10., 11.);
 
         let right =
-            BroadCollisionInfo::new(2, Aabb2::new(Point2::new(9., 10.), Point2::new(18., 18.)));
+            coll(2, 9., 10., 18., 18.);
 
         let mut sweep = SweepAndPrune::new();
         let potentials = sweep.compute(&mut vec![left, right]);
@@ -158,14 +159,23 @@ mod tests {
     #[test]
     fn intersection_for_hit_unsorted() {
         let left =
-            BroadCollisionInfo::new(1, Aabb2::new(Point2::new(8., 8.), Point2::new(10., 11.)));
+            coll(1, 8., 8.,10., 11.);
 
         let right =
-            BroadCollisionInfo::new(222, Aabb2::new(Point2::new(9., 10.), Point2::new(18., 18.)));
+            coll(222, 9., 10., 18., 18.);
 
         let mut sweep = SweepAndPrune::new();
         let potentials = sweep.compute(&mut vec![right, left]);
         assert_eq!(1, potentials.len());
         assert_eq!((1, 222), potentials[0]);
+    }
+
+    // util
+    fn coll(id : u32, min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> BroadCollisionInfo2D<u32, f32> {
+        BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
+    }
+
+    fn bound(min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> Aabb2<f32> {
+        Aabb2::new(Point2::new(min_x, min_y), Point2::new(max_x, max_y))
     }
 }

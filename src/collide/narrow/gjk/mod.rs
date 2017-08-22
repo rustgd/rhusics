@@ -3,7 +3,7 @@ pub mod epa;
 
 use super::NarrowPhase;
 
-use collide::{Contact, CollisionShape, CollisionStrategy, CollisionPrimitive};
+use collide::{Contact, ContactSet, CollisionShape, CollisionStrategy, CollisionPrimitive};
 
 use cgmath::prelude::*;
 use cgmath::{BaseFloat, Decomposed};
@@ -66,12 +66,12 @@ where
             (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
         (ref right_id, ref mut right, ref right_transform):
             (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
-    ) -> Vec<Contact<ID, S, V>> {
+    ) -> Option<ContactSet<ID, S, V>> {
         let mut contacts = Vec::default();
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
         {
-            return contacts;
+            return None;
         }
 
         for left_primitive in &left.primitives {
@@ -88,15 +88,11 @@ where
                             if left.strategy == CollisionStrategy::CollisionOnly ||
                                 right.strategy == CollisionStrategy::CollisionOnly
                             {
-                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly, (
-                                    left_id.clone(),
-                                    right_id.clone(),
-                                ))));
+                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
                             } else {
-                                contacts.push(self::epa::epa((left_id.clone(), right_id.clone()),
-                                                             &mut simplex,
-                                                             &left_primitive,
-                                                             left_transform,
+                                contacts.append(&mut self::epa::epa(&mut simplex,
+                                                              &left_primitive,
+                                                                    left_transform,
                                                              &right_primitive,
                                                              right_transform));
                             }
@@ -107,7 +103,11 @@ where
             }
         }
 
-        contacts
+        if contacts.len() > 0 {
+            Some(ContactSet::new((left_id.clone(), right_id.clone()), contacts))
+        } else {
+            None
+        }
     }
 }
 

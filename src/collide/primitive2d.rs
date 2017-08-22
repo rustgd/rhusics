@@ -114,3 +114,81 @@ where
         ::util::get_bound(&self.vertices)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std;
+    use super::*;
+    use cgmath::{Decomposed, Point2, Vector2, Rotation2, Rad};
+
+    // circle
+
+    #[test]
+    fn test_circle_far_1() {
+        test_circle(1., 0., 10., 0., 0.);
+    }
+
+    #[test]
+    fn test_circle_far_2() {
+        test_circle(1., 1., 7.0710677, 7.0710677, 0.);
+    }
+
+    #[test]
+    fn test_circle_far_3() {
+        test_circle(1., 0., 7.0710683, 7.0710683, -std::f32::consts::PI / 4.);
+    }
+
+    #[test]
+    fn test_circle_far_4() {
+        let circle = Circle::new(10.);
+        let direction = Vector2::new(1., 0.);
+        let transform = Decomposed {
+            disp: Vector2::new(0., 10.),
+            rot: Rotation2::from_angle(Rad(0.)),
+            scale: 1.,
+        };
+        let point = circle.get_far_point(&direction, &transform);
+        assert_eq!(Point2::new(10., 10.), point);
+    }
+
+    #[test]
+    fn test_circle_bound() {
+        let circle = Circle::new(10.);
+        assert_eq!(
+            bound(-10., -10., 10., 10.),
+            circle.get_bound()
+        )
+    }
+
+    fn test_circle(dx: f32, dy: f32, px: f32, py: f32, rot: f32) {
+        let circle = Circle::new(10.);
+        let direction = Vector2::new(dx, dy);
+        let transform = Decomposed {
+            disp: Vector2::new(0., 0.),
+            rot: Rotation2::from_angle(Rad(rot)),
+            scale: 1.,
+        };
+        let point = circle.get_far_point(&direction, &transform);
+        assert_eq!(Point2::new(px, py), point);
+    }
+
+    // rectangle
+    // not testing far point as ::util::get_max_point is rigorously tested
+    #[test]
+    fn test_rectangle_bound() {
+        let r = Rectangle::new(10., 10.);
+        assert_eq!(
+            bound(-5., -5., 5., 5.),
+            r.get_bound()
+        )
+    }
+
+    // convex polygon
+    // not testing bound as ::util::get_bound is fairly well tested
+    // not testing far point as ::util::get_max_point is rigorously tested
+
+    // util
+    fn bound(min_x : f32, min_y : f32, max_x : f32, max_y : f32) -> Aabb2<f32> {
+        Aabb2::new(Point2::new(min_x, min_y), Point2::new(max_x, max_y))
+    }
+}

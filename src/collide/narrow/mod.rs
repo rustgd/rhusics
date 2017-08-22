@@ -1,6 +1,6 @@
 pub mod gjk;
 
-use collide::{Contact, CollisionShape};
+use collide::{ContactSet, CollisionShape};
 
 use std::fmt::Debug;
 use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, EuclideanSpace, Decomposed, Rotation};
@@ -18,5 +18,5 @@ where
     fn collide(&mut self,
                left: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
                right: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>), )
-        -> Vec<Contact<ID, S, V>>;
+        -> Option<ContactSet<ID, S, V>>;
 }

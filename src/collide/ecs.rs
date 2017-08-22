@@ -1,4 +1,5 @@
-use specs::{System, ReadStorage, Join, Component, VecStorage, WriteStorage, Entities, Entity, FetchMut};
+use specs::{System, ReadStorage, Join, Component, VecStorage, WriteStorage, Entities, Entity,
+            FetchMut};
 use cgmath::prelude::*;
 use cgmath::{BaseFloat, Decomposed};
 use collision::{Aabb, MinMax, Discrete};
@@ -6,7 +7,7 @@ use collision::{Aabb, MinMax, Discrete};
 use std::fmt::Debug;
 use std::ops::{DerefMut, Deref};
 
-use collide::{CollisionShape, Contact, CollisionStrategy};
+use collide::{CollisionShape, CollisionStrategy, ContactSet};
 use collide::narrow::NarrowPhase;
 use collide::broad::{BroadPhase, BroadCollisionInfo};
 
@@ -43,6 +44,47 @@ where
         + 'static,
 {
     type Storage = VecStorage<CollisionShape<S, V, P, R, A>>;
+}
+
+#[derive(Debug)]
+pub struct Contacts<S, V>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
+    contacts: Vec<ContactSet<Entity, S, V>>,
+}
+
+impl<S, V> Contacts<S, V>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
+    pub fn new() -> Self {
+        Self { contacts: Vec::default() }
+    }
+}
+
+impl<S, V> Deref for Contacts<S, V>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
+    type Target = Vec<ContactSet<Entity, S, V>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.contacts
+    }
+}
+
+impl<S, V> DerefMut for Contacts<S, V>
+where
+    S: BaseFloat,
+    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.contacts
+    }
 }
 
 pub struct CollisionSystem<S, V, P, R, A>
@@ -91,47 +133,6 @@ where
     }
 }
 
-#[derive(Debug)]
-pub struct Contacts<S, V>
-    where
-        S: BaseFloat,
-        V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-{
-    contacts : Vec<Contact<Entity, S, V>>
-}
-
-impl <S, V> Contacts<S, V>
-    where
-        S: BaseFloat,
-        V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,{
-    pub fn new() -> Self {
-        Self {
-            contacts : Vec::default()
-        }
-    }
-}
-
-impl <S, V> Deref for Contacts<S, V>
-    where
-        S: BaseFloat,
-        V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-{
-    type Target = Vec<Contact<Entity, S, V>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.contacts
-    }
-}
-
-impl <S, V> DerefMut for Contacts<S, V> where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.contacts
-    }
-}
-
 impl<'a, S, V, P, R, A> System<'a> for CollisionSystem<S, V, P, R, A>
 where
     S: BaseFloat
@@ -171,9 +172,10 @@ where
     type SystemData = (Entities<'a>,
      ReadStorage<'a, BodyPose<S, V, P, R>>,
      WriteStorage<'a, CollisionShape<S, V, P, R, A>>,
-                       FetchMut<'a, Contacts<S, V>>,);
+     FetchMut<'a, Contacts<S, V>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
+        contacts.clear();
         match self.broad {
             Some(ref mut broad) => {
                 let mut info: Vec<BroadCollisionInfo<Entity, S, V, P, A>> = Vec::default();
@@ -195,10 +197,15 @@ where
                             let right_shape = shapes.get(right_entity).unwrap();
                             let left_pose = poses.get(left_entity).unwrap();
                             let right_pose = poses.get(right_entity).unwrap();
-                            contacts.append(&mut narrow.collide(
-                                (left_entity, left_shape, &left_pose.into()),
-                                (right_entity, right_shape, &right_pose.into()),
-                            ));
+                            match narrow.collide((left_entity, left_shape, &left_pose.into()), (
+                                right_entity,
+                                right_shape,
+                                &right_pose
+                                    .into(),
+                            )) {
+                                Some(contact_set) => contacts.push(contact_set),
+                                None => (),
+                            };
                         }
                     }
                     None => {
@@ -206,13 +213,15 @@ where
                         // intersections
                         // right now, we only report the collision, no normal/depth calculation
                         for (left_entity, right_entity) in potentials {
-                            contacts.push(Contact::new(CollisionStrategy::CollisionOnly,
-                                                       (left_entity, right_entity)));
+                            contacts.push(ContactSet::new_single(
+                                CollisionStrategy::CollisionOnly,
+                                (left_entity, right_entity),
+                            ));
                         }
                     }
                 }
             }
-            None => () // we only do narrow phase if we have both a broad phase and a narrow phase
+            None => (), // we only do narrow phase if we have both a broad phase and a narrow phase
         };
     }
 }

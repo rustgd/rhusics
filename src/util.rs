@@ -66,11 +66,13 @@ mod tests {
             Vector2::new(0., -1.),
             Vector2::new(1., 0.),
         ];
-        assert_eq!(Aabb2::new(Point2::new(-1., -1.), Point2::new(1., 1.)),
-                   get_bound(&triangle));
+        assert_eq!(
+            Aabb2::new(Point2::new(-1., -1.), Point2::new(1., 1.)),
+            get_bound(&triangle)
+        );
     }
 
-    fn test_max_point(dx : f32, dy: f32, px: f32, py: f32, rot_angle: f32) {
+    fn test_max_point(dx: f32, dy: f32, px: f32, py: f32, rot_angle: f32) {
         let direction = Vector2::new(dx, dy);
         let point = Point2::new(px, py);
         let triangle = vec![
@@ -83,40 +85,37 @@ mod tests {
             rot: Rotation2::from_angle(Rad(rot_angle)),
             scale: 1.,
         };
-        assert_eq!(
-            point,
-            get_max_point(&triangle, &direction, &transform)
-        );
+        assert_eq!(point, get_max_point(&triangle, &direction, &transform));
     }
 
     #[test]
     fn test_max_point_1() {
-        test_max_point(0., 1.,-1., 1., 0.);
+        test_max_point(0., 1., -1., 1., 0.);
     }
 
     #[test]
     fn test_max_point_2() {
-        test_max_point(-1., 0.,-1., 1., 0.);
+        test_max_point(-1., 0., -1., 1., 0.);
     }
 
     #[test]
     fn test_max_point_3() {
-        test_max_point(0., -1.,0., -1., 0.);
+        test_max_point(0., -1., 0., -1., 0.);
     }
 
     #[test]
     fn test_max_point_4() {
-        test_max_point(1., 0.,1., 0., 0.);
+        test_max_point(1., 0., 1., 0., 0.);
     }
 
     #[test]
     fn test_max_point_5() {
-        test_max_point(10., 1.,1., 0., 0.);
+        test_max_point(10., 1., 1., 0., 0.);
     }
 
     #[test]
     fn test_max_point_6() {
-        test_max_point(2., -100.,0., -1., 0.);
+        test_max_point(2., -100., 0., -1., 0.);
     }
 
     #[test]
@@ -138,9 +137,6 @@ mod tests {
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        assert_eq!(
-            point,
-            get_max_point(&triangle, &direction, &transform)
-        );
+        assert_eq!(point, get_max_point(&triangle, &direction, &transform));
     }
 }
