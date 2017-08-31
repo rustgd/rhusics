@@ -1,38 +1,34 @@
 use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut};
 use cgmath::prelude::*;
 use cgmath::{BaseFloat, Decomposed};
-use collision::{Aabb, MinMax, Discrete};
+use collision::Aabb;
 
 use std::fmt::Debug;
 
 use collide::ecs::resources::Contacts;
-use collide::{CollisionShape, CollisionStrategy, ContactSet};
+use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive};
 use collide::narrow::NarrowPhase;
 use collide::broad::{BroadPhase, BroadCollisionInfo};
 
 use BodyPose;
 
-pub struct CollisionSystem<S, V, P, R, A>
+pub struct CollisionSystem<P, A, R>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    R: Rotation<P>,
-    A: Aabb<S, V, P> + Discrete<A>,
+    A: Aabb + Clone,
+    A::Diff: Debug,
 {
-    narrow: Option<Box<NarrowPhase<Entity, S, V, P, R, A>>>,
-    broad: Option<Box<BroadPhase<Entity, S, V, P, A>>>,
+    narrow: Option<Box<NarrowPhase<Entity, P, A, R>>>,
+    broad: Option<Box<BroadPhase<Entity, A>>>,
 }
 
-impl<S, V, P, R, A> CollisionSystem<S, V, P, R, A>
+impl<P, A, R> CollisionSystem<P, A, R>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    R: Rotation<P>,
-    A: Aabb<S, V, P> + Discrete<A>,
+    A: Aabb + Clone + Send + Sync + 'static,
+    A::Diff: Debug + Send + Sync + 'static,
+    A::Scalar: BaseFloat + Send + Sync + 'static,
+    A::Point: Send + Sync + 'static,
+    P: Primitive<A> + Send + Sync + 'static,
+    R: Rotation<A::Point> + Send + Sync + 'static,
 {
     pub fn new() -> Self {
         Self {
@@ -41,7 +37,7 @@ where
         }
     }
 
-    pub fn with_narrow_phase<N: NarrowPhase<Entity, S, V, P, R, A> + 'static>(
+    pub fn with_narrow_phase<N: NarrowPhase<Entity, P, A, R> + 'static>(
         mut self,
         narrow: N,
     ) -> Self {
@@ -49,64 +45,34 @@ where
         self
     }
 
-    pub fn with_broad_phase<B: BroadPhase<Entity, S, V, P, A> + 'static>(
-        mut self,
-        broad: B,
-    ) -> Self {
+    pub fn with_broad_phase<B: BroadPhase<Entity, A> + 'static>(mut self, broad: B) -> Self {
         self.broad = Some(Box::new(broad));
         self
     }
 }
 
-impl<'a, S, V, P, R, A> System<'a> for CollisionSystem<S, V, P, R, A>
+impl<'a, P, A, R> System<'a> for CollisionSystem<P, A, R>
 where
-    S: BaseFloat
-        + Send
-        + Sync
-        + 'static
-        + Debug,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>
-        + Send
-        + Sync
-        + 'static
-        + Debug,
-    P: EuclideanSpace<
-        Scalar = S,
-        Diff = V,
-    >
-        + MinMax
-        + Send
-        + Sync
-        + 'static
-        + Debug,
-    R: Rotation<P>
-        + Send
-        + Sync
-        + 'static
-        + Debug,
-    A: Aabb<S, V, P>
-        + Discrete<A>
-        + Send
-        + Sync
-        + 'static
-        + Clone
-        + Debug,
+    A : Aabb + Clone + Send + Sync + 'static,
+    A::Diff : Debug + Send + Sync + 'static,
+    A::Scalar : BaseFloat + Send + Sync + 'static,
+    A::Point : Send + Sync + 'static,
+    P: Primitive<A> + Send + Sync + 'static,
+    R: Rotation<A::Point> + Send + Sync + 'static,
 {
     type SystemData = (Entities<'a>,
-     ReadStorage<'a, BodyPose<S, V, P, R>>,
-     WriteStorage<'a, CollisionShape<S, V, P, R, A>>,
-     FetchMut<'a, Contacts<S, V>>);
+     ReadStorage<'a, BodyPose<A::Point, R>>,
+     WriteStorage<'a, CollisionShape<P, A, R>>,
+     FetchMut<'a, Contacts<A::Diff>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
         contacts.clear();
         match self.broad {
             Some(ref mut broad) => {
-                let mut info: Vec<BroadCollisionInfo<Entity, S, V, P, A>> = Vec::default();
+                let mut info: Vec<BroadCollisionInfo<Entity, A>> = Vec::default();
                 for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                     if pose.dirty {
-                        let c: Decomposed<V, R> = pose.into();
+                        let c: Decomposed<A::Diff, R> = pose.into();
                         shape.update(&c);
                     }
                     info.push(BroadCollisionInfo::new(
@@ -134,9 +100,9 @@ where
                         }
                     }
                     None => {
-                        // if we only have a broad phase, we generate contacts for aabb
-                        // intersections
-                        // right now, we only report the collision, no normal/depth calculation
+// if we only have a broad phase, we generate contacts for aabb
+// intersections
+// right now, we only report the collision, no normal/depth calculation
                         for (left_entity, right_entity) in potentials {
                             contacts.push(ContactSet::new_single(
                                 CollisionStrategy::CollisionOnly,
@@ -146,7 +112,7 @@ where
                     }
                 }
             }
-            None => (), // we only do narrow phase if we have both a broad phase and a narrow phase
+None => (), // we only do narrow phase if we have both a broad phase and a narrow phase
         };
     }
 }

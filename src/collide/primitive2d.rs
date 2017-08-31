@@ -1,24 +1,24 @@
 use cgmath::prelude::*;
-use cgmath::{BaseFloat, Vector2, Point2, Basis2, Decomposed};
+use cgmath::{BaseFloat, Vector2, Point2, Decomposed};
 use collision::Aabb2;
 use super::Primitive;
 
-#[derive(Debug)]
-pub struct Circle<S: BaseFloat> {
+#[derive(Debug, Clone)]
+pub struct Circle<S> {
     pub radius: S,
 }
 
-impl<S: BaseFloat> Circle<S> {
+impl<S> Circle<S> {
     pub fn new(radius: S) -> Self {
         Self { radius }
     }
 }
 
-#[derive(Debug)]
-pub struct Rectangle<S: BaseFloat> {
+#[derive(Debug, Clone)]
+pub struct Rectangle<S> {
     pub dim: Vector2<S>,
     half_dim: Vector2<S>,
-    corners: Vec<Vector2<S>>,
+    corners: Vec<Point2<S>>,
 }
 
 impl<S: BaseFloat> Rectangle<S> {
@@ -35,83 +35,89 @@ impl<S: BaseFloat> Rectangle<S> {
         }
     }
 
-    pub fn generate_corners(dimensions: &Vector2<S>) -> Vec<Vector2<S>> {
+    pub fn generate_corners(dimensions: &Vector2<S>) -> Vec<Point2<S>> {
         let two = S::one() + S::one();
         vec![
-            Vector2::new(dimensions.x / two, dimensions.y / two),
-            Vector2::new(-dimensions.x / two, dimensions.y / two),
-            Vector2::new(-dimensions.x / two, -dimensions.y / two),
-            Vector2::new(dimensions.x / two, -dimensions.y / two),
+            Point2::new(dimensions.x / two, dimensions.y / two),
+            Point2::new(-dimensions.x / two, dimensions.y / two),
+            Point2::new(-dimensions.x / two, -dimensions.y / two),
+            Point2::new(dimensions.x / two, -dimensions.y / two),
         ]
     }
 }
 
-#[derive(Debug)]
-pub struct ConvexPolygon<S: BaseFloat> {
-    pub vertices: Vec<Vector2<S>>,
+#[derive(Debug, Clone)]
+pub struct ConvexPolygon<S> {
+    pub vertices: Vec<Point2<S>>,
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for Circle<S>
-where
-    S: BaseFloat
-        + Send
-        + Sync,
-{
-    fn get_far_point(
-        &self,
-        direction: &Vector2<S>,
-        transform: &Decomposed<Vector2<S>, Basis2<S>>,
-    ) -> Point2<S> {
-        let direction = transform.rot.invert().rotate_vector(*direction);
-        Point2::from_vec(transform.disp + direction.normalize_to(self.radius))
-    }
+#[derive(Debug, Clone)]
+pub enum Primitive2D<S> {
+    Circle(Circle<S>),
+    Rectangle(Rectangle<S>),
+    ConvexPolygon(ConvexPolygon<S>),
+}
 
-    fn get_bound(&self) -> Aabb2<S> {
-        Aabb2::new(
-            Point2::new(-self.radius, -self.radius),
-            Point2::new(self.radius, self.radius),
-        )
+impl<S> Into<Primitive2D<S>> for Circle<S> {
+    fn into(self) -> Primitive2D<S> {
+        Primitive2D::Circle(self)
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for Rectangle<S>
-where
-    S: BaseFloat
-        + Send
-        + Sync,
-{
-    fn get_far_point(
-        &self,
-        direction: &Vector2<S>,
-        transform: &Decomposed<Vector2<S>, Basis2<S>>,
-    ) -> Point2<S> {
-        ::util::get_max_point(&self.corners, direction, transform)
-    }
-
-    fn get_bound(&self) -> Aabb2<S> {
-        Aabb2::new(
-            Point2::new(-self.half_dim.x, -self.half_dim.y),
-            Point2::new(self.half_dim.x, self.half_dim.y),
-        )
+impl<S> Into<Primitive2D<S>> for Rectangle<S> {
+    fn into(self) -> Primitive2D<S> {
+        Primitive2D::Rectangle(self)
     }
 }
 
-impl<S> Primitive<S, Vector2<S>, Point2<S>, Basis2<S>, Aabb2<S>> for ConvexPolygon<S>
+impl<S> Into<Primitive2D<S>> for ConvexPolygon<S> {
+    fn into(self) -> Primitive2D<S> {
+        Primitive2D::ConvexPolygon(self)
+    }
+}
+
+impl<S> Primitive<Aabb2<S>> for Primitive2D<S>
 where
-    S: BaseFloat
-        + Send
-        + Sync,
+    S: BaseFloat + Send + Sync,
 {
-    fn get_far_point(
-        &self,
-        direction: &Vector2<S>,
-        transform: &Decomposed<Vector2<S>, Basis2<S>>,
-    ) -> Point2<S> {
-        ::util::get_max_point(&self.vertices, direction, transform)
+    fn get_bound(&self) -> Aabb2<S> {
+        match *self {
+            Primitive2D::Circle(ref circle) => {
+                Aabb2::new(
+                    Point2::new(-circle.radius, -circle.radius),
+                    Point2::new(circle.radius, circle.radius),
+                )
+            }
+            Primitive2D::Rectangle(ref rectangle) => {
+                Aabb2::new(
+                    Point2::new(-rectangle.half_dim.x, -rectangle.half_dim.y),
+                    Point2::new(rectangle.half_dim.x, rectangle.half_dim.y),
+                )
+            }
+            Primitive2D::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),
+        }
     }
 
-    fn get_bound(&self) -> Aabb2<S> {
-        ::util::get_bound(&self.vertices)
+    fn get_far_point<R>(
+        &self,
+        direction: &Vector2<S>,
+        transform: &Decomposed<Vector2<S>, R>,
+    ) -> Point2<S>
+    where
+        R: Rotation<Point2<S>>,
+    {
+        match *self {
+            Primitive2D::Circle(ref circle) => {
+                let direction = transform.rot.invert().rotate_vector(*direction);
+                Point2::from_vec(transform.disp + direction.normalize_to(circle.radius))
+            }
+            Primitive2D::Rectangle(Rectangle { ref corners, .. }) => {
+                ::util::get_max_point(corners, direction, transform)
+            }
+            Primitive2D::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => {
+                ::util::get_max_point(vertices, direction, transform)
+            }
+        }
     }
 }
 
@@ -119,7 +125,7 @@ where
 mod tests {
     use std;
     use super::*;
-    use cgmath::{Decomposed, Point2, Vector2, Rotation2, Rad};
+    use cgmath::{Decomposed, Point2, Vector2, Rotation2, Rad, Basis2};
 
     // circle
 
@@ -140,9 +146,9 @@ mod tests {
 
     #[test]
     fn test_circle_far_4() {
-        let circle = Circle::new(10.);
+        let circle: Primitive2D<f32> = Circle::new(10.).into();
         let direction = Vector2::new(1., 0.);
-        let transform = Decomposed {
+        let transform: Decomposed<Vector2<f32>, Basis2<f32>> = Decomposed {
             disp: Vector2::new(0., 10.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
@@ -153,14 +159,14 @@ mod tests {
 
     #[test]
     fn test_circle_bound() {
-        let circle = Circle::new(10.);
+        let circle: Primitive2D<f32> = Circle::new(10.).into();
         assert_eq!(bound(-10., -10., 10., 10.), circle.get_bound())
     }
 
     fn test_circle(dx: f32, dy: f32, px: f32, py: f32, rot: f32) {
-        let circle = Circle::new(10.);
+        let circle: Primitive2D<f32> = Circle::new(10.).into();
         let direction = Vector2::new(dx, dy);
-        let transform = Decomposed {
+        let transform: Decomposed<Vector2<f32>, Basis2<f32>> = Decomposed {
             disp: Vector2::new(0., 0.),
             rot: Rotation2::from_angle(Rad(rot)),
             scale: 1.,
@@ -173,7 +179,7 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r = Rectangle::new(10., 10.);
+        let r: Primitive2D<f32> = Rectangle::new(10., 10.).into();
         assert_eq!(bound(-5., -5., 5., 5.), r.get_bound())
     }
 

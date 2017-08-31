@@ -3,11 +3,12 @@ pub mod epa;
 
 use super::NarrowPhase;
 
-use collide::{Contact, ContactSet, CollisionShape, CollisionStrategy, CollisionPrimitive};
+use collide::{Contact, ContactSet, CollisionShape, CollisionStrategy, CollisionPrimitive,
+              Primitive};
 
 use cgmath::prelude::*;
 use cgmath::{BaseFloat, Decomposed};
-use collision::{Aabb, Discrete, MinMax};
+use collision::{Aabb, Discrete};
 
 use std;
 use std::ops::Neg;
@@ -19,16 +20,13 @@ const MAX_ITERATIONS: u32 = 100;
 
 #[derive(Debug)]
 struct RunningAverage {
-    pub average : f64,
-    n : u32
+    pub average: f64,
+    n: u32,
 }
 
 impl RunningAverage {
     pub fn new() -> Self {
-        Self {
-            average : 0.,
-            n : 0
-        }
+        Self { average: 0., n: 0 }
     }
 
     pub fn add(&mut self, value: u32) {
@@ -40,22 +38,22 @@ impl RunningAverage {
     }
 }
 
-pub struct GJK<S, V, P>
+pub struct GJK<V, P>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
-    P: SimplexProcessor<S, V>,
+    V: VectorSpace,
+    V::Scalar: BaseFloat,
+    P: SimplexProcessor<V::Scalar>,
 {
     simplex_processor: P,
     average: RunningAverage,
-    marker: std::marker::PhantomData<(S, V)>,
+    marker: std::marker::PhantomData<V>,
 }
 
-impl<S, V, P> GJK<S, V, P>
+impl<V, P> GJK<V, P>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
-    P: SimplexProcessor<S, V>,
+    V: VectorSpace,
+    V::Scalar: BaseFloat,
+    P: SimplexProcessor<V::Scalar>,
 {
     pub fn new() -> Self {
         Self {
@@ -70,39 +68,37 @@ where
     }
 }
 
-impl<ID, S, V, P, A, R, SP> NarrowPhase<ID, S, V, P, R, A> for GJK<S, V, SP>
+impl<ID, P, A, R, S> NarrowPhase<ID, P, A, R> for GJK<A::Diff, S>
 where
-    ID: Clone + Debug,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>
-        + MetricSpace
+    ID: Debug + Clone,
+    A: Aabb + Discrete<A> + Clone,
+    A::Diff: Debug
         + InnerSpace
-        + Neg<Output = V>,
-    P: EuclideanSpace<
-        Scalar = S,
-        Diff = V,
-    >
-        + MinMax + Debug,
-    A: Aabb<S, V, P> + Discrete<A> + Clone,
-    R: Rotation<P>,
-    SP: SimplexProcessor<S, V>
+        + Neg<Output = A::Diff>,
+    A::Scalar: BaseFloat,
+    R: Rotation<A::Point>,
+    S: SimplexProcessor<
+        A::Scalar,
+        Vector = A::Diff,
+    >,
+    P: Primitive<A>,
 {
     fn collide(
         &mut self,
-        (ref left_id, ref left, ref left_transform):
-            (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
-        (ref right_id, ref right, ref right_transform):
-            (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
-    ) -> Option<ContactSet<ID, S, V>> {
-        let mut contacts = Vec::default();
+        (ref left_id, ref left, ref left_transform): (ID,
+                                                      &CollisionShape<P, A, R>,
+                                                      &Decomposed<A::Diff, R>),
+        (ref right_id, ref right, ref right_transform): (ID,
+                                                         &CollisionShape<P, A, R>,
+                                                         &Decomposed<A::Diff, R>),
+    ) -> Option<ContactSet<ID, A::Diff>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
         {
             return None;
         }
 
+        let mut contacts = Vec::default();
         for left_primitive in &left.primitives {
             for right_primitive in &right.primitives {
                 if left.transformed_bound.intersects(&right.transformed_bound) {
@@ -120,12 +116,14 @@ where
                             {
                                 contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
                             } else {
-                                contacts.append(&mut self::epa::epa(&mut simplex,
-                                                              &left_primitive,
-                                                                    left_transform,
-                                                             &right_primitive,
-                                                             right_transform,
-                                                            &self.simplex_processor));
+                                contacts.append(&mut self::epa::epa(
+                                    &mut simplex,
+                                    &left_primitive,
+                                    left_transform,
+                                    &right_primitive,
+                                    right_transform,
+                                    &self.simplex_processor,
+                                ));
                             }
                         }
                         None => (),
@@ -135,42 +133,45 @@ where
         }
 
         if contacts.len() > 0 {
-            Some(ContactSet::new((left_id.clone(), right_id.clone()), contacts))
+            Some(ContactSet::new(
+                (left_id.clone(), right_id.clone()),
+                contacts,
+            ))
         } else {
             None
         }
     }
 }
 
-fn gjk<S, V, P, A, R, SP>(
-    left: &CollisionPrimitive<S, V, P, R, A>,
-    left_transform: &Decomposed<V, R>,
-    right: &CollisionPrimitive<S, V, P, R, A>,
-    right_transform: &Decomposed<V, R>,
-    simplex_processor: &SP,
+fn gjk<P, A, R, S>(
+    left: &CollisionPrimitive<P, A, R>,
+    left_transform: &Decomposed<A::Diff, R>,
+    right: &CollisionPrimitive<P, A, R>,
+    right_transform: &Decomposed<A::Diff, R>,
+    simplex_processor: &S,
     average: &mut RunningAverage,
-) -> Option<Vec<V>>
+) -> Option<Vec<A::Diff>>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace + Neg<Output = V>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Debug,
-    A: Aabb<S, V, P> + Discrete<A> + Clone,
-    R: Rotation<P>,
-    SP: SimplexProcessor<S, V>,
+    A: Aabb + Clone,
+    A::Diff: Debug + Neg<Output = A::Diff> + InnerSpace,
+    A::Scalar: BaseFloat,
+    P: Primitive<A>,
+    R: Rotation<A::Point>,
+    S: SimplexProcessor<A::Scalar, Vector = A::Diff>,
 {
     let mut d = right_transform.disp - left_transform.disp;
     let a = support(left, left_transform, right, right_transform, &d);
-    if a.dot(d) <= S::zero() {
+    if a.dot(d) <= A::Scalar::zero() {
         average.add(0);
         return None;
     }
-    let mut simplex: Vec<V> = Vec::default();
+    let mut simplex: Vec<A::Diff> = Vec::default();
     simplex.push(a);
     d = d.neg();
     let mut i = 0;
     loop {
         let a = support(left, left_transform, right, right_transform, &d);
-        if a.dot(d) <= S::zero() {
+        if a.dot(d) <= A::Scalar::zero() {
             average.add(i + 1);
             return None;
         } else {
@@ -188,24 +189,25 @@ where
     }
 }
 
-pub fn support<S, V, P, A, R>(
-    left: &CollisionPrimitive<S, V, P, R, A>,
-    left_transform: &Decomposed<V, R>,
-    right: &CollisionPrimitive<S, V, P, R, A>,
-    right_transform: &Decomposed<V, R>,
-    direction: &V,
-) -> V
+pub fn support<P, A, R>(
+    left: &CollisionPrimitive<P, A, R>,
+    left_transform: &Decomposed<A::Diff, R>,
+    right: &CollisionPrimitive<P, A, R>,
+    right_transform: &Decomposed<A::Diff, R>,
+    direction: &A::Diff,
+) -> A::Diff
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + Neg<Output = V>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax + Debug,
-    A: Aabb<S, V, P> + Discrete<A> + Clone,
-    R: Rotation<P>,
+    A: Aabb + Clone,
+    A::Scalar: BaseFloat,
+    A::Diff: Neg<Output = A::Diff>,
+    P: Primitive<A>,
+    R: Rotation<A::Point>,
 {
     let l = left.get_far_point(direction, left_transform);
     let r = right.get_far_point(&direction.neg(), right_transform);
     l - r
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -217,13 +219,13 @@ mod tests {
 
     #[test]
     fn test_support() {
-        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(15., 0.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(-15., 0.),
             rot: Rotation2::from_angle(Rad(0.)),
@@ -238,53 +240,66 @@ mod tests {
 
     #[test]
     fn test_gjk_miss() {
-        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(15., 0.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(-15., 0.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut average = RunningAverage::new();
         assert_eq!(
             None,
-            gjk(&left, &left_transform, &right, &right_transform, &processor, &mut average)
+            gjk(
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+                &processor,
+                &mut average,
+            )
         );
     }
 
     #[test]
     fn test_gjk_hit() {
-        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let left = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(15., 0.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.));
+        let right = CollisionPrimitive2D::<f32>::new(Rectangle::new(10., 10.).into());
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(7., 2.),
             rot: Rotation2::from_angle(Rad(0.)),
             scale: 1.,
         };
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut average = RunningAverage::new();
-        assert!(gjk(&left, &left_transform, &right, &right_transform, &processor,
-                    &mut average).is_some());
+        assert!(
+            gjk(
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+                &processor,
+                &mut average,
+            ).is_some()
+        );
     }
 
     #[test]
     fn test_gjk_shape_simple_miss() {
         let left = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(15., 0.),
@@ -293,7 +308,7 @@ mod tests {
         };
         let right = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(-15., 0.),
@@ -311,7 +326,7 @@ mod tests {
     fn test_gjk_shape_simple_hit() {
         let left = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let left_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(15., 0.),
@@ -320,7 +335,7 @@ mod tests {
         };
         let right = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(7., 2.),
@@ -341,7 +356,7 @@ mod tests {
             CollisionStrategy::CollisionOnly,
             vec![
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., 5.),
                         scale: 1.,
@@ -349,7 +364,7 @@ mod tests {
                     }
                 ),
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., -5.),
                         scale: 1.,
@@ -365,7 +380,7 @@ mod tests {
         };
         let right = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(-15., 0.),
@@ -385,7 +400,7 @@ mod tests {
             CollisionStrategy::CollisionOnly,
             vec![
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., 5.),
                         scale: 1.,
@@ -393,7 +408,7 @@ mod tests {
                     }
                 ),
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., -5.),
                         scale: 1.,
@@ -409,7 +424,7 @@ mod tests {
         };
         let right = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(7., 6.),
@@ -430,7 +445,7 @@ mod tests {
             CollisionStrategy::CollisionOnly,
             vec![
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., 5.),
                         scale: 1.,
@@ -438,7 +453,7 @@ mod tests {
                     }
                 ),
                 CollisionPrimitive2D::new_impl(
-                    Rectangle::new(10., 10.),
+                    Rectangle::new(10., 10.).into(),
                     Decomposed::<Vector2<f32>, Basis2<f32>> {
                         disp: Vector2::new(0., -5.),
                         scale: 1.,
@@ -454,7 +469,7 @@ mod tests {
         };
         let right = CollisionShape2D::<f32>::new_simple(
             CollisionStrategy::CollisionOnly,
-            Rectangle::new(10., 10.),
+            Rectangle::new(10., 10.).into(),
         );
         let right_transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(7., 4.),

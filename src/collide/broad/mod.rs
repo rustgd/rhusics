@@ -1,4 +1,4 @@
-use collision::{Aabb, Discrete, MinMax};
+use collision::{Aabb, Discrete};
 use cgmath::prelude::*;
 use cgmath::BaseFloat;
 use collide::CollisionShape;
@@ -11,60 +11,27 @@ use std::clone::Clone;
 use std;
 
 #[derive(Debug)]
-pub struct BroadCollisionInfo<ID, S, V, P, A>
-where
-    ID: Debug + Clone,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    A: Aabb<S, V, P> + Discrete<A>,
-{
+pub struct BroadCollisionInfo<ID, A> {
     id: ID,
     bound: A,
-    m: std::marker::PhantomData<(S, V, P)>,
 }
 
-impl<ID, S, V, P, A> BroadCollisionInfo<ID, S, V, P, A>
-where
-    ID: Debug + Clone,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    A: Aabb<S, V, P> + Discrete<A>,
-{
+impl<ID, A> BroadCollisionInfo<ID, A> {
     pub fn new(id: ID, bound: A) -> Self {
-        Self {
-            id,
-            bound,
-            m: std::marker::PhantomData,
-        }
+        Self { id, bound }
     }
 }
 
-impl<ID, S, V, P, R, A> From<(ID, CollisionShape<S, V, P, R, A>)>
-    for BroadCollisionInfo<ID, S, V, P, A>
+impl<ID, P, A, R> From<(ID, CollisionShape<P, A, R>)> for BroadCollisionInfo<ID, A>
 where
-    ID: Clone + Debug,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    R: Rotation<P>,
-    A: Aabb<S, V, P> + Discrete<A> + Clone,
+    A: Aabb + Clone,
+    A::Diff: Debug,
 {
-    fn from((id, shape): (ID, CollisionShape<S, V, P, R, A>)) -> Self {
-        Self::new(id.clone(), shape.transformed_bound.clone())
+    fn from((id, shape): (ID, CollisionShape<P, A, R>)) -> Self {
+        Self::new(id, shape.transformed_bound.clone())
     }
 }
 
-pub trait BroadPhase<ID, S, V, P, A>
-where
-    ID: Debug + Clone,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    A: Aabb<S, V, P> + Discrete<A>,
-{
-    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, S, V, P, A>>) -> Vec<(ID, ID)>;
+pub trait BroadPhase<ID, A> {
+    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)>;
 }

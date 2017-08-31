@@ -3,20 +3,17 @@ pub mod gjk;
 use collide::{ContactSet, CollisionShape};
 
 use std::fmt::Debug;
-use cgmath::{BaseFloat, VectorSpace, ElementWise, Array, EuclideanSpace, Decomposed, Rotation};
-use collision::{Aabb, Discrete, MinMax};
+use cgmath::Decomposed;
+use collision::Aabb;
 
-pub trait NarrowPhase<ID, S, V, P, R, A>
+pub trait NarrowPhase<ID, P, A, R>
 where
-    ID: Clone + Debug,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    A: Aabb<S, V, P> + Discrete<A>,
-    R: Rotation<P>,
+    A: Aabb,
+    A::Diff: Debug,
 {
-    fn collide(&mut self,
-               left: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>),
-               right: (ID, &CollisionShape<S, V, P, R, A>, &Decomposed<V, R>), )
-        -> Option<ContactSet<ID, S, V>>;
+    fn collide(
+        &mut self,
+        left: (ID, &CollisionShape<P, A, R>, &Decomposed<A::Diff, R>),
+        right: (ID, &CollisionShape<P, A, R>, &Decomposed<A::Diff, R>),
+    ) -> Option<ContactSet<ID, A::Diff>>;
 }

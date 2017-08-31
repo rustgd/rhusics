@@ -1,23 +1,16 @@
 use collide::broad::*;
 
-use std::fmt::Debug;
 use std::clone::Clone;
 
 #[derive(Debug, Default)]
 pub struct BruteForce;
 
-impl<ID, S, V, P, A> BroadPhase<ID, S, V, P, A> for BruteForce
+impl<ID, A> BroadPhase<ID, A> for BruteForce
 where
-    ID: Debug + Clone,
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V>
-        + MinMax,
-    A: Aabb<S, V, P> + Discrete<A>,
+    ID: Clone,
+    A: Aabb + Discrete<A>,
 {
-    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, S, V, P, A>>) -> Vec<(ID, ID)> {
+    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)> {
         let mut pairs = Vec::<(ID, ID)>::default();
         if shapes.len() <= 1 {
             return pairs;

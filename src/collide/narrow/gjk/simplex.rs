@@ -1,40 +1,38 @@
 use cgmath::prelude::*;
+use cgmath::num_traits::Float;
 use cgmath::{BaseFloat, Vector2, Vector3};
 use std::ops::Neg;
 
-pub trait SimplexProcessor<S, V>
+pub trait SimplexProcessor<S>
 where
     S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>
-        + InnerSpace,
 {
-    fn check_origin(&self, simplex: &mut Vec<V>, d: &mut V) -> bool;
-    fn closest_feature(&self, simplex: &Vec<V>) -> Option<Feature<S, V>>;
+    type Vector: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace;
+
+    fn check_origin(&self, simplex: &mut Vec<Self::Vector>, d: &mut Self::Vector) -> bool;
+    fn closest_feature(&self, simplex: &Vec<Self::Vector>) -> Option<Feature<Self::Vector>>;
     fn new() -> Self;
 }
 
 #[derive(Debug)]
-pub struct Feature<S, V>
+pub struct Feature<V>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
+    V: VectorSpace,
 {
     pub normal: V,
-    pub distance: S,
+    pub distance: V::Scalar,
     pub index: usize,
 }
 
-impl<S, V> Feature<S, V>
+impl<V> Feature<V>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
+    V: VectorSpace,
+    V::Scalar: BaseFloat,
 {
     pub fn new() -> Self {
         Self {
             normal: V::zero(),
-            distance: S::infinity(),
+            distance: V::Scalar::infinity(),
             index: 0,
         }
     }
@@ -43,10 +41,12 @@ where
 pub struct SimplexProcessor2D;
 pub struct SimplexProcessor3D;
 
-impl<S> SimplexProcessor<S, Vector2<S>> for SimplexProcessor2D
+impl<S> SimplexProcessor<S> for SimplexProcessor2D
 where
     S: BaseFloat,
 {
+    type Vector = Vector2<S>;
+
     fn check_origin(&self, simplex: &mut Vec<Vector2<S>>, d: &mut Vector2<S>) -> bool {
         // 3 points
         if simplex.len() == 3 {
@@ -82,7 +82,7 @@ where
         false
     }
 
-    fn closest_feature(&self, simplex: &Vec<Vector2<S>>) -> Option<Feature<S, Vector2<S>>> {
+    fn closest_feature(&self, simplex: &Vec<Vector2<S>>) -> Option<Feature<Vector2<S>>> {
         if simplex.len() < 3 {
             None
         } else {
@@ -110,10 +110,12 @@ where
     }
 }
 
-impl<S> SimplexProcessor<S, Vector3<S>> for SimplexProcessor3D
+impl<S> SimplexProcessor<S> for SimplexProcessor3D
 where
     S: BaseFloat,
 {
+    type Vector = Vector3<S>;
+
     fn check_origin(&self, simplex: &mut Vec<Vector3<S>>, d: &mut Vector3<S>) -> bool {
         // 4 points
         if simplex.len() == 4 {
@@ -140,7 +142,7 @@ where
         false
     }
 
-    fn closest_feature(&self, simplex: &Vec<Vector3<S>>) -> Option<Feature<S, Vector3<S>>> {
+    fn closest_feature(&self, simplex: &Vec<Vector3<S>>) -> Option<Feature<Vector3<S>>> {
         if simplex.len() < 4 {
             None
         } else {
@@ -161,8 +163,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_empty() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -172,8 +173,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_single() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![Vector2::new(40., 0.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -183,8 +183,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_edge() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![Vector2::new(40., 10.), Vector2::new(-10., 10.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -195,8 +194,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_triangle_outside_ac() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
             Vector2::new(40., 10.),
@@ -211,8 +209,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_triangle_outside_ab() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
             Vector2::new(40., 10.),
@@ -227,8 +224,7 @@ mod tests_2d {
 
     #[test]
     fn test_check_origin_triangle_hit() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
             Vector2::new(40., 10.),
@@ -242,20 +238,16 @@ mod tests_2d {
 
     #[test]
     fn test_closest_feature_0() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         assert!(
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::closest_feature(
-                &processor,
-                &vec![],
-            ).is_none()
+            <SimplexProcessor2D as SimplexProcessor<f32>>::closest_feature(&processor, &vec![])
+                .is_none()
         )
     }
 
     #[test]
     fn test_closest_feature_1() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         assert!(
             processor
                 .closest_feature(&vec![Vector2::<f32>::new(10., 10.)])
@@ -265,24 +257,25 @@ mod tests_2d {
 
     #[test]
     fn test_closest_feature_2() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
         assert!(
             processor
-                .closest_feature(&vec![Vector2::<f32>::new(10., 10.),
-                                       Vector2::<f32>::new(-10., 5.)])
+                .closest_feature(&vec![
+                    Vector2::<f32>::new(10., 10.),
+                    Vector2::<f32>::new(-10., 5.),
+                ])
                 .is_none()
         )
     }
 
     #[test]
     fn test_closest_feature_3() {
-        let processor =
-            <SimplexProcessor2D as SimplexProcessor<f32, Vector2<f32>>>::new();
-        let feature = processor
-            .closest_feature(&vec![Vector2::<f32>::new(10., 10.),
-                                   Vector2::<f32>::new(-10., 5.),
-                                   Vector2::<f32>::new(2., -5.)]);
+        let processor = <SimplexProcessor2D as SimplexProcessor<f32>>::new();
+        let feature = processor.closest_feature(&vec![
+            Vector2::<f32>::new(10., 10.),
+            Vector2::<f32>::new(-10., 5.),
+            Vector2::<f32>::new(2., -5.),
+        ]);
         assert!(feature.is_some());
         let feature = feature.unwrap();
         assert_eq!(2, feature.index);

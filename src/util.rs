@@ -1,23 +1,23 @@
 use cgmath::prelude::*;
-use cgmath::{BaseFloat, Vector2, Decomposed};
-use collision::{Aabb, MinMax};
+use cgmath::{BaseFloat, Vector2, Decomposed, Zero};
+use cgmath::num_traits::Float;
+use collision::Aabb;
 
-pub fn get_max_point<S, V, P, R>(
-    vertices: &Vec<V>,
-    direction: &V,
-    transform: &Decomposed<V, R>,
+pub fn get_max_point<P, R>(
+    vertices: &Vec<P>,
+    direction: &P::Diff,
+    transform: &Decomposed<P::Diff, R>,
 ) -> P
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S> + InnerSpace,
-    P: EuclideanSpace<Scalar = S, Diff = V>,
+    P: EuclideanSpace,
     R: Rotation<P>,
+    <P as EuclideanSpace>::Scalar: BaseFloat,
 {
     let direction = transform.rot.invert().rotate_vector(*direction);
     let (p, _) = vertices.iter().map(|v| (v, v.dot(direction))).fold(
         (
-            V::zero(),
-            S::neg_infinity(),
+            P::from_value(P::Scalar::zero()),
+            P::Scalar::neg_infinity(),
         ),
         |(max_p,
           max_dot),
@@ -29,20 +29,14 @@ where
             }
         },
     );
-    transform.transform_point(P::from_vec(p))
+    transform.transform_point(p)
 }
 
-pub fn get_bound<S, V, P, A>(vertices: &Vec<V>) -> A
+pub fn get_bound<A>(vertices: &Vec<A::Point>) -> A
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V> + MinMax,
-    A: Aabb<S, V, P>,
+    A: Aabb,
 {
-    vertices.iter().fold(
-        A::new(P::from_value(S::zero()), P::from_value(S::zero())),
-        |bound, p| bound.grow(P::from_vec(*p)),
-    )
+    vertices.iter().fold(A::zero(), |bound, p| bound.grow(*p))
 }
 
 #[inline]
@@ -62,9 +56,9 @@ mod tests {
     #[test]
     fn test_get_bound() {
         let triangle = vec![
-            Vector2::new(-1., 1.),
-            Vector2::new(0., -1.),
-            Vector2::new(1., 0.),
+            Point2::new(-1., 1.),
+            Point2::new(0., -1.),
+            Point2::new(1., 0.),
         ];
         assert_eq!(
             Aabb2::new(Point2::new(-1., -1.), Point2::new(1., 1.)),
@@ -76,9 +70,9 @@ mod tests {
         let direction = Vector2::new(dx, dy);
         let point = Point2::new(px, py);
         let triangle = vec![
-            Vector2::new(-1., 1.),
-            Vector2::new(0., -1.),
-            Vector2::new(1., 0.),
+            Point2::new(-1., 1.),
+            Point2::new(0., -1.),
+            Point2::new(1., 0.),
         ];
         let transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(0., 0.),
@@ -128,9 +122,9 @@ mod tests {
         let direction = Vector2::new(0., 1.);
         let point = Point2::new(-1., 9.);
         let triangle = vec![
-            Vector2::new(-1., 1.),
-            Vector2::new(0., -1.),
-            Vector2::new(1., 0.),
+            Point2::new(-1., 1.),
+            Point2::new(0., -1.),
+            Point2::new(1., 0.),
         ];
         let transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
             disp: Vector2::new(0., 8.),

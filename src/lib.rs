@@ -14,11 +14,10 @@ use cgmath::prelude::*;
 use cgmath::{BaseFloat, Decomposed};
 
 #[derive(Clone, Debug)]
-pub struct BodyPose<S, V, P, R>
+pub struct BodyPose<P, R>
 where
-    S: BaseFloat + Clone,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
 {
     pub dirty: bool,
@@ -27,11 +26,10 @@ where
     pub inverse_rotation: R,
 }
 
-impl<S, V, P, R> BodyPose<S, V, P, R>
+impl<P, R> BodyPose<P, R>
 where
-    S: BaseFloat + Clone,
-    V: VectorSpace<Scalar = S> + ElementWise + Array<Element = S>,
-    P: EuclideanSpace<Scalar = S, Diff = V>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
 {
     pub fn new(position: P, rotation: R) -> Self {
@@ -44,25 +42,19 @@ where
     }
 
     pub fn zero() -> Self {
-        Self::new(P::from_value(S::zero()), R::one())
+        Self::new(P::from_value(P::Scalar::zero()), R::one())
     }
 }
 
-impl<'a, S, V, P, R> Into<Decomposed<V, R>> for &'a BodyPose<S, V, P, R>
+impl<'a, P, R> Into<Decomposed<P::Diff, R>> for &'a BodyPose<P, R>
 where
-    S: BaseFloat,
-    V: VectorSpace<Scalar = S>
-        + ElementWise
-        + Array<Element = S>,
-    P: EuclideanSpace<
-        Scalar = S,
-        Diff = V,
-    >,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
 {
-    fn into(self) -> Decomposed<V, R> {
+    fn into(self) -> Decomposed<P::Diff, R> {
         Decomposed {
-            scale: S::one(),
+            scale: P::Scalar::one(),
             rot: self.rotation.clone(),
             disp: self.position.to_vec(),
         }
@@ -85,7 +77,7 @@ mod tests {
             .create_entity()
             .with(CollisionShape2D::<f32>::new_simple(
                 CollisionStrategy::CollisionOnly,
-                Rectangle::new(10., 10.),
+                Rectangle::new(10., 10.).into(),
             ))
             .with(BodyPose2D::<f32>::zero());
         let mut system =
