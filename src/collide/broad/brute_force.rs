@@ -1,6 +1,6 @@
-use collide::broad::*;
-
 use std::clone::Clone;
+
+use collide::broad::*;
 
 #[derive(Debug, Default)]
 pub struct BruteForce;
@@ -35,10 +35,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use collide2d::BroadCollisionInfo2D;
     use cgmath::Point2;
     use collision::Aabb2;
+
     use super::*;
+    use Real;
+    use collide2d::BroadCollisionInfo2D;
 
     #[test]
     fn no_intersection_for_miss() {
@@ -89,15 +91,15 @@ mod tests {
     // util
     fn coll(
         id: u32,
-        min_x: f32,
-        min_y: f32,
-        max_x: f32,
-        max_y: f32,
-    ) -> BroadCollisionInfo2D<u32, f32> {
+        min_x: Real,
+        min_y: Real,
+        max_x: Real,
+        max_y: Real,
+    ) -> BroadCollisionInfo2D<u32> {
         BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
-    fn bound(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Aabb2<f32> {
+    fn bound(min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> Aabb2<Real> {
         Aabb2::new(Point2::new(min_x, min_y), Point2::new(max_x, max_y))
     }
 }

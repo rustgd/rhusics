@@ -1,34 +1,33 @@
-use collide::{CollisionPrimitive, Contact, CollisionStrategy, Primitive};
-use super::simplex::SimplexProcessor;
-use super::support;
+use std::ops::Neg;
+
 use cgmath::prelude::*;
-use cgmath::{Decomposed, BaseFloat};
-use cgmath::num_traits::NumCast;
 use collision::Aabb;
 
-use std::ops::Neg;
+use super::simplex::SimplexProcessor;
+use super::support;
+use {Pose, Real};
+use collide::{CollisionPrimitive, Contact, CollisionStrategy, Primitive};
 
 const EPA_TOLERANCE: f32 = 0.00001;
 const MAX_ITERATIONS: u32 = 100;
 
-pub fn epa<P, A, R, S>(
+pub fn epa<P, A, T, S>(
     simplex: &mut Vec<A::Diff>,
-    left: &CollisionPrimitive<P, A, R>,
-    left_transform: &Decomposed<A::Diff, R>,
-    right: &CollisionPrimitive<P, A, R>,
-    right_transform: &Decomposed<A::Diff, R>,
+    left: &CollisionPrimitive<P, A, T>,
+    left_transform: &T,
+    right: &CollisionPrimitive<P, A, T>,
+    right_transform: &T,
     processor: &S,
 ) -> Vec<Contact<A::Diff>>
 where
-    A: Aabb + Clone,
+    A: Aabb<Scalar = Real> + Clone,
     P: Primitive<A>,
-    A::Scalar: BaseFloat,
     A::Diff: InnerSpace + Neg<Output = A::Diff>,
-    R: Rotation<A::Point>,
-    S: SimplexProcessor<A::Scalar, Vector = A::Diff>,
+    T: Pose<A::Point>,
+    S: SimplexProcessor<Vector = A::Diff>,
 {
     let mut i = 0;
-    let tolerance: A::Scalar = NumCast::from(EPA_TOLERANCE).unwrap();
+    let tolerance = EPA_TOLERANCE as Real;
     if processor.closest_feature(&simplex).is_none() {
         return Vec::default();
     }

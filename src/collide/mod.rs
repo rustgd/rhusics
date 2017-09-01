@@ -3,11 +3,12 @@ pub mod narrow;
 pub mod primitive2d;
 pub mod ecs;
 
+use std::fmt::Debug;
+
 use cgmath::prelude::*;
-use cgmath::{Decomposed, BaseFloat};
 use collision::Aabb;
 
-use std::fmt::Debug;
+use {Pose, Real};
 
 #[derive(Debug, PartialEq)]
 pub enum CollisionStrategy {
@@ -61,40 +62,36 @@ where
 
 pub trait Primitive<A>: Debug + Send + Sync
 where
-    A: Aabb,
-    A::Scalar: BaseFloat,
+    A: Aabb<Scalar = Real>,
 {
-    fn get_far_point<R: Rotation<A::Point>>(
-        &self,
-        direction: &A::Diff,
-        transform: &Decomposed<A::Diff, R>,
-    ) -> A::Point;
+    fn get_far_point<P>(&self, direction: &A::Diff, transform: &P) -> A::Point
+    where
+        P: Pose<A::Point>;
     fn get_bound(&self) -> A;
 }
 
 #[derive(Debug)]
-pub struct CollisionPrimitive<P, A, R>
+pub struct CollisionPrimitive<P, A, T>
 where
     A: Aabb,
 {
-    local_transform: Decomposed<A::Diff, R>,
+    local_transform: T,
     base_bound: A,
     transformed_bound: A,
     primitive: P,
 }
 
-impl<P, A, R> CollisionPrimitive<P, A, R>
+impl<P, A, T> CollisionPrimitive<P, A, T>
 where
-    A: Aabb + Clone,
-    A::Scalar: BaseFloat,
+    A: Aabb<Scalar = Real> + Clone,
     P: Primitive<A>,
-    R: Rotation<A::Point>,
+    T: Pose<A::Point>,
 {
     pub fn new(primitive: P) -> Self {
-        Self::new_impl(primitive, Decomposed::one())
+        Self::new_impl(primitive, T::one())
     }
 
-    pub fn new_impl(primitive: P, local_transform: Decomposed<A::Diff, R>) -> Self {
+    pub fn new_impl(primitive: P, local_transform: T) -> Self {
         let bound = primitive.get_bound().transform(&local_transform);
         Self {
             local_transform,
@@ -104,22 +101,18 @@ where
         }
     }
 
-    pub fn update(&mut self, transform: &Decomposed<A::Diff, R>) {
+    pub fn update(&mut self, transform: &T) {
         self.transformed_bound = self.base_bound.transform(transform)
     }
 
-    pub fn get_far_point(
-        &self,
-        direction: &A::Diff,
-        transform: &Decomposed<A::Diff, R>,
-    ) -> A::Point {
+    pub fn get_far_point(&self, direction: &A::Diff, transform: &T) -> A::Point {
         let t = transform.concat(&self.local_transform);
         self.primitive.get_far_point(direction, &t)
     }
 }
 
 #[derive(Debug)]
-pub struct CollisionShape<P, A, R>
+pub struct CollisionShape<P, A, T>
 where
     A: Aabb,
     A::Diff: Debug,
@@ -127,21 +120,20 @@ where
     pub enabled: bool,
     base_bound: A,
     transformed_bound: A,
-    primitives: Vec<CollisionPrimitive<P, A, R>>,
+    primitives: Vec<CollisionPrimitive<P, A, T>>,
     strategy: CollisionStrategy,
 }
 
-impl<P, A, R> CollisionShape<P, A, R>
+impl<P, A, T> CollisionShape<P, A, T>
 where
-    A: Aabb + Clone,
-    A::Scalar: BaseFloat,
+    A: Aabb<Scalar = Real> + Clone,
     A::Diff: Debug,
     P: Primitive<A>,
-    R: Rotation<A::Point>,
+    T: Pose<A::Point>,
 {
     pub fn new_complex(
         strategy: CollisionStrategy,
-        primitives: Vec<CollisionPrimitive<P, A, R>>,
+        primitives: Vec<CollisionPrimitive<P, A, T>>,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
@@ -157,18 +149,14 @@ where
         Self::new_complex(strategy, vec![CollisionPrimitive::new(primitive)])
     }
 
-    pub fn new_simple_offset(
-        strategy: CollisionStrategy,
-        primitive: P,
-        transform: Decomposed<A::Diff, R>,
-    ) -> Self {
+    pub fn new_simple_offset(strategy: CollisionStrategy, primitive: P, transform: T) -> Self {
         Self::new_complex(
             strategy,
             vec![CollisionPrimitive::new_impl(primitive, transform)],
         )
     }
 
-    pub fn update(&mut self, transform: &Decomposed<A::Diff, R>) {
+    pub fn update(&mut self, transform: &T) {
         self.transformed_bound = self.base_bound.transform(transform);
         for mut primitive in &mut self.primitives {
             primitive.update(transform)
@@ -176,10 +164,9 @@ where
     }
 }
 
-fn get_bound<P, A, R>(primitives: &Vec<CollisionPrimitive<P, A, R>>) -> A
+fn get_bound<P, A, T>(primitives: &Vec<CollisionPrimitive<P, A, T>>) -> A
 where
-    A: Aabb,
-    A::Scalar: BaseFloat,
+    A: Aabb<Scalar = Real>,
     P: Primitive<A>,
 {
     primitives.iter().map(|p| &p.base_bound).fold(

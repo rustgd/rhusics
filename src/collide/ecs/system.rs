@@ -1,34 +1,30 @@
-use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut};
-use cgmath::prelude::*;
-use cgmath::{BaseFloat, Decomposed};
-use collision::Aabb;
-
 use std::fmt::Debug;
 
-use collide::ecs::resources::Contacts;
+use collision::Aabb;
+use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
+
+use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive};
-use collide::narrow::NarrowPhase;
 use collide::broad::{BroadPhase, BroadCollisionInfo};
+use collide::ecs::resources::Contacts;
+use collide::narrow::NarrowPhase;
 
-use BodyPose;
-
-pub struct CollisionSystem<P, A, R>
+pub struct CollisionSystem<P, A, T>
 where
     A: Aabb + Clone,
     A::Diff: Debug,
 {
-    narrow: Option<Box<NarrowPhase<Entity, P, A, R>>>,
+    narrow: Option<Box<NarrowPhase<Entity, P, A, T>>>,
     broad: Option<Box<BroadPhase<Entity, A>>>,
 }
 
-impl<P, A, R> CollisionSystem<P, A, R>
+impl<P, A, T> CollisionSystem<P, A, T>
 where
-    A: Aabb + Clone + Send + Sync + 'static,
+    A: Aabb<Scalar = Real> + Clone + Send + Sync + 'static,
     A::Diff: Debug + Send + Sync + 'static,
-    A::Scalar: BaseFloat + Send + Sync + 'static,
     A::Point: Send + Sync + 'static,
     P: Primitive<A> + Send + Sync + 'static,
-    R: Rotation<A::Point> + Send + Sync + 'static,
+    T: Pose<A::Point> + Component,
 {
     pub fn new() -> Self {
         Self {
@@ -37,7 +33,7 @@ where
         }
     }
 
-    pub fn with_narrow_phase<N: NarrowPhase<Entity, P, A, R> + 'static>(
+    pub fn with_narrow_phase<N: NarrowPhase<Entity, P, A, T> + 'static>(
         mut self,
         narrow: N,
     ) -> Self {
@@ -51,18 +47,25 @@ where
     }
 }
 
-impl<'a, P, A, R> System<'a> for CollisionSystem<P, A, R>
+impl<'a, P, A, T> System<'a> for CollisionSystem<P, A, T>
 where
-    A : Aabb + Clone + Send + Sync + 'static,
-    A::Diff : Debug + Send + Sync + 'static,
-    A::Scalar : BaseFloat + Send + Sync + 'static,
-    A::Point : Send + Sync + 'static,
+    A: Aabb<Scalar = Real>
+        + Clone
+        + Send
+        + Sync
+        + 'static,
+    A::Diff: Debug + Send + Sync + 'static,
+    A::Point: Send + Sync + 'static,
     P: Primitive<A> + Send + Sync + 'static,
-    R: Rotation<A::Point> + Send + Sync + 'static,
+    T: Component
+        + Pose<A::Point>
+        + Send
+        + Sync
+        + 'static,
 {
     type SystemData = (Entities<'a>,
-     ReadStorage<'a, BodyPose<A::Point, R>>,
-     WriteStorage<'a, CollisionShape<P, A, R>>,
+     ReadStorage<'a, T>,
+     WriteStorage<'a, CollisionShape<P, A, T>>,
      FetchMut<'a, Contacts<A::Diff>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
@@ -71,10 +74,7 @@ where
             Some(ref mut broad) => {
                 let mut info: Vec<BroadCollisionInfo<Entity, A>> = Vec::default();
                 for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
-                    if pose.dirty {
-                        let c: Decomposed<A::Diff, R> = pose.into();
-                        shape.update(&c);
-                    }
+                    shape.update(&pose);
                     info.push(BroadCollisionInfo::new(
                         entity,
                         shape.transformed_bound.clone(),
@@ -88,11 +88,10 @@ where
                             let right_shape = shapes.get(right_entity).unwrap();
                             let left_pose = poses.get(left_entity).unwrap();
                             let right_pose = poses.get(right_entity).unwrap();
-                            match narrow.collide((left_entity, left_shape, &left_pose.into()), (
+                            match narrow.collide((left_entity, left_shape, left_pose), (
                                 right_entity,
                                 right_shape,
-                                &right_pose
-                                    .into(),
+                                right_pose,
                             )) {
                                 Some(contact_set) => contacts.push(contact_set),
                                 None => (),
@@ -100,9 +99,9 @@ where
                         }
                     }
                     None => {
-// if we only have a broad phase, we generate contacts for aabb
-// intersections
-// right now, we only report the collision, no normal/depth calculation
+                        // if we only have a broad phase, we generate contacts for aabb
+                        // intersections
+                        // right now, we only report the collision, no normal/depth calculation
                         for (left_entity, right_entity) in potentials {
                             contacts.push(ContactSet::new_single(
                                 CollisionStrategy::CollisionOnly,
@@ -112,7 +111,7 @@ where
                     }
                 }
             }
-None => (), // we only do narrow phase if we have both a broad phase and a narrow phase
+            None => (), // we only do narrow phase if we have both a broad phase and a narrow phase
         };
     }
 }
