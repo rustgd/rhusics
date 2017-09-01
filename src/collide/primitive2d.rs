@@ -82,14 +82,14 @@ impl Primitive<Aabb2<Real>> for Primitive2D {
         match *self {
             Primitive2D::Circle(ref circle) => {
                 Aabb2::new(
-                    Point2::new(-circle.radius, -circle.radius),
-                    Point2::new(circle.radius, circle.radius),
+                    Point2::from_value(-circle.radius),
+                    Point2::from_value(circle.radius),
                 )
             }
             Primitive2D::Rectangle(ref rectangle) => {
                 Aabb2::new(
-                    Point2::new(-rectangle.half_dim.x, -rectangle.half_dim.y),
-                    Point2::new(rectangle.half_dim.x, rectangle.half_dim.y),
+                    Point2::from_vec(-rectangle.half_dim),
+                    Point2::from_vec(rectangle.half_dim),
                 )
             }
             Primitive2D::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),

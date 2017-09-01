@@ -1,6 +1,7 @@
 pub mod broad;
 pub mod narrow;
 pub mod primitive2d;
+pub mod primitive3d;
 pub mod ecs;
 
 use std::fmt::Debug;

@@ -34,7 +34,7 @@ pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;
 
 pub fn world_register<'a, T>(world: &mut World)
 where
-    T : Pose<Point2<Real>> + Component + Send + Sync + 'static,
+    T: Pose<Point2<Real>> + Component + Send + Sync + 'static,
 {
     world.register::<T>();
     world.register::<CollisionShape2D<T>>();

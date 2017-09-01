@@ -1,44 +1,12 @@
 use std::ops::Neg;
 
-use cgmath::{Vector2, Vector3};
-use cgmath::num_traits::Float;
 use cgmath::prelude::*;
+use cgmath::{Vector2};
 
 use Real;
-
-pub trait SimplexProcessor {
-    type Vector: VectorSpace<Scalar = Real>;
-
-    fn check_origin(&self, simplex: &mut Vec<Self::Vector>, d: &mut Self::Vector) -> bool;
-    fn closest_feature(&self, simplex: &Vec<Self::Vector>) -> Option<Feature<Self::Vector>>;
-    fn new() -> Self;
-}
-
-#[derive(Debug)]
-pub struct Feature<V>
-where
-    V: VectorSpace,
-{
-    pub normal: V,
-    pub distance: V::Scalar,
-    pub index: usize,
-}
-
-impl<V> Feature<V>
-where
-    V: VectorSpace<Scalar = Real>,
-{
-    pub fn new() -> Self {
-        Self {
-            normal: V::zero(),
-            distance: Real::infinity(),
-            index: 0,
-        }
-    }
-}
+use super::{SimplexProcessor, Feature};
 
 pub struct SimplexProcessor2D;
-pub struct SimplexProcessor3D;
 
 impl SimplexProcessor for SimplexProcessor2D {
     type Vector = Vector2<Real>;
@@ -66,14 +34,14 @@ impl SimplexProcessor for SimplexProcessor2D {
                 }
             }
         }
-        // 2 points
-        else if simplex.len() == 2 {
-            let a = simplex[1];
-            let ao = a.neg();
-            let b = simplex[0];
-            let ab = b - a;
-            *d = ::util::triple_product(&ab, &ao, &ab);
-        }
+            // 2 points
+            else if simplex.len() == 2 {
+                let a = simplex[1];
+                let ao = a.neg();
+                let b = simplex[0];
+                let ab = b - a;
+                *d = ::util::triple_product(&ab, &ao, &ab);
+            }
         // 0-1 point means we can't really do anything
         false
     }
@@ -106,50 +74,8 @@ impl SimplexProcessor for SimplexProcessor2D {
     }
 }
 
-impl SimplexProcessor for SimplexProcessor3D {
-    type Vector = Vector3<Real>;
-
-    fn check_origin(&self, simplex: &mut Vec<Vector3<Real>>, d: &mut Vector3<Real>) -> bool {
-        // 4 points
-        if simplex.len() == 4 {
-            //TODO
-        }
-        // 3 points
-        else if simplex.len() == 3 {
-            //TODO
-        }
-        // 2 points
-        else if simplex.len() == 2 {
-            let a = simplex[1];
-            let ao = a.neg();
-            let b = simplex[0];
-            let ab = b - a;
-            if ab.dot(ao) > 0. {
-                *d = ab.cross(ao).cross(ab);
-            } else {
-                simplex.remove(0);
-                *d = ao;
-            }
-        }
-        // 0-1 points
-        false
-    }
-
-    fn closest_feature(&self, simplex: &Vec<Vector3<Real>>) -> Option<Feature<Vector3<Real>>> {
-        if simplex.len() < 4 {
-            None
-        } else {
-            None // TODO
-        }
-    }
-
-    fn new() -> Self {
-        Self {}
-    }
-}
-
 #[cfg(test)]
-mod tests_2d {
+mod tests {
     use cgmath::Vector2;
 
     use super::*;
@@ -239,9 +165,9 @@ mod tests_2d {
     fn test_closest_feature_1() {
         let processor = SimplexProcessor2D::new();
         assert!(
-            processor
-                .closest_feature(&vec![Vector2::new(10., 10.)])
-                .is_none()
+        processor
+            .closest_feature(&vec![Vector2::new(10., 10.)])
+            .is_none()
         )
     }
 
@@ -249,9 +175,9 @@ mod tests_2d {
     fn test_closest_feature_2() {
         let processor = SimplexProcessor2D::new();
         assert!(
-            processor
-                .closest_feature(&vec![Vector2::new(10., 10.), Vector2::new(-10., 5.)])
-                .is_none()
+        processor
+            .closest_feature(&vec![Vector2::new(10., 10.), Vector2::new(-10., 5.)])
+            .is_none()
         )
     }
 
