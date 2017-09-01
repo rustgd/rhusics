@@ -126,7 +126,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cgmath::Transform;
+    use cgmath::{Transform, Rotation2, Rad, Point2};
     use specs::{World, RunNow};
 
     use collide2d::*;
@@ -138,13 +138,16 @@ mod tests {
     #[test]
     pub fn test_world() {
         let mut world = World::new();
-        world.register::<Shape>();
-        world.register::<Pose>();
-        world.add_resource(Contacts2D::new());
+        world_register::<Pose>(&mut world);
         world
             .create_entity()
-            .with(Shape::new_simple(CollisionStrategy::CollisionOnly, Rectangle::new(10., 10.).into(),))
+            .with(Shape::new_simple(CollisionStrategy::FullResolution, Rectangle::new(10., 10.).into(),))
             .with(Pose::one());
+        world
+            .create_entity()
+            .with(Shape::new_simple(CollisionStrategy::FullResolution, Rectangle::new(10., 10.).into(),))
+            .with(Pose::new(Point2::new(3., 2.), Rotation2::from_angle(Rad(0.))));
+
         let mut system = System::new()
             .with_broad_phase(BroadBruteForce2D::default())
             .with_narrow_phase(GJK2D::new());

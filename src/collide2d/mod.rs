@@ -3,8 +3,9 @@ pub use collide::primitive2d::*;
 
 use cgmath::{Vector2, Basis2, Point2};
 use collision::Aabb2;
+use specs::{World, Component};
 
-use {BodyPose, Real};
+use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape};
 use collide::broad::BroadCollisionInfo;
 use collide::broad::brute_force::BruteForce;
@@ -30,3 +31,12 @@ pub type GJK2D = GJK<Vector2<Real>, SimplexProcessor2D>;
 
 pub type CollisionSystem2D<T> = CollisionSystem<Primitive2D, Aabb2<Real>, T>;
 pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;
+
+pub fn world_register<'a, T>(world: &mut World)
+where
+    T : Pose<Point2<Real>> + Component + Send + Sync + 'static,
+{
+    world.register::<T>();
+    world.register::<CollisionShape2D<T>>();
+    world.add_resource(Contacts2D::new());
+}
