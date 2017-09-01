@@ -14,6 +14,7 @@ use collide::broad::sweep_prune::variance::Variance2D;
 use collide::ecs::resources::Contacts;
 use collide::ecs::system::CollisionSystem;
 use collide::narrow::gjk::GJK;
+use collide::narrow::gjk::epa::EPA2D;
 use collide::narrow::gjk::simplex::SimplexProcessor2D;
 use collide::primitive2d::Primitive2D;
 
@@ -27,7 +28,7 @@ pub type BroadCollisionInfo2D<ID> = BroadCollisionInfo<ID, Aabb2<Real>>;
 pub type BroadBruteForce2D = BruteForce;
 pub type SweepAndPrune2D = SweepAndPrune<Variance2D>;
 
-pub type GJK2D = GJK<Vector2<Real>, SimplexProcessor2D>;
+pub type GJK2D<T> = GJK<Point2<Real>, T, SimplexProcessor2D, EPA2D>;
 
 pub type CollisionSystem2D<T> = CollisionSystem<Primitive2D, Aabb2<Real>, T>;
 pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;

@@ -92,14 +92,9 @@ impl Primitive<Aabb3<Real>> for Primitive3D {
                 )
             }
             Primitive3D::Box(ref b) => {
-                Aabb3::new(
-                    Point3::from_vec(-b.half_dim),
-                    Point3::from_vec(b.half_dim),
-                )
+                Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
-            Primitive3D::ConvexPolyhedron(ref c) => {
-                ::util::get_bound(&c.vertices)
-            }
+            Primitive3D::ConvexPolyhedron(ref c) => ::util::get_bound(&c.vertices),
         }
     }
 
@@ -112,9 +107,7 @@ impl Primitive<Aabb3<Real>> for Primitive3D {
                 let direction = transform.inverse_rotation().rotate_vector(*direction);
                 transform.position() + direction.normalize_to(sphere.radius)
             }
-            Primitive3D::Box(ref b) => {
-                ::util::get_max_point(&b.corners, direction, transform)
-            }
+            Primitive3D::Box(ref b) => ::util::get_max_point(&b.corners, direction, transform),
             Primitive3D::ConvexPolyhedron(ref c) => {
                 ::util::get_max_point(&c.vertices, direction, transform)
             }
@@ -139,7 +132,15 @@ mod tests {
 
     #[test]
     fn test_sphere_far_2() {
-        test_sphere(1., 1., 1., 5.773502691896258, 5.773502691896258, 5.773502691896258, 0.);
+        test_sphere(
+            1.,
+            1.,
+            1.,
+            5.773502691896258,
+            5.773502691896258,
+            5.773502691896258,
+            0.,
+        );
     }
 
     #[test]
@@ -195,7 +196,17 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
 
     // util
-    fn bound(min_x: Real, min_y: Real, min_z: Real, max_x: Real, max_y: Real, max_z : Real) -> Aabb3<Real> {
-        Aabb3::new(Point3::new(min_x, min_y, min_z), Point3::new(max_x, max_y, max_z))
+    fn bound(
+        min_x: Real,
+        min_y: Real,
+        min_z: Real,
+        max_x: Real,
+        max_y: Real,
+        max_z: Real,
+    ) -> Aabb3<Real> {
+        Aabb3::new(
+            Point3::new(min_x, min_y, min_z),
+            Point3::new(max_x, max_y, max_z),
+        )
     }
 }

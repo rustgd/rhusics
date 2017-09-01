@@ -14,6 +14,7 @@ use collide::broad::sweep_prune::variance::Variance3D;
 use collide::ecs::resources::Contacts;
 use collide::ecs::system::CollisionSystem;
 use collide::narrow::gjk::GJK;
+use collide::narrow::gjk::epa::EPA3D;
 use collide::narrow::gjk::simplex::SimplexProcessor3D;
 
 pub type Contacts3D = Contacts<Vector3<Real>>;
@@ -26,7 +27,7 @@ pub type BroadCollisionInfo3D<ID> = BroadCollisionInfo<ID, Aabb3<Real>>;
 pub type BroadBruteForce3D = BruteForce;
 pub type SweepAndPrune3D = SweepAndPrune<Variance3D>;
 
-pub type GJK3D = GJK<Vector3<Real>, SimplexProcessor3D>;
+pub type GJK3D<T> = GJK<Point3<Real>, T, SimplexProcessor3D, EPA3D>;
 
 pub type CollisionSystem3D<T> = CollisionSystem<Primitive3D, Aabb3<Real>, T>;
 pub type BodyPose3D = BodyPose<Point3<Real>, Quaternion<Real>>;

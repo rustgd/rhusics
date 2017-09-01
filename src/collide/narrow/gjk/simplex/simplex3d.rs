@@ -1,23 +1,25 @@
 use std::ops::Neg;
 
+use cgmath::{Vector3, Point3};
 use cgmath::prelude::*;
-use cgmath::{Vector3};
 
+use collide::narrow::gjk::SupportPoint;
+use super::SimplexProcessor;
 use Real;
-use super::{SimplexProcessor, Feature};
 
 pub struct SimplexProcessor3D;
 
 impl SimplexProcessor for SimplexProcessor3D {
     type Vector = Vector3<Real>;
+    type Point = Point3<Real>;
 
-    fn check_origin(&self, simplex: &mut Vec<Vector3<Real>>, v: &mut Vector3<Real>) -> bool {
+    fn check_origin(&self, simplex: &mut Vec<SupportPoint<Point3<Real>>>, v: &mut Vector3<Real>) -> bool {
         // 4 points
         if simplex.len() == 4 {
-            let a = simplex[3];
-            let b = simplex[2];
-            let c = simplex[1];
-            let d = simplex[0];
+            let a = simplex[3].v;
+            let b = simplex[2].v;
+            let c = simplex[1].v;
+            let d = simplex[0].v;
 
             let ao = a.neg();
             let ab = b - a;
@@ -47,42 +49,34 @@ impl SimplexProcessor for SimplexProcessor3D {
                         simplex.remove(1);
                         simplex.swap(0, 1);
                         *v = adb;
-                        // origin is inside simplex
+                    // origin is inside simplex
                     } else {
                         return true;
                     }
                 }
             }
         }
-            // 3 points
-            else if simplex.len() == 3 {
-                let a = simplex[2];
-                let b = simplex[1];
-                let c = simplex[0];
-                let ao = a.neg();
-                let ab = b - a;
-                let ac = c - a;
+        // 3 points
+        else if simplex.len() == 3 {
+            let a = simplex[2].v;
+            let b = simplex[1].v;
+            let c = simplex[0].v;
+            let ao = a.neg();
+            let ab = b - a;
+            let ac = c - a;
 
-                check_side(&ab.cross(ac), &ab, &ac, &ao, simplex, v, false, false);
-            }
-                // 2 points
-                else if simplex.len() == 2 {
-                    let a = simplex[1];
-                    let ao = a.neg();
-                    let b = simplex[0];
-                    let ab = b - a;
-                    *v = cross_aba(&ab, &ao);
-                }
+            check_side(&ab.cross(ac), &ab, &ac, &ao, simplex, v, false, false);
+        }
+        // 2 points
+        else if simplex.len() == 2 {
+            let a = simplex[1].v;
+            let ao = a.neg();
+            let b = simplex[0].v;
+            let ab = b - a;
+            *v = cross_aba(&ab, &ao);
+        }
         // 0-1 points
         false
-    }
-
-    fn closest_feature(&self, simplex: &Vec<Vector3<Real>>) -> Option<Feature<Vector3<Real>>> {
-        if simplex.len() < 4 {
-            None
-        } else {
-            None // TODO
-        }
     }
 
     fn new() -> Self {
@@ -96,8 +90,16 @@ fn cross_aba(a: &Vector3<Real>, b: &Vector3<Real>) -> Vector3<Real> {
 }
 
 #[inline]
-fn check_side(abc: &Vector3<Real>, ab: &Vector3<Real>, ac: &Vector3<Real>, ao: &Vector3<Real>,
-              simplex: &mut Vec<Vector3<Real>>, v : &mut Vector3<Real>, above : bool, ignore_ab : bool) {
+fn check_side(
+    abc: &Vector3<Real>,
+    ab: &Vector3<Real>,
+    ac: &Vector3<Real>,
+    ao: &Vector3<Real>,
+    simplex: &mut Vec<SupportPoint<Point3<Real>>>,
+    v: &mut Vector3<Real>,
+    above: bool,
+    ignore_ab: bool,
+) {
     let ab_perp = ab.cross(*abc);
 
     // origin outside AB, remove C and v = edge normal towards origin
@@ -122,7 +124,7 @@ fn check_side(abc: &Vector3<Real>, ab: &Vector3<Real>, ac: &Vector3<Real>, ao: &
     } else if abc.dot(*ao) > 0. {
         // [c, b, a]
         *v = *abc;
-        // origin below triangle, rewind simplex and set v = surface normal towards origin
+    // origin below triangle, rewind simplex and set v = surface normal towards origin
     } else {
         // [b, c, a]
         simplex.swap(0, 1);
@@ -132,6 +134,4 @@ fn check_side(abc: &Vector3<Real>, ab: &Vector3<Real>, ac: &Vector3<Real>, ao: &
 }
 
 #[cfg(test)]
-mod tests {
-
-}
+mod tests {}

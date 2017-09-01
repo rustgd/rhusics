@@ -1,23 +1,25 @@
 use std::ops::Neg;
 
+use cgmath::{Vector2, Point2};
 use cgmath::prelude::*;
-use cgmath::{Vector2};
 
+use super::SimplexProcessor;
+use collide::narrow::gjk::SupportPoint;
 use Real;
-use super::{SimplexProcessor, Feature};
 
 pub struct SimplexProcessor2D;
 
 impl SimplexProcessor for SimplexProcessor2D {
     type Vector = Vector2<Real>;
+    type Point = Point2<Real>;
 
-    fn check_origin(&self, simplex: &mut Vec<Vector2<Real>>, d: &mut Vector2<Real>) -> bool {
+    fn check_origin(&self, simplex: &mut Vec<SupportPoint<Point2<Real>>>, d: &mut Vector2<Real>) -> bool {
         // 3 points
         if simplex.len() == 3 {
-            let a = simplex[2];
+            let a = simplex[2].v;
             let ao = a.neg();
-            let b = simplex[1];
-            let c = simplex[0];
+            let b = simplex[1].v;
+            let c = simplex[0].v;
             let ab = b - a;
             let ac = c - a;
             let ab_perp = ::util::triple_product(&ac, &ab, &ab);
@@ -34,39 +36,16 @@ impl SimplexProcessor for SimplexProcessor2D {
                 }
             }
         }
-            // 2 points
-            else if simplex.len() == 2 {
-                let a = simplex[1];
-                let ao = a.neg();
-                let b = simplex[0];
-                let ab = b - a;
-                *d = ::util::triple_product(&ab, &ao, &ab);
-            }
+        // 2 points
+        else if simplex.len() == 2 {
+            let a = simplex[1].v;
+            let ao = a.neg();
+            let b = simplex[0].v;
+            let ab = b - a;
+            *d = ::util::triple_product(&ab, &ao, &ab);
+        }
         // 0-1 point means we can't really do anything
         false
-    }
-
-    fn closest_feature(&self, simplex: &Vec<Vector2<Real>>) -> Option<Feature<Vector2<Real>>> {
-        if simplex.len() < 3 {
-            None
-        } else {
-            let mut feature = Feature::new();
-            for i in 0..simplex.len() {
-                let j = if i + 1 == simplex.len() { 0 } else { i + 1 };
-                let a = simplex[i];
-                let b = simplex[j];
-                let e = b - a;
-                let oa = a;
-                let n = ::util::triple_product(&e, &oa, &e).normalize();
-                let d = n.dot(a);
-                if d < feature.distance {
-                    feature.distance = d;
-                    feature.normal = n;
-                    feature.index = j;
-                }
-            }
-            Some(feature)
-        }
     }
 
     fn new() -> Self {
@@ -165,9 +144,9 @@ mod tests {
     fn test_closest_feature_1() {
         let processor = SimplexProcessor2D::new();
         assert!(
-        processor
-            .closest_feature(&vec![Vector2::new(10., 10.)])
-            .is_none()
+            processor
+                .closest_feature(&vec![Vector2::new(10., 10.)])
+                .is_none()
         )
     }
 
@@ -175,9 +154,9 @@ mod tests {
     fn test_closest_feature_2() {
         let processor = SimplexProcessor2D::new();
         assert!(
-        processor
-            .closest_feature(&vec![Vector2::new(10., 10.), Vector2::new(-10., 5.)])
-            .is_none()
+            processor
+                .closest_feature(&vec![Vector2::new(10., 10.), Vector2::new(-10., 5.)])
+                .is_none()
         )
     }
 

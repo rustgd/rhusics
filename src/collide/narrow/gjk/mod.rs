@@ -8,6 +8,7 @@ use std::ops::Neg;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
+use self::epa::EPA;
 use self::simplex::SimplexProcessor;
 use super::NarrowPhase;
 use {Pose, Real};
@@ -36,21 +37,25 @@ impl RunningAverage {
     }
 }
 
-pub struct GJK<V, S> {
+pub struct GJK<P, T, S, E> {
     simplex_processor: S,
+    epa: E,
     average: RunningAverage,
-    marker: std::marker::PhantomData<V>,
+    marker: std::marker::PhantomData<(P, T)>,
 }
 
-impl<V, S> GJK<V, S>
+impl<P, T, S, E> GJK<P, T, S, E>
 where
-    V: VectorSpace<Scalar = Real>,
-    S: SimplexProcessor<Vector = V>,
+    P: EuclideanSpace<Scalar = Real>,
+    S: SimplexProcessor<Vector = P::Diff>,
+    T: Pose<P>,
+    E: EPA<T>,
 {
     pub fn new() -> Self {
         Self {
             simplex_processor: S::new(),
             average: RunningAverage::new(),
+            epa: E::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -60,16 +65,17 @@ where
     }
 }
 
-impl<ID, P, A, T, S> NarrowPhase<ID, P, A, T> for GJK<A::Diff, S>
+impl<ID, P, A, T, S, E> NarrowPhase<ID, P, A, T> for GJK<A::Point, T, S, E>
 where
     ID: Debug + Clone,
     A: Aabb<Scalar=Real> + Discrete<A> + Clone,
     A::Diff: Debug
         + InnerSpace
         + Neg<Output = A::Diff>,
-    S: SimplexProcessor<Vector = A::Diff>,
+    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
     P: Primitive<A>,
     T: Pose<A::Point>,
+    E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point>,
 {
     fn collide(
         &mut self,
@@ -100,13 +106,12 @@ where
                             {
                                 contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
                             } else {
-                                contacts.append(&mut self::epa::epa(
+                                contacts.append(&mut self.epa.process(
                                     &mut simplex,
-                                    &left_primitive,
+                                    left_primitive,
                                     left_transform,
-                                    &right_primitive,
+                                    right_primitive,
                                     right_transform,
-                                    &self.simplex_processor,
                                 ));
                             }
                         }
@@ -134,27 +139,27 @@ fn gjk<P, A, T, S>(
     right_transform: &T,
     simplex_processor: &S,
     average: &mut RunningAverage,
-) -> Option<Vec<A::Diff>>
+) -> Option<Vec<SupportPoint<A::Point>>>
 where
     A: Aabb<Scalar = Real> + Clone,
     A::Diff: Debug + Neg<Output = A::Diff> + InnerSpace,
     P: Primitive<A>,
     T: Pose<A::Point>,
-    S: SimplexProcessor<Vector = A::Diff>,
+    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
 {
     let mut d = *right_transform.position() - *left_transform.position();
     let a = support(left, left_transform, right, right_transform, &d);
-    if a.dot(d) <= 0. {
+    if a.v.dot(d) <= 0. {
         average.add(0);
         return None;
     }
-    let mut simplex: Vec<A::Diff> = Vec::default();
+    let mut simplex: Vec<SupportPoint<A::Point>> = Vec::default();
     simplex.push(a);
     d = d.neg();
     let mut i = 0;
     loop {
         let a = support(left, left_transform, right, right_transform, &d);
-        if a.dot(d) <= 0. {
+        if a.v.dot(d) <= 0. {
             average.add(i + 1);
             return None;
         } else {
@@ -172,13 +177,22 @@ where
     }
 }
 
-pub fn support<P, A, T>(
+pub struct SupportPoint<P>
+where
+    P: EuclideanSpace,
+{
+    v: P::Diff,
+    sup_a: P,
+    sup_b: P,
+}
+
+pub(crate) fn support<P, A, T>(
     left: &CollisionPrimitive<P, A, T>,
     left_transform: &T,
     right: &CollisionPrimitive<P, A, T>,
     right_transform: &T,
     direction: &A::Diff,
-) -> A::Diff
+) -> SupportPoint<A::Point>
 where
     A: Aabb<Scalar = Real> + Clone,
     A::Diff: Neg<Output = A::Diff>,
@@ -187,7 +201,7 @@ where
 {
     let l = left.get_far_point(direction, left_transform);
     let r = right.get_far_point(&direction.neg(), right_transform);
-    l - r
+    SupportPoint { v : l - r, sup_a : l, sup_b : r }
 }
 
 #[cfg(test)]
