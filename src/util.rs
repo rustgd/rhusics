@@ -1,19 +1,16 @@
-use cgmath::prelude::*;
-use cgmath::{BaseFloat, Vector2, Decomposed, Zero};
+use cgmath::{Vector2, Zero};
 use cgmath::num_traits::Float;
+use cgmath::prelude::*;
 use collision::Aabb;
 
-pub fn get_max_point<P, R>(
-    vertices: &Vec<P>,
-    direction: &P::Diff,
-    transform: &Decomposed<P::Diff, R>,
-) -> P
+use {Pose, Real};
+
+pub fn get_max_point<P, T>(vertices: &Vec<P>, direction: &P::Diff, transform: &T) -> P
 where
-    P: EuclideanSpace,
-    R: Rotation<P>,
-    <P as EuclideanSpace>::Scalar: BaseFloat,
+    P: EuclideanSpace<Scalar = Real>,
+    T: Pose<P>,
 {
-    let direction = transform.rot.invert().rotate_vector(*direction);
+    let direction = transform.inverse_rotation().rotate_vector(*direction);
     let (p, _) = vertices.iter().map(|v| (v, v.dot(direction))).fold(
         (
             P::from_value(P::Scalar::zero()),
@@ -29,7 +26,7 @@ where
             }
         },
     );
-    transform.transform_point(p)
+    *transform.position() + transform.rotation().rotate_point(p).to_vec()
 }
 
 pub fn get_bound<A>(vertices: &Vec<A::Point>) -> A
@@ -40,7 +37,7 @@ where
 }
 
 #[inline]
-pub fn triple_product<S: BaseFloat>(a: &Vector2<S>, b: &Vector2<S>, c: &Vector2<S>) -> Vector2<S> {
+pub fn triple_product(a: &Vector2<Real>, b: &Vector2<Real>, c: &Vector2<Real>) -> Vector2<Real> {
     let ac = a.x * c.x + a.y * c.y;
     let bc = b.x * c.x + b.y * c.y;
     Vector2::new(b.x * ac - a.x * bc, b.y * ac - a.y * bc)
@@ -49,9 +46,12 @@ pub fn triple_product<S: BaseFloat>(a: &Vector2<S>, b: &Vector2<S>, c: &Vector2<
 #[cfg(test)]
 mod tests {
     use std;
-    use super::*;
-    use cgmath::{Decomposed, Vector2, Rotation2, Rad, Point2, Basis2};
+
+    use cgmath::{Vector2, Rotation2, Rad, Point2, Basis2};
     use collision::Aabb2;
+
+    use super::*;
+    use {BodyPose, Real};
 
     #[test]
     fn test_get_bound() {
@@ -66,7 +66,7 @@ mod tests {
         );
     }
 
-    fn test_max_point(dx: f32, dy: f32, px: f32, py: f32, rot_angle: f32) {
+    fn test_max_point(dx: Real, dy: Real, px: Real, py: Real, rot_angle: Real) {
         let direction = Vector2::new(dx, dy);
         let point = Point2::new(px, py);
         let triangle = vec![
@@ -74,12 +74,11 @@ mod tests {
             Point2::new(0., -1.),
             Point2::new(1., 0.),
         ];
-        let transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
-            disp: Vector2::new(0., 0.),
-            rot: Rotation2::from_angle(Rad(rot_angle)),
-            scale: 1.,
-        };
-        assert_eq!(point, get_max_point(&triangle, &direction, &transform));
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> =
+            BodyPose::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(rot_angle)));
+        let max_point = get_max_point(&triangle, &direction, &transform);
+        assert_approx_eq!(point.x, max_point.x);
+        assert_approx_eq!(point.y, max_point.y);
     }
 
     #[test]
@@ -114,7 +113,13 @@ mod tests {
 
     #[test]
     fn test_max_point_rot() {
-        test_max_point(0., 1., 0.70710677, 0.70710677, std::f32::consts::PI / 4.);
+        test_max_point(
+            0.,
+            1.,
+            std::f64::consts::FRAC_1_SQRT_2 as Real,
+            std::f64::consts::FRAC_1_SQRT_2 as Real,
+            std::f64::consts::PI as Real / 4.,
+        );
     }
 
     #[test]
@@ -126,11 +131,8 @@ mod tests {
             Point2::new(0., -1.),
             Point2::new(1., 0.),
         ];
-        let transform = Decomposed::<Vector2<f32>, Basis2<f32>> {
-            disp: Vector2::new(0., 8.),
-            rot: Rotation2::from_angle(Rad(0.)),
-            scale: 1.,
-        };
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> =
+            BodyPose::new(Point2::new(0., 8.), Rotation2::from_angle(Rad(0.)));
         assert_eq!(point, get_max_point(&triangle, &direction, &transform));
     }
 }
