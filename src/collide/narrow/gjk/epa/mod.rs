@@ -7,17 +7,17 @@ mod epa3d;
 use cgmath::prelude::*;
 use collision::{Aabb, MinMax};
 
+use super::SupportPoint;
 use Real;
 use collide::{CollisionPrimitive, Contact, Primitive};
-use super::SupportPoint;
 
 pub const EPA_TOLERANCE: Real = 0.00001;
 pub const MAX_ITERATIONS: u32 = 100;
 
 pub trait EPA<T> {
     type Vector: VectorSpace<Scalar = Real> + ElementWise + Array<Element = Real>;
-    type Point : EuclideanSpace<Scalar = Real, Diff=Self::Vector> + MinMax;
-    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point=Self::Point>;
+    type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector> + MinMax;
+    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point>;
     type Primitive: Primitive<Self::Aabb>;
 
     fn process(

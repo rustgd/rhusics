@@ -4,8 +4,8 @@ use cgmath::{Vector2, Point2};
 use cgmath::prelude::*;
 
 use super::SimplexProcessor;
-use collide::narrow::gjk::SupportPoint;
 use Real;
+use collide::narrow::gjk::SupportPoint;
 
 pub struct SimplexProcessor2D;
 
@@ -13,24 +13,30 @@ impl SimplexProcessor for SimplexProcessor2D {
     type Vector = Vector2<Real>;
     type Point = Point2<Real>;
 
-    fn check_origin(&self, simplex: &mut Vec<SupportPoint<Point2<Real>>>, d: &mut Vector2<Real>) -> bool {
+    fn check_origin(
+        &self,
+        simplex: &mut Vec<SupportPoint<Point2<Real>>>,
+        d: &mut Vector2<Real>,
+    ) -> bool {
         // 3 points
         if simplex.len() == 3 {
             let a = simplex[2].v;
-            let ao = a.neg();
             let b = simplex[1].v;
             let c = simplex[0].v;
+
+            let ao = a.neg();
             let ab = b - a;
             let ac = c - a;
-            let ab_perp = ::util::triple_product(&ac, &ab, &ab);
-            if ab_perp.dot(ao) > 0. {
+
+            let abp = ::util::triple_product(&ac, &ab, &ab);
+            if abp.dot(ao) > 0. {
                 simplex.remove(0);
-                *d = ab_perp;
+                *d = abp;
             } else {
-                let ac_perp = ::util::triple_product(&ab, &ac, &ac);
-                if ac_perp.dot(ao) > 0. {
+                let acp = ::util::triple_product(&ab, &ac, &ac);
+                if acp.dot(ao) > 0. {
                     simplex.remove(1);
-                    *d = ac_perp;
+                    *d = acp;
                 } else {
                     return true;
                 }
@@ -39,9 +45,11 @@ impl SimplexProcessor for SimplexProcessor2D {
         // 2 points
         else if simplex.len() == 2 {
             let a = simplex[1].v;
-            let ao = a.neg();
             let b = simplex[0].v;
+
+            let ao = a.neg();
             let ab = b - a;
+
             *d = ::util::triple_product(&ab, &ao, &ab);
         }
         // 0-1 point means we can't really do anything

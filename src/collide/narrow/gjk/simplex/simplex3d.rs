@@ -3,9 +3,9 @@ use std::ops::Neg;
 use cgmath::{Vector3, Point3};
 use cgmath::prelude::*;
 
-use collide::narrow::gjk::SupportPoint;
 use super::SimplexProcessor;
 use Real;
+use collide::narrow::gjk::SupportPoint;
 
 pub struct SimplexProcessor3D;
 
@@ -13,7 +13,11 @@ impl SimplexProcessor for SimplexProcessor3D {
     type Vector = Vector3<Real>;
     type Point = Point3<Real>;
 
-    fn check_origin(&self, simplex: &mut Vec<SupportPoint<Point3<Real>>>, v: &mut Vector3<Real>) -> bool {
+    fn check_origin(
+        &self,
+        simplex: &mut Vec<SupportPoint<Point3<Real>>>,
+        v: &mut Vector3<Real>,
+    ) -> bool {
         // 4 points
         if simplex.len() == 4 {
             let a = simplex[3].v;
@@ -24,7 +28,6 @@ impl SimplexProcessor for SimplexProcessor3D {
             let ao = a.neg();
             let ab = b - a;
             let ac = c - a;
-            let ad = d - a;
 
             let abc = ab.cross(ac);
 
@@ -34,6 +37,7 @@ impl SimplexProcessor for SimplexProcessor3D {
                 simplex.remove(0);
                 check_side(&abc, &ab, &ac, &ao, simplex, v, true, false);
             } else {
+                let ad = d - a;
                 let acd = ac.cross(ad);
                 // origin outside ACD, remove B and check side
                 // no need to test first edge, since that region is also over ABC
@@ -61,6 +65,7 @@ impl SimplexProcessor for SimplexProcessor3D {
             let a = simplex[2].v;
             let b = simplex[1].v;
             let c = simplex[0].v;
+
             let ao = a.neg();
             let ab = b - a;
             let ac = c - a;
@@ -70,9 +75,11 @@ impl SimplexProcessor for SimplexProcessor3D {
         // 2 points
         else if simplex.len() == 2 {
             let a = simplex[1].v;
-            let ao = a.neg();
             let b = simplex[0].v;
+
+            let ao = a.neg();
             let ab = b - a;
+
             *v = cross_aba(&ab, &ao);
         }
         // 0-1 points

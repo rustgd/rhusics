@@ -145,7 +145,7 @@ where
     A::Diff: Debug + Neg<Output = A::Diff> + InnerSpace,
     P: Primitive<A>,
     T: Pose<A::Point>,
-    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
+    S: SimplexProcessor<Vector = A::Diff, Point = A::Point>,
 {
     let mut d = *right_transform.position() - *left_transform.position();
     let a = support(left, left_transform, right, right_transform, &d);
@@ -177,6 +177,7 @@ where
     }
 }
 
+#[derive(Clone)]
 pub struct SupportPoint<P>
 where
     P: EuclideanSpace,
@@ -184,6 +185,19 @@ where
     v: P::Diff,
     sup_a: P,
     sup_b: P,
+}
+
+impl<P> SupportPoint<P>
+where
+    P: EuclideanSpace<Scalar = Real>,
+{
+    pub fn new() -> Self {
+        Self {
+            v: P::Diff::zero(),
+            sup_a: P::from_value(0.),
+            sup_b: P::from_value(0.),
+        }
+    }
 }
 
 pub(crate) fn support<P, A, T>(
@@ -201,7 +215,11 @@ where
 {
     let l = left.get_far_point(direction, left_transform);
     let r = right.get_far_point(&direction.neg(), right_transform);
-    SupportPoint { v : l - r, sup_a : l, sup_b : r }
+    SupportPoint {
+        v: l - r,
+        sup_a: l,
+        sup_b: r,
+    }
 }
 
 #[cfg(test)]

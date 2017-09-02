@@ -13,6 +13,10 @@ pub trait SimplexProcessor {
     type Vector: VectorSpace<Scalar = Real>;
     type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector>;
 
-    fn check_origin(&self, simplex: &mut Vec<SupportPoint<Self::Point>>, d: &mut Self::Vector) -> bool;
+    fn check_origin(
+        &self,
+        simplex: &mut Vec<SupportPoint<Self::Point>>,
+        d: &mut Self::Vector,
+    ) -> bool;
     fn new() -> Self;
 }
