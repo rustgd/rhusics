@@ -177,7 +177,7 @@ where
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SupportPoint<P>
 where
     P: EuclideanSpace,
@@ -245,7 +245,7 @@ mod tests {
         let direction = Vector2::new(1., 0.);
         assert_eq!(
             Vector2::new(40., 0.),
-            support(&left, &left_transform, &right, &right_transform, &direction)
+            support(&left, &left_transform, &right, &right_transform, &direction).v
         );
     }
 
@@ -257,8 +257,7 @@ mod tests {
         let right_transform = transform(-15., 0., 0.);
         let processor = SimplexProcessor2D::new();
         let mut average = RunningAverage::new();
-        assert_eq!(
-            None,
+        assert!(
             gjk(
                 &left,
                 &left_transform,
@@ -266,7 +265,7 @@ mod tests {
                 &right_transform,
                 &processor,
                 &mut average,
-            )
+            ).is_none()
         );
     }
 
@@ -278,16 +277,15 @@ mod tests {
         let right_transform = transform(7., 2., 0.);
         let processor = SimplexProcessor2D::new();
         let mut average = RunningAverage::new();
-        assert!(
-            gjk(
-                &left,
-                &left_transform,
-                &right,
-                &right_transform,
-                &processor,
-                &mut average,
-            ).is_some()
+        let simplex = gjk(
+            &left,
+            &left_transform,
+            &right,
+            &right_transform,
+            &processor,
+            &mut average,
         );
+        assert!(simplex.is_some());
     }
 
     #[test]

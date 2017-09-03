@@ -105,3 +105,126 @@ fn closest_edge(simplex: &Vec<SupportPoint<Point2<Real>>>) -> Option<Edge> {
         Some(edge)
     }
 }
+
+#[cfg(test)]
+mod tests {
+
+    use cgmath::{Point2, Vector2, Rotation2, Rad};
+
+    use super::*;
+    use collide::narrow::gjk::SupportPoint;
+
+    use Real;
+    use collide2d::*;
+
+    #[test]
+    fn test_closest_edge_0() {
+        assert!(closest_edge(&vec![]).is_none())
+    }
+
+    #[test]
+    fn test_closest_edge_1() {
+        assert!(
+        closest_edge(&vec![sup(10., 10.)])
+            .is_none()
+        )
+    }
+
+    #[test]
+    fn test_closest_edge_2() {
+        assert!(
+        closest_edge(&vec![sup(10., 10.), sup(-10., 5.)])
+            .is_none()
+        )
+    }
+
+    #[test]
+    fn test_closest_edge_3() {
+        let edge = closest_edge(&vec![
+            sup(10., 10.),
+            sup(-10., 5.),
+            sup(2., -5.),
+        ]);
+        assert!(edge.is_some());
+        let edge = edge.unwrap();
+        assert_eq!(2, edge.index);
+        assert_approx_eq!(2.5607374, edge.distance);
+        assert_approx_eq!(-0.6401844, edge.normal.x);
+        assert_approx_eq!(-0.7682213, edge.normal.y);
+    }
+
+    // let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+    // let left_transform = transform(15., 0., 0.);
+    // let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+    // let right_transform = transform(7., 2., 0.);
+    // let mut simplex = vec![
+    //  SupportPoint { v: Vector2 [-2, 8], sup_a: Point2 [10, 5], sup_b: Point2 [12, -3] },
+    //  SupportPoint { v: Vector2 [18, -12], sup_a: Point2 [20, -5], sup_b: Point2 [2, 7] },
+    //  SupportPoint { v: Vector2 [-2, -12], sup_a: Point2 [10, -5], sup_b: Point2 [12, 7] }
+    // ]
+
+    #[test]
+    fn test_epa_0() {
+        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left_transform = transform(15., 0., 0.);
+        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right_transform = transform(7., 2., 0.);
+        let epa = EPA2D;
+        assert!(epa.process(&mut vec![], &left, &left_transform, &right, &right_transform).is_empty());
+    }
+
+    #[test]
+    fn test_epa_1() {
+        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left_transform = transform(15., 0., 0.);
+        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right_transform = transform(7., 2., 0.);
+        let mut simplex = vec![
+            sup(-2. , 8.)
+        ];
+        let epa = EPA2D;
+        assert!(epa.process(&mut simplex, &left, &left_transform, &right, &right_transform).is_empty());
+    }
+
+    #[test]
+    fn test_epa_2() {
+        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left_transform = transform(15., 0., 0.);
+        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right_transform = transform(7., 2., 0.);
+        let mut simplex = vec![
+            sup(-2. , 8.),
+            sup(18., -12.),
+        ];
+        let epa = EPA2D;
+        assert!(epa.process(&mut simplex, &left, &left_transform, &right, &right_transform).is_empty());
+    }
+
+    #[test]
+    fn test_epa_3() {
+        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left_transform = transform(15., 0., 0.);
+        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right_transform = transform(7., 2., 0.);
+        let mut simplex = vec![
+            sup(-2. , 8.),
+            sup(18., -12.),
+            sup(-2., -12.),
+        ];
+        let epa = EPA2D;
+        let contacts = epa.process(&mut simplex, &left, &left_transform, &right, &right_transform);
+        assert_eq!(1, contacts.len());
+        assert_eq!(Vector2::new(-1., 0.), contacts[0].normal);
+        assert_eq!(2., contacts[0].penetration_depth);
+    }
+
+    fn sup(x: f32, y: f32) -> SupportPoint<Point2<Real>> {
+        let mut s = SupportPoint::new();
+        s.v = Vector2::new(x, y);
+        s
+    }
+
+    fn transform(x: Real, y: Real, angle: Real) -> BodyPose2D {
+        BodyPose2D::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
+    }
+}

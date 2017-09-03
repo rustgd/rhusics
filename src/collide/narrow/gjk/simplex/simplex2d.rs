@@ -66,6 +66,7 @@ mod tests {
     use cgmath::Vector2;
 
     use super::*;
+    use collide::narrow::gjk::SupportPoint;
 
     #[test]
     fn test_check_origin_empty() {
@@ -81,7 +82,7 @@ mod tests {
     fn test_check_origin_single() {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
-        let mut simplex = vec![Vector2::new(40., 0.)];
+        let mut simplex = vec![sup(40., 0.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(1, simplex.len());
         assert_eq!(Vector2::new(1., 0.), direction);
@@ -91,7 +92,7 @@ mod tests {
     fn test_check_origin_edge() {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
-        let mut simplex = vec![Vector2::new(40., 10.), Vector2::new(-10., 10.)];
+        let mut simplex = vec![sup(40., 10.), sup(-10., 10.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(2, simplex.len());
         assert_eq!(0., direction.x);
@@ -103,9 +104,9 @@ mod tests {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
-            Vector2::new(40., 10.),
-            Vector2::new(-10., 10.),
-            Vector2::new(0., 3.),
+            sup(40., 10.),
+            sup(-10., 10.),
+            sup(0., 3.),
         ];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(2, simplex.len());
@@ -118,9 +119,9 @@ mod tests {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
-            Vector2::new(40., 10.),
-            Vector2::new(10., 10.),
-            Vector2::new(3., -3.),
+            sup(40., 10.),
+            sup(10., 10.),
+            sup(3., -3.),
         ];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(2, simplex.len());
@@ -133,54 +134,18 @@ mod tests {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![
-            Vector2::new(40., 10.),
-            Vector2::new(-10., 10.),
-            Vector2::new(0., -3.),
+            sup(40., 10.),
+            sup(-10., 10.),
+            sup(0., -3.),
         ];
         assert!(processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(3, simplex.len());
         assert_eq!(Vector2::new(1., 0.), direction);
     }
 
-    #[test]
-    fn test_closest_feature_0() {
-        let processor = SimplexProcessor2D::new();
-        assert!(processor.closest_feature(&vec![]).is_none())
-    }
-
-    #[test]
-    fn test_closest_feature_1() {
-        let processor = SimplexProcessor2D::new();
-        assert!(
-            processor
-                .closest_feature(&vec![Vector2::new(10., 10.)])
-                .is_none()
-        )
-    }
-
-    #[test]
-    fn test_closest_feature_2() {
-        let processor = SimplexProcessor2D::new();
-        assert!(
-            processor
-                .closest_feature(&vec![Vector2::new(10., 10.), Vector2::new(-10., 5.)])
-                .is_none()
-        )
-    }
-
-    #[test]
-    fn test_closest_feature_3() {
-        let processor = SimplexProcessor2D::new();
-        let feature = processor.closest_feature(&vec![
-            Vector2::new(10., 10.),
-            Vector2::new(-10., 5.),
-            Vector2::new(2., -5.),
-        ]);
-        assert!(feature.is_some());
-        let feature = feature.unwrap();
-        assert_eq!(2, feature.index);
-        assert_approx_eq!(2.5607374, feature.distance);
-        assert_approx_eq!(-0.6401844, feature.normal.x);
-        assert_approx_eq!(-0.7682213, feature.normal.y);
+    fn sup(x: f32, y: f32) -> SupportPoint<Point2<Real>> {
+        let mut s = SupportPoint::new();
+        s.v = Vector2::new(x, y);
+        s
     }
 }
