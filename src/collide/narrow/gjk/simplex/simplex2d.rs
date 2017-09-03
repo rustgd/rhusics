@@ -103,11 +103,7 @@ mod tests {
     fn test_check_origin_triangle_outside_ac() {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
-        let mut simplex = vec![
-            sup(40., 10.),
-            sup(-10., 10.),
-            sup(0., 3.),
-        ];
+        let mut simplex = vec![sup(40., 10.), sup(-10., 10.), sup(0., 3.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(2, simplex.len());
         assert!(direction.x < 0.);
@@ -118,11 +114,7 @@ mod tests {
     fn test_check_origin_triangle_outside_ab() {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
-        let mut simplex = vec![
-            sup(40., 10.),
-            sup(10., 10.),
-            sup(3., -3.),
-        ];
+        let mut simplex = vec![sup(40., 10.), sup(10., 10.), sup(3., -3.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(2, simplex.len());
         assert!(direction.x < 0.);
@@ -133,17 +125,13 @@ mod tests {
     fn test_check_origin_triangle_hit() {
         let processor = SimplexProcessor2D::new();
         let mut direction = Vector2::new(1., 0.);
-        let mut simplex = vec![
-            sup(40., 10.),
-            sup(-10., 10.),
-            sup(0., -3.),
-        ];
+        let mut simplex = vec![sup(40., 10.), sup(-10., 10.), sup(0., -3.)];
         assert!(processor.check_origin(&mut simplex, &mut direction));
         assert_eq!(3, simplex.len());
         assert_eq!(Vector2::new(1., 0.), direction);
     }
 
-    fn sup(x: f32, y: f32) -> SupportPoint<Point2<Real>> {
+    fn sup(x: Real, y: Real) -> SupportPoint<Point2<Real>> {
         let mut s = SupportPoint::new();
         s.v = Vector2::new(x, y);
         s

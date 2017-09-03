@@ -124,27 +124,17 @@ mod tests {
 
     #[test]
     fn test_closest_edge_1() {
-        assert!(
-        closest_edge(&vec![sup(10., 10.)])
-            .is_none()
-        )
+        assert!(closest_edge(&vec![sup(10., 10.)]).is_none())
     }
 
     #[test]
     fn test_closest_edge_2() {
-        assert!(
-        closest_edge(&vec![sup(10., 10.), sup(-10., 5.)])
-            .is_none()
-        )
+        assert!(closest_edge(&vec![sup(10., 10.), sup(-10., 5.)]).is_none())
     }
 
     #[test]
     fn test_closest_edge_3() {
-        let edge = closest_edge(&vec![
-            sup(10., 10.),
-            sup(-10., 5.),
-            sup(2., -5.),
-        ]);
+        let edge = closest_edge(&vec![sup(10., 10.), sup(-10., 5.), sup(2., -5.)]);
         assert!(edge.is_some());
         let edge = edge.unwrap();
         assert_eq!(2, edge.index);
@@ -169,8 +159,17 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
-        let epa = EPA2D;
-        assert!(epa.process(&mut vec![], &left, &left_transform, &right, &right_transform).is_empty());
+        assert!(
+            EPA2D
+                .process(
+                    &mut vec![],
+                    &left,
+                    &left_transform,
+                    &right,
+                    &right_transform,
+                )
+                .is_empty()
+        );
     }
 
     #[test]
@@ -179,11 +178,18 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
-        let mut simplex = vec![
-            sup(-2. , 8.)
-        ];
-        let epa = EPA2D;
-        assert!(epa.process(&mut simplex, &left, &left_transform, &right, &right_transform).is_empty());
+        let mut simplex = vec![sup(-2., 8.)];
+        assert!(
+            EPA2D
+                .process(
+                    &mut simplex,
+                    &left,
+                    &left_transform,
+                    &right,
+                    &right_transform,
+                )
+                .is_empty()
+        );
     }
 
     #[test]
@@ -192,12 +198,18 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
-        let mut simplex = vec![
-            sup(-2. , 8.),
-            sup(18., -12.),
-        ];
-        let epa = EPA2D;
-        assert!(epa.process(&mut simplex, &left, &left_transform, &right, &right_transform).is_empty());
+        let mut simplex = vec![sup(-2., 8.), sup(18., -12.)];
+        assert!(
+            EPA2D
+                .process(
+                    &mut simplex,
+                    &left,
+                    &left_transform,
+                    &right,
+                    &right_transform,
+                )
+                .is_empty()
+        );
     }
 
     #[test]
@@ -206,19 +218,20 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
-        let mut simplex = vec![
-            sup(-2. , 8.),
-            sup(18., -12.),
-            sup(-2., -12.),
-        ];
-        let epa = EPA2D;
-        let contacts = epa.process(&mut simplex, &left, &left_transform, &right, &right_transform);
+        let mut simplex = vec![sup(-2., 8.), sup(18., -12.), sup(-2., -12.)];
+        let contacts = EPA2D.process(
+            &mut simplex,
+            &left,
+            &left_transform,
+            &right,
+            &right_transform,
+        );
         assert_eq!(1, contacts.len());
         assert_eq!(Vector2::new(-1., 0.), contacts[0].normal);
         assert_eq!(2., contacts[0].penetration_depth);
     }
 
-    fn sup(x: f32, y: f32) -> SupportPoint<Point2<Real>> {
+    fn sup(x: Real, y: Real) -> SupportPoint<Point2<Real>> {
         let mut s = SupportPoint::new();
         s.v = Vector2::new(x, y);
         s

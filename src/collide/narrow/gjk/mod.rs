@@ -224,16 +224,21 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Vector2, Rotation2, Rad, Point2};
+    use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
 
     use super::{gjk, support, RunningAverage};
-    use super::simplex::{SimplexProcessor2D, SimplexProcessor};
+    use super::simplex::{SimplexProcessor2D, SimplexProcessor, SimplexProcessor3D};
     use Real;
     use collide::narrow::NarrowPhase;
     use collide2d::*;
+    use collide3d::*;
 
     fn transform(x: Real, y: Real, angle: Real) -> BodyPose2D {
         BodyPose2D::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
+    }
+
+    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3D {
+        BodyPose3D::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
     }
 
     #[test]
@@ -289,6 +294,25 @@ mod tests {
     }
 
     #[test]
+    fn test_gjk_3d_hit() {
+        let left = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let left_transform = transform_3d(15., 0., 0., 0.);
+        let right = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let right_transform = transform_3d(7., 2., 0., 0.);
+        let processor = SimplexProcessor3D::new();
+        let mut average = RunningAverage::new();
+        let simplex = gjk(
+            &left,
+            &left_transform,
+            &right,
+            &right_transform,
+            &processor,
+            &mut average,
+        );
+        assert!(simplex.is_some());
+    }
+
+    #[test]
     fn test_gjk_shape_simple_miss() {
         let left = CollisionShape2D::new_simple(
             CollisionStrategy::CollisionOnly,
@@ -320,6 +344,26 @@ mod tests {
         );
         let right_transform = transform(7., 2., 0.);
         let mut gjk = GJK2D::new();
+        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
+        assert!(set.is_some());
+        let contact_set = set.unwrap();
+        assert_eq!((1, 2), contact_set.bodies);
+        assert_eq!(1, contact_set.contacts.len());
+    }
+
+    #[test]
+    fn test_gjk_3d_shape_hit() {
+        let left = CollisionShape3D::new_simple(
+            CollisionStrategy::CollisionOnly,
+            Box::new(10., 10., 10.).into(),
+        );
+        let left_transform = transform_3d(15., 0., 0., 0.);
+        let right = CollisionShape3D::new_simple(
+            CollisionStrategy::CollisionOnly,
+            Box::new(10., 10., 10.).into(),
+        );
+        let right_transform = transform_3d(7., 2., 0., 0.);
+        let mut gjk = GJK3D::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();
