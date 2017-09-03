@@ -96,9 +96,9 @@ impl Primitive<Aabb2<Real>> for Primitive2D {
         }
     }
 
-    fn get_far_point<P>(&self, direction: &Vector2<Real>, transform: &P) -> Point2<Real>
+    fn get_far_point<T>(&self, direction: &Vector2<Real>, transform: &T) -> Point2<Real>
     where
-        P: Pose<Point2<Real>>,
+        T: Pose<Point2<Real>>,
     {
         match *self {
             Primitive2D::Circle(ref circle) => {

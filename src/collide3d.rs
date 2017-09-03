@@ -7,15 +7,9 @@ use specs::{World, Component};
 
 use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape};
-use collide::broad::BroadCollisionInfo;
-use collide::broad::brute_force::BruteForce;
-use collide::broad::sweep_prune::SweepAndPrune;
-use collide::broad::sweep_prune::variance::Variance3D;
-use collide::ecs::resources::Contacts;
-use collide::ecs::system::CollisionSystem;
-use collide::narrow::gjk::GJK;
-use collide::narrow::gjk::epa::EPA3D;
-use collide::narrow::gjk::simplex::SimplexProcessor3D;
+use collide::broad::{BroadCollisionInfo, BruteForce, SweepAndPrune, Variance3D};
+use collide::ecs::{Contacts, CollisionSystem};
+use collide::narrow::{GJK, EPA3D, SimplexProcessor3D};
 
 pub type Contacts3D = Contacts<Vector3<Real>>;
 pub type CollisionPrimitive3D<T> = CollisionPrimitive<Primitive3D, Aabb3<Real>, T>;

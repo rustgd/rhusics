@@ -5,7 +5,7 @@ use collision::Aabb;
 
 use {Pose, Real};
 
-pub fn get_max_point<P, T>(vertices: &Vec<P>, direction: &P::Diff, transform: &T) -> P
+pub(crate) fn get_max_point<P, T>(vertices: &Vec<P>, direction: &P::Diff, transform: &T) -> P
 where
     P: EuclideanSpace<Scalar = Real>,
     T: Pose<P>,
@@ -29,7 +29,7 @@ where
     *transform.position() + transform.rotation().rotate_point(p).to_vec()
 }
 
-pub fn get_bound<A>(vertices: &Vec<A::Point>) -> A
+pub(crate) fn get_bound<A>(vertices: &Vec<A::Point>) -> A
 where
     A: Aabb,
 {
@@ -37,7 +37,7 @@ where
 }
 
 #[inline]
-pub fn triple_product(a: &Vector2<Real>, b: &Vector2<Real>, c: &Vector2<Real>) -> Vector2<Real> {
+pub(crate) fn triple_product(a: &Vector2<Real>, b: &Vector2<Real>, c: &Vector2<Real>) -> Vector2<Real> {
     let ac = a.x * c.x + a.y * c.y;
     let bc = b.x * c.x + b.y * c.y;
     Vector2::new(b.x * ac - a.x * bc, b.y * ac - a.y * bc)

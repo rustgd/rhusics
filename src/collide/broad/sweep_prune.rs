@@ -1,8 +1,9 @@
+pub use self::variance::*;
+
 use std::clone::Clone;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
-use self::variance::Variance;
 use Real;
 use collide::broad::*;
 
@@ -98,7 +99,7 @@ where
     }
 }
 
-pub mod variance {
+mod variance {
     use cgmath::{Vector2, Point2, Point3, Vector3};
     use cgmath::prelude::*;
 

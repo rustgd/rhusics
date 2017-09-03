@@ -9,13 +9,16 @@ extern crate log;
 #[macro_use]
 extern crate assert_approx_eq;
 
-pub mod util;
+
 pub mod collide;
 pub mod collide2d;
 pub mod collide3d;
-pub mod ecs;
+
 
 use cgmath::prelude::*;
+
+mod util;
+mod ecs;
 
 #[cfg(not(feature = "double"))]
 pub(crate) type Real = f32;

@@ -1,5 +1,5 @@
-pub mod simplex;
-pub mod epa;
+pub use self::simplex::{SimplexProcessor2D, SimplexProcessor3D};
+pub use self::epa::{EPA2D, EPA3D};
 
 use std;
 use std::fmt::Debug;
@@ -14,6 +14,9 @@ use super::NarrowPhase;
 use {Pose, Real};
 use collide::{Contact, ContactSet, CollisionShape, CollisionStrategy, CollisionPrimitive,
               Primitive};
+
+mod simplex;
+mod epa;
 
 const MAX_ITERATIONS: u32 = 100;
 
