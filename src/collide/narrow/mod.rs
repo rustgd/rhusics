@@ -1,10 +1,12 @@
-pub mod gjk;
+pub use self::gjk::{GJK, EPA2D, EPA3D, SimplexProcessor2D, SimplexProcessor3D};
 
 use std::fmt::Debug;
 
 use collision::Aabb;
 
 use collide::{ContactSet, CollisionShape};
+
+mod gjk;
 
 pub trait NarrowPhase<ID, P, A, T>
 where

@@ -1,5 +1,5 @@
-pub mod sweep_prune;
-pub mod brute_force;
+pub use self::brute_force::BruteForce;
+pub use self::sweep_prune::{SweepAndPrune, Variance2D, Variance3D};
 
 use std::clone::Clone;
 use std::fmt::Debug;
@@ -8,6 +8,9 @@ use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
 use collide::CollisionShape;
+
+mod sweep_prune;
+mod brute_force;
 
 #[derive(Debug)]
 pub struct BroadCollisionInfo<ID, A> {

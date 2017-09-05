@@ -98,9 +98,9 @@ impl Primitive<Aabb3<Real>> for Primitive3D {
         }
     }
 
-    fn get_far_point<P>(&self, direction: &Vector3<Real>, transform: &P) -> Point3<Real>
+    fn get_far_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
     where
-        P: Pose<Point3<Real>>,
+        T: Pose<Point3<Real>>,
     {
         match *self {
             Primitive3D::Sphere(ref sphere) => {

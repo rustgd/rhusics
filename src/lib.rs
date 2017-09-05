@@ -9,13 +9,16 @@ extern crate log;
 #[macro_use]
 extern crate assert_approx_eq;
 
-pub mod util;
+
 pub mod collide;
 pub mod collide2d;
 pub mod collide3d;
-pub mod ecs;
+
 
 use cgmath::prelude::*;
+
+mod util;
+mod ecs;
 
 #[cfg(not(feature = "double"))]
 pub(crate) type Real = f32;
@@ -122,47 +125,5 @@ where
 
     fn inverse_rotation(&self) -> &R {
         &self.inverse_rotation
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use cgmath::{Transform, Rotation2, Rad, Point2};
-    use specs::{World, RunNow};
-
-    use collide2d::{CollisionShape2D, CollisionSystem2D, BodyPose2D, BroadBruteForce2D, GJK2D,
-                    world_register, Rectangle, Contacts2D, CollisionStrategy};
-
-    type Shape = CollisionShape2D<BodyPose2D>;
-    type Pose = BodyPose2D;
-    type System = CollisionSystem2D<Pose>;
-
-    #[test]
-    pub fn test_world() {
-        let mut world = World::new();
-        world_register::<Pose>(&mut world);
-        world
-            .create_entity()
-            .with(Shape::new_simple(
-                CollisionStrategy::FullResolution,
-                Rectangle::new(10., 10.).into(),
-            ))
-            .with(Pose::one());
-        world
-            .create_entity()
-            .with(Shape::new_simple(
-                CollisionStrategy::FullResolution,
-                Rectangle::new(10., 10.).into(),
-            ))
-            .with(Pose::new(
-                Point2::new(3., 2.),
-                Rotation2::from_angle(Rad(0.)),
-            ));
-
-        let mut system = System::new()
-            .with_broad_phase(BroadBruteForce2D::default())
-            .with_narrow_phase(GJK2D::new());
-        system.run_now(&world.res);
-        println!("Contacts: {:?}", *world.read_resource::<Contacts2D>());
     }
 }
