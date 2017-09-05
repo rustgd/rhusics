@@ -14,8 +14,8 @@ before_script:
 script:
 - |
   travis-cargo build &&
-  travis-cargo test --all &&
-  travis-cargo test --all --features double &&
+  travis-cargo test &&
+  travis-cargo test --features double &&
   travis-cargo bench &&
   travis-cargo --only stable doc
 #after_success:
