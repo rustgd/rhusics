@@ -72,6 +72,7 @@ pub fn main() {
 * Spatial sorting to the CollisionSystem
 * Raycasting + picking
 * Broad phase using DBVT
+* Frustum coloring
 * Contact manifold with contact points
 * Impulse solver with both equality and non-equality constraints
 * Better primitive type for convex polytope (adjacent edge)
