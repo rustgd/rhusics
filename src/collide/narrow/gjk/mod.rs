@@ -8,6 +8,7 @@ use std::ops::Neg;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
+use self::epa::EPA;
 use self::simplex::SimplexProcessor;
 use super::NarrowPhase;
 use {Pose, Real};
@@ -36,21 +37,25 @@ impl RunningAverage {
     }
 }
 
-pub struct GJK<V, S> {
+pub struct GJK<P, T, S, E> {
     simplex_processor: S,
+    epa: E,
     average: RunningAverage,
-    marker: std::marker::PhantomData<V>,
+    marker: std::marker::PhantomData<(P, T)>,
 }
 
-impl<V, S> GJK<V, S>
+impl<P, T, S, E> GJK<P, T, S, E>
 where
-    V: VectorSpace<Scalar = Real>,
-    S: SimplexProcessor<Vector = V>,
+    P: EuclideanSpace<Scalar = Real>,
+    S: SimplexProcessor<Vector = P::Diff>,
+    T: Pose<P>,
+    E: EPA<T>,
 {
     pub fn new() -> Self {
         Self {
             simplex_processor: S::new(),
             average: RunningAverage::new(),
+            epa: E::new(),
             marker: std::marker::PhantomData,
         }
     }
@@ -60,16 +65,17 @@ where
     }
 }
 
-impl<ID, P, A, T, S> NarrowPhase<ID, P, A, T> for GJK<A::Diff, S>
+impl<ID, P, A, T, S, E> NarrowPhase<ID, P, A, T> for GJK<A::Point, T, S, E>
 where
     ID: Debug + Clone,
     A: Aabb<Scalar=Real> + Discrete<A> + Clone,
     A::Diff: Debug
         + InnerSpace
         + Neg<Output = A::Diff>,
-    S: SimplexProcessor<Vector = A::Diff>,
+    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
     P: Primitive<A>,
     T: Pose<A::Point>,
+    E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point>,
 {
     fn collide(
         &mut self,
@@ -100,13 +106,12 @@ where
                             {
                                 contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
                             } else {
-                                contacts.append(&mut self::epa::epa(
+                                contacts.append(&mut self.epa.process(
                                     &mut simplex,
-                                    &left_primitive,
+                                    left_primitive,
                                     left_transform,
-                                    &right_primitive,
+                                    right_primitive,
                                     right_transform,
-                                    &self.simplex_processor,
                                 ));
                             }
                         }
@@ -134,27 +139,27 @@ fn gjk<P, A, T, S>(
     right_transform: &T,
     simplex_processor: &S,
     average: &mut RunningAverage,
-) -> Option<Vec<A::Diff>>
+) -> Option<Vec<SupportPoint<A::Point>>>
 where
     A: Aabb<Scalar = Real> + Clone,
     A::Diff: Debug + Neg<Output = A::Diff> + InnerSpace,
     P: Primitive<A>,
     T: Pose<A::Point>,
-    S: SimplexProcessor<Vector = A::Diff>,
+    S: SimplexProcessor<Vector = A::Diff, Point = A::Point>,
 {
     let mut d = *right_transform.position() - *left_transform.position();
     let a = support(left, left_transform, right, right_transform, &d);
-    if a.dot(d) <= 0. {
+    if a.v.dot(d) <= 0. {
         average.add(0);
         return None;
     }
-    let mut simplex: Vec<A::Diff> = Vec::default();
+    let mut simplex: Vec<SupportPoint<A::Point>> = Vec::default();
     simplex.push(a);
     d = d.neg();
     let mut i = 0;
     loop {
         let a = support(left, left_transform, right, right_transform, &d);
-        if a.dot(d) <= 0. {
+        if a.v.dot(d) <= 0. {
             average.add(i + 1);
             return None;
         } else {
@@ -172,13 +177,36 @@ where
     }
 }
 
-pub fn support<P, A, T>(
+#[derive(Clone, Debug)]
+pub struct SupportPoint<P>
+where
+    P: EuclideanSpace,
+{
+    v: P::Diff,
+    sup_a: P,
+    sup_b: P,
+}
+
+impl<P> SupportPoint<P>
+where
+    P: EuclideanSpace<Scalar = Real>,
+{
+    pub fn new() -> Self {
+        Self {
+            v: P::Diff::zero(),
+            sup_a: P::from_value(0.),
+            sup_b: P::from_value(0.),
+        }
+    }
+}
+
+pub(crate) fn support<P, A, T>(
     left: &CollisionPrimitive<P, A, T>,
     left_transform: &T,
     right: &CollisionPrimitive<P, A, T>,
     right_transform: &T,
     direction: &A::Diff,
-) -> A::Diff
+) -> SupportPoint<A::Point>
 where
     A: Aabb<Scalar = Real> + Clone,
     A::Diff: Neg<Output = A::Diff>,
@@ -187,21 +215,30 @@ where
 {
     let l = left.get_far_point(direction, left_transform);
     let r = right.get_far_point(&direction.neg(), right_transform);
-    l - r
+    SupportPoint {
+        v: l - r,
+        sup_a: l,
+        sup_b: r,
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Vector2, Rotation2, Rad, Point2};
+    use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
 
     use super::{gjk, support, RunningAverage};
-    use super::simplex::{SimplexProcessor2D, SimplexProcessor};
+    use super::simplex::{SimplexProcessor2D, SimplexProcessor, SimplexProcessor3D};
     use Real;
     use collide::narrow::NarrowPhase;
     use collide2d::*;
+    use collide3d::*;
 
     fn transform(x: Real, y: Real, angle: Real) -> BodyPose2D {
         BodyPose2D::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
+    }
+
+    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3D {
+        BodyPose3D::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
     }
 
     #[test]
@@ -213,7 +250,7 @@ mod tests {
         let direction = Vector2::new(1., 0.);
         assert_eq!(
             Vector2::new(40., 0.),
-            support(&left, &left_transform, &right, &right_transform, &direction)
+            support(&left, &left_transform, &right, &right_transform, &direction).v
         );
     }
 
@@ -225,8 +262,7 @@ mod tests {
         let right_transform = transform(-15., 0., 0.);
         let processor = SimplexProcessor2D::new();
         let mut average = RunningAverage::new();
-        assert_eq!(
-            None,
+        assert!(
             gjk(
                 &left,
                 &left_transform,
@@ -234,7 +270,7 @@ mod tests {
                 &right_transform,
                 &processor,
                 &mut average,
-            )
+            ).is_none()
         );
     }
 
@@ -246,16 +282,34 @@ mod tests {
         let right_transform = transform(7., 2., 0.);
         let processor = SimplexProcessor2D::new();
         let mut average = RunningAverage::new();
-        assert!(
-            gjk(
-                &left,
-                &left_transform,
-                &right,
-                &right_transform,
-                &processor,
-                &mut average,
-            ).is_some()
+        let simplex = gjk(
+            &left,
+            &left_transform,
+            &right,
+            &right_transform,
+            &processor,
+            &mut average,
         );
+        assert!(simplex.is_some());
+    }
+
+    #[test]
+    fn test_gjk_3d_hit() {
+        let left = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let left_transform = transform_3d(15., 0., 0., 0.);
+        let right = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let right_transform = transform_3d(7., 2., 0., 0.);
+        let processor = SimplexProcessor3D::new();
+        let mut average = RunningAverage::new();
+        let simplex = gjk(
+            &left,
+            &left_transform,
+            &right,
+            &right_transform,
+            &processor,
+            &mut average,
+        );
+        assert!(simplex.is_some());
     }
 
     #[test]
@@ -290,6 +344,26 @@ mod tests {
         );
         let right_transform = transform(7., 2., 0.);
         let mut gjk = GJK2D::new();
+        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
+        assert!(set.is_some());
+        let contact_set = set.unwrap();
+        assert_eq!((1, 2), contact_set.bodies);
+        assert_eq!(1, contact_set.contacts.len());
+    }
+
+    #[test]
+    fn test_gjk_3d_shape_hit() {
+        let left = CollisionShape3D::new_simple(
+            CollisionStrategy::CollisionOnly,
+            Box::new(10., 10., 10.).into(),
+        );
+        let left_transform = transform_3d(15., 0., 0., 0.);
+        let right = CollisionShape3D::new_simple(
+            CollisionStrategy::CollisionOnly,
+            Box::new(10., 10., 10.).into(),
+        );
+        let right_transform = transform_3d(7., 2., 0., 0.);
+        let mut gjk = GJK3D::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();
