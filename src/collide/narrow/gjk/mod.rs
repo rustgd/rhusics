@@ -1,5 +1,5 @@
-pub use self::simplex::{SimplexProcessor2D, SimplexProcessor3D};
 pub use self::epa::{EPA2D, EPA3D};
+pub use self::simplex::{SimplexProcessor2D, SimplexProcessor3D};
 
 use std;
 use std::fmt::Debug;
@@ -40,6 +40,19 @@ impl RunningAverage {
     }
 }
 
+/// Gilbert-Johnson-Keerthi narrow phase collision detection algorithm.
+///
+/// # Type parameters:
+///
+/// - `P`: collision primitive type.
+/// - `T`: transform type
+/// - `S`: simplex processor type. Should be either
+///        [`SimplexProcessor2D`](struct.SimplexProcessor2D.html) or
+///        [`SimplexProcessor3D`](struct.SimplexProcessor3D.html)
+/// - `E`: EPA algorithm implementation type. Should be either
+///        [`EPA2D`](struct.EPA2D.html) or
+///        [`EPA3D`](struct.EPA3D.html)
+///
 pub struct GJK<P, T, S, E> {
     simplex_processor: S,
     epa: E,
@@ -54,6 +67,7 @@ where
     T: Pose<P>,
     E: EPA<T>,
 {
+    /// Create a new GJK algorithm implementation
     pub fn new() -> Self {
         Self {
             simplex_processor: S::new(),
@@ -63,6 +77,7 @@ where
         }
     }
 
+    /// Return the average amount of iterations run by the algorithm for each collision pair.
     pub fn get_average(&self) -> f64 {
         self.average.average
     }

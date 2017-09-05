@@ -9,6 +9,16 @@ use collide::broad::{BroadPhase, BroadCollisionInfo};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
+/// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
+/// [`specs`](https://docs.rs/specs/0.9.5/specs/).
+///
+/// Has support for both broad phase and narrow phase collision detection. Will only do narrow phase
+/// if both broad and narrow phase is activated.
+///
+/// Can handle any transform component type, as long as the type implements
+/// [`Pose`](../../trait.Pose.html) and
+/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+///
 pub struct CollisionSystem<P, A, T>
 where
     A: Aabb + Clone,
@@ -26,6 +36,7 @@ where
     P: Primitive<A> + Send + Sync + 'static,
     T: Pose<A::Point> + Component,
 {
+    /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
         Self {
             narrow: None,
@@ -33,6 +44,7 @@ where
         }
     }
 
+    /// Specify what narrow phase algorithm to use
     pub fn with_narrow_phase<N: NarrowPhase<Entity, P, A, T> + 'static>(
         mut self,
         narrow: N,
@@ -41,6 +53,7 @@ where
         self
     }
 
+    /// Specify what broad phase algorithm to use
     pub fn with_broad_phase<B: BroadPhase<Entity, A> + 'static>(mut self, broad: B) -> Self {
         self.broad = Some(Box::new(broad));
         self

@@ -5,8 +5,8 @@ extern crate specs;
 use cgmath::{Transform, Rotation3, Rad, Point3, Quaternion};
 use specs::{World, RunNow};
 
-use rhusics::collide3d::{CollisionShape3D, CollisionSystem3D, BodyPose3D, BroadBruteForce3D, GJK3D,
-                world_register, Box, Contacts3D, CollisionStrategy};
+use rhusics::collide3d::{CollisionShape3D, CollisionSystem3D, BodyPose3D, BroadBruteForce3D,
+                         GJK3D, world_register, Box, Contacts3D, CollisionStrategy};
 
 pub fn main() {
     let mut world = World::new();

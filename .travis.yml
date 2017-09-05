@@ -1,35 +1,26 @@
+sudo: false
 language: rust
 rust:
-    - stable
-    - beta
-    - nightly
-
-# Allow for occasional compiler breakage on Nightly.
+- nightly
+- beta
+- stable
 matrix:
-    allow_failures:
-        - rust: nightly
-
-# Since this build doesn't require sudo, we can turn it off and improve build
-# performance.
-sudo: false
-
-# Force third-party crates to persist from previous builds and update only when
-# needed.
-cache: cargo
-
-os:
-    - linux
-    - osx
-
-# Install the necessary crates for building and testing.
+  allow_failures:
+  - rust: nightly
 before_script:
-    - export PATH=$PATH:/home/travis/.cargo/bin
-
-# Format the codebase, generate documentation, compile, run tests.
-script: |
-      cargo doc --all --no-deps -v &&
-      cargo build --all -v &&
-      # Build and test single precision
-      cargo test --all -v &&
-      # Build and test double precision
-      cargo test --all --features double -v
+- |
+  pip install 'travis-cargo<0.2' --user &&
+  export PATH=$HOME/.local/bin:$PATH
+script:
+- |
+  travis-cargo build &&
+  travis-cargo test -- --all &&
+  travis-cargo test -- --all --features double &&
+  travis-cargo bench &&
+  travis-cargo --only stable doc
+cache: cargo
+env:
+  global:
+  - TRAVIS_CARGO_NIGHTLY_FEATURE=""
+#after_success:
+#- travis-cargo --only stable doc-upload

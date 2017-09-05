@@ -18,6 +18,13 @@ where
     type Storage = VecStorage<CollisionShape<P, A, T>>;
 }
 
+/// Contacts storage for use in ECS.
+///
+/// Will typically contain the contacts found in the last collision detection run.
+///
+/// # Type parameters:
+///
+/// - `V`: cgmath vector type
 #[derive(Debug)]
 pub struct Contacts<V>
 where
@@ -26,15 +33,14 @@ where
     contacts: Vec<ContactSet<Entity, V>>,
 }
 
-impl<V> Contacts<V>
+impl<V> Default for Contacts<V>
 where
     V: VectorSpace,
 {
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self { contacts: Vec::default() }
     }
 }
-
 impl<V> Deref for Contacts<V>
 where
     V: VectorSpace,

@@ -5,8 +5,8 @@ extern crate specs;
 use cgmath::{Transform, Rotation2, Rad, Point2};
 use specs::{World, RunNow};
 
-use rhusics::collide2d::{CollisionShape2D, CollisionSystem2D, BodyPose2D, BroadBruteForce2D, GJK2D,
-                world_register, Rectangle, Contacts2D, CollisionStrategy};
+use rhusics::collide2d::{CollisionShape2D, CollisionSystem2D, BodyPose2D, BroadBruteForce2D,
+                         GJK2D, world_register, Rectangle, Contacts2D, CollisionStrategy};
 
 pub fn main() {
     let mut world = World::new();

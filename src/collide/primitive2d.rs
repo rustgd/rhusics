@@ -1,3 +1,21 @@
+//! Collision primitives for 2D.
+//!
+//! These are the building blocks of all collision detection for 2D.
+//! The enum [`Primitive2D`](enum.Primitive2D.html) is the main type, that implements the
+//! [`Primitive`](../trait.Primitive.html) trait.
+//!
+//! All primitive types have `Into` implementations to turn them into enum variants for
+//! [`Primitive2D`](enum.Primitive2D.html).
+//!
+//! # Example
+//!
+//! ```
+//! # use rhusics::collide::primitive2d::*;
+//! use rhusics::collide::Primitive;
+//! let p : Primitive2D = Rectangle::new(10., 34.).into();
+//! p.get_bound();
+//! ```
+
 use cgmath::{Vector2, Point2};
 use cgmath::prelude::*;
 use collision::Aabb2;
@@ -5,29 +23,38 @@ use collision::Aabb2;
 use super::Primitive;
 use {Pose, Real};
 
+/// Circle primitive
 #[derive(Debug, Clone)]
 pub struct Circle {
+    /// Radius of the circle
     pub radius: Real,
 }
 
 impl Circle {
+    /// Create a new circle primitive
     pub fn new(radius: Real) -> Self {
         Self { radius }
     }
 }
 
+/// Rectangle primitive.
+///
+/// Have a cached set of corner points to speed up computation.
 #[derive(Debug, Clone)]
 pub struct Rectangle {
+    /// Dimensions of the rectangle
     pub dim: Vector2<Real>,
     half_dim: Vector2<Real>,
     corners: Vec<Point2<Real>>,
 }
 
 impl Rectangle {
+    /// Create a new rectangle primitive from component dimensions
     pub fn new(dim_x: Real, dim_y: Real) -> Self {
         Self::new_impl(Vector2::new(dim_x, dim_y))
     }
 
+    /// Create a new rectangle primitive from a vector of component dimensions
     pub fn new_impl(dim: Vector2<Real>) -> Self {
         Rectangle {
             dim,
@@ -36,7 +63,7 @@ impl Rectangle {
         }
     }
 
-    pub fn generate_corners(dimensions: &Vector2<Real>) -> Vec<Point2<Real>> {
+    fn generate_corners(dimensions: &Vector2<Real>) -> Vec<Point2<Real>> {
         let two = 2.;
         vec![
             Point2::new(dimensions.x / two, dimensions.y / two),
@@ -47,15 +74,33 @@ impl Rectangle {
     }
 }
 
+/// Convex polygon primitive.
+///
+/// Can contain any number of vertices, but a high number of vertices will
+/// affect performance of course. Vertices need to be in CCW order.
 #[derive(Debug, Clone)]
 pub struct ConvexPolygon {
+    /// Vertices of the convex polygon.
     pub vertices: Vec<Point2<Real>>,
 }
 
+impl ConvexPolygon {
+    /// Create a new convex polygon from the given vertices. Vertices need to be in CCW order.
+    pub fn new(vertices: Vec<Point2<Real>>) -> Self {
+        Self { vertices }
+    }
+}
+
+/// Base enum for all 2D primitives
 #[derive(Debug, Clone)]
 pub enum Primitive2D {
+    /// Circle variant
     Circle(Circle),
+
+    /// Rectangle variant
     Rectangle(Rectangle),
+
+    /// Convex polygon variant
     ConvexPolygon(ConvexPolygon),
 }
 

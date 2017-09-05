@@ -1,3 +1,21 @@
+//! Collision primitives for 3D.
+//!
+//! These are the building blocks of all collision detection for 3D.
+//! The enum [`Primitive3D`](enum.Primitive3D.html) is the main type, that implements the
+//! [`Primitive`](../trait.Primitive.html) trait.
+//!
+//! All primitive types have `Into` implementations to turn them into enum variants for
+//! [`Primitive3D`](enum.Primitive3D.html).
+//!
+//! # Example
+//!
+//! ```
+//! # use rhusics::collide::primitive3d::*;
+//! use rhusics::collide::Primitive;
+//! let p : Primitive3D = Box::new(10., 34., 22.).into();
+//! p.get_bound();
+//! ```
+
 use cgmath::{Vector3, Point3};
 use cgmath::prelude::*;
 use collision::Aabb3;
@@ -5,29 +23,38 @@ use collision::Aabb3;
 use super::Primitive;
 use {Pose, Real};
 
+/// Sphere primitive
 #[derive(Debug, Clone)]
 pub struct Sphere {
+    /// Radius of the sphere
     pub radius: Real,
 }
 
 impl Sphere {
+    /// Create a new sphere primitive
     pub fn new(radius: Real) -> Self {
         Self { radius }
     }
 }
 
+/// Box primitive.
+///
+/// Have a cached set of corner points to speed up computation.
 #[derive(Debug, Clone)]
 pub struct Box {
+    /// Dimensions of the box
     pub dim: Vector3<Real>,
     half_dim: Vector3<Real>,
     corners: Vec<Point3<Real>>,
 }
 
 impl Box {
+    /// Create a new rectangle primitive from component dimensions
     pub fn new(dim_x: Real, dim_y: Real, dim_z: Real) -> Self {
         Self::new_impl(Vector3::new(dim_x, dim_y, dim_z))
     }
 
+    /// Create a new rectangle primitive from a vector of component dimensions
     pub fn new_impl(dim: Vector3<Real>) -> Self {
         Self {
             dim,
@@ -36,7 +63,7 @@ impl Box {
         }
     }
 
-    pub fn generate_corners(dimensions: &Vector3<Real>) -> Vec<Point3<Real>> {
+    fn generate_corners(dimensions: &Vector3<Real>) -> Vec<Point3<Real>> {
         let two = 2.;
         vec![
             Point3::new(dimensions.x, dimensions.y, dimensions.z) / two,
@@ -51,15 +78,33 @@ impl Box {
     }
 }
 
+/// Convex polyhedron primitive.
+///
+/// Can contain any number of vertices, but a high number of vertices will
+/// affect performance of course.
 #[derive(Debug, Clone)]
 pub struct ConvexPolyhedron {
+    /// Vertices of the convex polyhedron
     pub vertices: Vec<Point3<Real>>,
 }
 
+impl ConvexPolyhedron {
+    /// Create a new convex polyhedron from the given vertices.
+    pub fn new(vertices: Vec<Point3<Real>>) -> Self {
+        Self { vertices }
+    }
+}
+
+/// Base enum for all 3D primitives
 #[derive(Debug, Clone)]
 pub enum Primitive3D {
+    /// Sphere variant
     Sphere(Sphere),
+
+    /// Box variant
     Box(Box),
+
+    /// Convex polyhedron variant
     ConvexPolyhedron(ConvexPolyhedron),
     // TODO: more primitives
 }

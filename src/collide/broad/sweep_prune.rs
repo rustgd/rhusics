@@ -7,6 +7,21 @@ use std::fmt::Debug;
 use Real;
 use collide::broad::*;
 
+/// Sweep and prune broad phase collision detection algorithm.
+///
+/// Will sort the bounding boxes of the collision world along some axis, and will then sweep the
+/// sorted list, and compare the bounds along the sweep axis, advancing a
+/// "can still be collided with" index when the end point is reached. If shapes are approximately
+/// the same size throughout the world, this will give close to linear time. If some of the shapes
+/// are much larger than the others, this will cause degradation down to quadratic time.
+///
+/// Any shape pairs found by the base algorithm, will then do a bounding box intersection test,
+/// before adding to the resulting pairs list.
+///
+/// # Type parameters:
+///
+/// - `V`: Variance type used for computing what axis to use on the next iteration. Should be either
+///        [`Variance2D`](struct.Variance2D.html) or [`Variance3D`](struct.Variance3D.html)
 #[derive(Debug)]
 pub struct SweepAndPrune<V> {
     sweep_axis: usize,
@@ -17,10 +32,12 @@ impl<V> SweepAndPrune<V>
 where
     V: Variance,
 {
+    /// Create a new sweep and prune algorithm, will use the X axis as the first sweep axis
     pub fn new() -> Self {
         Self::new_impl(0)
     }
 
+    /// Create a new sweep and prune algorithm, starting with the given axis as the first sweep axis
     pub fn new_impl(sweep_axis: usize) -> Self {
         Self {
             sweep_axis,
@@ -114,6 +131,7 @@ mod variance {
         fn compute_axis(&self, n: Real) -> (usize, Real);
     }
 
+    /// Variance for 2D sweep and prune
     pub struct Variance2D {
         csum: Vector2<Real>,
         csumsq: Vector2<Real>,
@@ -161,6 +179,7 @@ mod variance {
         }
     }
 
+    /// Variance for 3D sweep and prune
     pub struct Variance3D {
         csum: Vector3<Real>,
         csumsq: Vector3<Real>,
