@@ -18,5 +18,8 @@ script:
   travis-cargo test -- --all --features double &&
   travis-cargo bench &&
   travis-cargo --only stable doc
+env:
+  global:
+  - TRAVIS_CARGO_NIGHTLY_FEATURE=nightly
 #after_success:
 #- travis-cargo --only stable doc-upload
