@@ -18,6 +18,7 @@ script:
   travis-cargo test -- --all --features double &&
   travis-cargo bench &&
   travis-cargo --only stable doc
+cache: cargo
 env:
   global:
   - TRAVIS_CARGO_NIGHTLY_FEATURE=""
