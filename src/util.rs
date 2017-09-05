@@ -37,7 +37,11 @@ where
 }
 
 #[inline]
-pub(crate) fn triple_product(a: &Vector2<Real>, b: &Vector2<Real>, c: &Vector2<Real>) -> Vector2<Real> {
+pub(crate) fn triple_product(
+    a: &Vector2<Real>,
+    b: &Vector2<Real>,
+    c: &Vector2<Real>,
+) -> Vector2<Real> {
     let ac = a.x * c.x + a.y * c.y;
     let bc = b.x * c.x + b.y * c.y;
     Vector2::new(b.x * ac - a.x * bc, b.y * ac - a.y * bc)

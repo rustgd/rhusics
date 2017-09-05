@@ -2,6 +2,9 @@ use std::clone::Clone;
 
 use collide::broad::*;
 
+/// Broad phase collision detection brute force implementation.
+///
+/// Will simply do bounding box intersection tests for all shape combinations.
 #[derive(Debug, Default)]
 pub struct BruteForce;
 

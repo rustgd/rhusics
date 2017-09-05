@@ -1,7 +1,16 @@
 [package]
 name = "rhusics"
 version = "0.1.0"
-authors = ["Simon Rönnberg <simon.ronnberg@codemill.se>"]
+authors = ["Simon Rönnberg <seamonr@gmail.com>"]
+repository = "https://github.com/Rhuagh/rhusics.git"
+homepage = "https://github.com/Rhuagh/rhusics.git"
+
+license = "MIT OR Apache-2.0"
+readme = "README.md"
+documentation = "https://docs.rs/rhusics"
+description = "Physics library for use with `specs`"
+
+keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [features]
 double = []
@@ -9,9 +18,9 @@ double = []
 [dependencies]
 cgmath = "0.15"
 collision = { git = "https://github.com/kvark/collision-rs" }
-specs = { git = "https://github.com/slide-rs/specs/"}
-"specs-derive" = { git = "https://github.com/slide-rs/specs/"}
-log = "*"
+specs = "0.9"
+"specs-derive" = "0.1"
+log = "0.3"
 
 [dev-dependencies]
-assert_approx_eq = "*"
+assert_approx_eq = "1"

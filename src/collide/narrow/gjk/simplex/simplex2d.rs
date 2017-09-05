@@ -7,6 +7,7 @@ use super::SimplexProcessor;
 use Real;
 use collide::narrow::gjk::SupportPoint;
 
+/// Simplex processor implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 pub struct SimplexProcessor2D;
 
 impl SimplexProcessor for SimplexProcessor2D {
