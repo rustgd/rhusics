@@ -110,7 +110,6 @@ fn closest_edge(simplex: &Vec<SupportPoint<Point2<Real>>>) -> Option<Edge> {
 
 #[cfg(test)]
 mod tests {
-
     use cgmath::{Point2, Vector2, Rotation2, Rad};
 
     use super::*;

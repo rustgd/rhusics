@@ -41,6 +41,7 @@ where
         Self { contacts: Vec::default() }
     }
 }
+
 impl<V> Deref for Contacts<V>
 where
     V: VectorSpace,

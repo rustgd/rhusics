@@ -17,7 +17,7 @@ where
             P::Scalar::neg_infinity(),
         ),
         |(max_p,
-          max_dot),
+             max_dot),
          (v, dot)| {
             if dot > max_dot {
                 (v.clone(), dot)

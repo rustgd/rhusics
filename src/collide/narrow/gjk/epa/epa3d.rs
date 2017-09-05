@@ -90,7 +90,6 @@ impl<'a> Polytope<'a> {
     }
 
     pub fn add(&mut self, sup: SupportPoint<Point3<Real>>) {
-
         // remove faces that can see the point
         let mut edges = Vec::default();
         let mut i = 0;

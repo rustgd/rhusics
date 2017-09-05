@@ -74,7 +74,7 @@
 //! ```
 
 #![deny(missing_docs, missing_debug_implementations, trivial_casts,
-        unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
+unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
 
 extern crate cgmath;
 extern crate collision;
