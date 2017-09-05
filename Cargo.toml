@@ -8,7 +8,7 @@ double = []
 
 [dependencies]
 cgmath = "0.15"
-collision = { path = "../collision-rs" }
+collision = { git = "https://github.com/kvark/collision-rs" }
 specs = { git = "https://github.com/slide-rs/specs/"}
 "specs-derive" = { git = "https://github.com/slide-rs/specs/"}
 log = "*"
