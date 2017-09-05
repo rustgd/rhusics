@@ -57,7 +57,7 @@ where
 /// - `ID`: id type of collision shapes
 /// - `A`: Aabb bounding box type
 ///
-pub trait BroadPhase<ID, A> {
+pub trait BroadPhase<ID, A>: Debug {
     /// Compute a list of potentially colliding shapes.
     ///
     /// # Parameters:

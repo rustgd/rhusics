@@ -53,6 +53,7 @@ impl RunningAverage {
 ///        [`EPA2D`](struct.EPA2D.html) or
 ///        [`EPA3D`](struct.EPA3D.html)
 ///
+#[derive(Debug)]
 pub struct GJK<P, T, S, E> {
     simplex_processor: S,
     epa: E,
@@ -90,10 +91,11 @@ where
     A::Diff: Debug
         + InnerSpace
         + Neg<Output = A::Diff>,
-    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
+    A::Point: Debug,
+    S: SimplexProcessor<Vector = A::Diff, Point=A::Point> + Debug,
     P: Primitive<A>,
-    T: Pose<A::Point>,
-    E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point>,
+    T: Pose<A::Point> + Debug,
+    E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point> + Debug,
 {
     fn collide(
         &mut self,

@@ -20,7 +20,7 @@ mod gjk;
 /// - `P`: collision primitive type
 /// - `A`: bounding box type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<ID, P, A, T>
+pub trait NarrowPhase<ID, P, A, T>: Debug
 where
     A: Aabb,
     A::Diff: Debug,

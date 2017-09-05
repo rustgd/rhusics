@@ -8,6 +8,7 @@ use collide::narrow::gjk::{support, SupportPoint};
 use collide::primitive3d::Primitive3D;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
+#[derive(Debug)]
 pub struct EPA3D;
 
 impl<T> EPA<T> for EPA3D
