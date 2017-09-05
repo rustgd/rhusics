@@ -6,9 +6,7 @@ pub use self::gjk::{GJK, EPA2D, EPA3D, SimplexProcessor2D, SimplexProcessor3D};
 
 use std::fmt::Debug;
 
-use collision::Aabb;
-
-use collide::{ContactSet, CollisionShape};
+use collide::{ContactSet, CollisionShape, Primitive};
 
 mod gjk;
 
@@ -20,10 +18,9 @@ mod gjk;
 /// - `P`: collision primitive type
 /// - `A`: bounding box type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<ID, P, A, T>: Debug
+pub trait NarrowPhase<ID, P, T>: Debug
 where
-    A: Aabb,
-    A::Diff: Debug,
+    P: Primitive,
 {
     /// Check if two shapes collides, and give contact manifolds for any contacts found
     ///
@@ -40,7 +37,7 @@ where
     ///
     fn collide(
         &mut self,
-        left: (ID, &CollisionShape<P, A, T>, &T),
-        right: (ID, &CollisionShape<P, A, T>, &T),
-    ) -> Option<ContactSet<ID, A::Diff>>;
+        left: (ID, &CollisionShape<P, T>, &T),
+        right: (ID, &CollisionShape<P, T>, &T),
+    ) -> Option<ContactSet<ID, P::Vector>>;
 }

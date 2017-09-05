@@ -16,7 +16,7 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
-use collide::CollisionShape;
+use collide::{CollisionShape, Primitive};
 
 mod sweep_prune;
 mod brute_force;
@@ -40,12 +40,11 @@ impl<ID, A> BroadCollisionInfo<ID, A> {
     }
 }
 
-impl<ID, P, A, T> From<(ID, CollisionShape<P, A, T>)> for BroadCollisionInfo<ID, A>
+impl<ID, P, T> From<(ID, CollisionShape<P, T>)> for BroadCollisionInfo<ID, P::Aabb>
 where
-    A: Aabb + Clone,
-    A::Diff: Debug,
+    P: Primitive,
 {
-    fn from((id, shape): (ID, CollisionShape<P, A, T>)) -> Self {
+    fn from((id, shape): (ID, CollisionShape<P, T>)) -> Self {
         Self::new(id, shape.transformed_bound.clone())
     }
 }

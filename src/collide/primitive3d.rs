@@ -127,7 +127,11 @@ impl Into<Primitive3D> for ConvexPolyhedron {
     }
 }
 
-impl Primitive<Aabb3<Real>> for Primitive3D {
+impl Primitive for Primitive3D {
+    type Vector = Vector3<Real>;
+    type Point = Point3<Real>;
+    type Aabb = Aabb3<Real>;
+
     fn get_bound(&self) -> Aabb3<Real> {
         match *self {
             Primitive3D::Sphere(ref sphere) => {

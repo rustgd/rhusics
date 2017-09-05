@@ -6,7 +6,7 @@ use std::fmt::Debug;
 use std::ops::Neg;
 
 use cgmath::prelude::*;
-use collision::{Aabb, Discrete};
+use collision::Discrete;
 
 use self::epa::EPA;
 use self::simplex::SimplexProcessor;
@@ -84,22 +84,22 @@ where
     }
 }
 
-impl<ID, P, A, T, S, E> NarrowPhase<ID, P, A, T> for GJK<A::Point, T, S, E>
+impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
     where
         ID: Debug + Clone,
-        A: Aabb<Scalar=Real> + Discrete<A> + Clone,
-        A::Diff: Debug + InnerSpace + Neg<Output=A::Diff>,
-        A::Point: Debug,
-        S: SimplexProcessor<Vector=A::Diff, Point=A::Point> + Debug,
-        P: Primitive<A>,
-        T: Pose<A::Point> + Debug,
-        E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point> + Debug,
+        P: Primitive,
+        P::Aabb: Discrete<P::Aabb>,
+        P::Point: Debug,
+        P::Vector: InnerSpace + Neg<Output=P::Vector>,
+        S: SimplexProcessor<Vector=P::Vector, Point=P::Point> + Debug,
+        T: Pose<P::Point> + Debug,
+        E: EPA<T, Vector=P::Vector, Primitive=P, Point=P::Point> + Debug,
 {
     fn collide(
         &mut self,
-        (ref left_id, ref left, ref left_transform): (ID, &CollisionShape<P, A, T>, &T),
-        (ref right_id, ref right, ref right_transform): (ID, &CollisionShape<P, A, T>, &T),
-    ) -> Option<ContactSet<ID, A::Diff>> {
+        (ref left_id, ref left, ref left_transform): (ID, &CollisionShape<P, T>, &T),
+        (ref right_id, ref right, ref right_transform): (ID, &CollisionShape<P, T>, &T),
+    ) -> Option<ContactSet<ID, P::Vector>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
             {
@@ -150,20 +150,19 @@ impl<ID, P, A, T, S, E> NarrowPhase<ID, P, A, T> for GJK<A::Point, T, S, E>
     }
 }
 
-fn gjk<P, A, T, S>(
-    left: &CollisionPrimitive<P, A, T>,
+fn gjk<P, T, S>(
+    left: &CollisionPrimitive<P, T>,
     left_transform: &T,
-    right: &CollisionPrimitive<P, A, T>,
+    right: &CollisionPrimitive<P, T>,
     right_transform: &T,
     simplex_processor: &S,
     average: &mut RunningAverage,
-) -> Option<Vec<SupportPoint<A::Point>>>
+) -> Option<Vec<SupportPoint<P::Point>>>
 where
-    A: Aabb<Scalar = Real> + Clone,
-    A::Diff: Debug + Neg<Output = A::Diff> + InnerSpace,
-    P: Primitive<A>,
-    T: Pose<A::Point>,
-    S: SimplexProcessor<Vector = A::Diff, Point = A::Point>,
+    P::Vector: Neg<Output = P::Vector> + InnerSpace,
+    P: Primitive,
+    T: Pose<P::Point>,
+    S: SimplexProcessor<Vector = P::Vector, Point = P::Point>,
 {
     let mut d = *right_transform.position() - *left_transform.position();
     let a = support(left, left_transform, right, right_transform, &d);
@@ -171,7 +170,7 @@ where
         average.add(0);
         return None;
     }
-    let mut simplex: Vec<SupportPoint<A::Point>> = Vec::default();
+    let mut simplex: Vec<SupportPoint<P::Point>> = Vec::default();
     simplex.push(a);
     d = d.neg();
     let mut i = 0;
@@ -218,18 +217,17 @@ where
     }
 }
 
-pub(crate) fn support<P, A, T>(
-    left: &CollisionPrimitive<P, A, T>,
+pub(crate) fn support<P, T>(
+    left: &CollisionPrimitive<P, T>,
     left_transform: &T,
-    right: &CollisionPrimitive<P, A, T>,
+    right: &CollisionPrimitive<P, T>,
     right_transform: &T,
-    direction: &A::Diff,
-) -> SupportPoint<A::Point>
+    direction: &P::Vector,
+) -> SupportPoint<P::Point>
 where
-    A: Aabb<Scalar = Real> + Clone,
-    A::Diff: Neg<Output = A::Diff>,
-    P: Primitive<A>,
-    T: Pose<A::Point>,
+    P: Primitive,
+    T: Pose<P::Point>,
+    P::Vector: Neg<Output = P::Vector>,
 {
     let l = left.get_far_point(direction, left_transform);
     let r = right.get_far_point(&direction.neg(), right_transform);
@@ -239,7 +237,7 @@ where
         sup_b: r,
     }
 }
-
+/*
 #[cfg(test)]
 mod tests {
     use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
@@ -475,3 +473,4 @@ mod tests {
         assert_eq!(2, contact_set.contacts.len());
     }
 }
+*/
