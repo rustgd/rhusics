@@ -1,21 +1,17 @@
-use std::fmt::Debug;
 use std::ops::{DerefMut, Deref};
 
 use cgmath::prelude::*;
-use collision::Aabb;
 use specs::{Component, VecStorage, Entity};
 
-use Real;
-use collide::{CollisionShape, ContactSet};
+use collide::{CollisionShape, ContactSet, Primitive};
 
-impl<P, A, T> Component for CollisionShape<P, A, T>
+impl<P, T> Component for CollisionShape<P, T>
 where
-    A: Aabb<Scalar = Real> + Send + Sync + 'static,
-    A::Diff: Debug + Send + Sync + 'static,
     T: Send + Sync + 'static,
-    P: Send + Sync + 'static,
+    P: Primitive + Send + Sync + 'static,
+    P::Aabb: Send + Sync + 'static,
 {
-    type Storage = VecStorage<CollisionShape<P, A, T>>;
+    type Storage = VecStorage<CollisionShape<P, T>>;
 }
 
 /// Contacts storage for use in ECS.

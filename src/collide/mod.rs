@@ -9,7 +9,7 @@ pub mod ecs;
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::Aabb;
+use collision::{Aabb, MinMax};
 
 use {Pose, Real};
 
@@ -100,14 +100,16 @@ where
 /// See [primitive2d](primitive2d/index.html) and [primitive3d](primitive3d/index.html)
 /// for more information about supported primitives.
 ///
-/// # Type parameters:
-///
-/// - `A`: [`collision::Aabb`](https://docs.rs/collision/0.10.1/collision/trait.Aabb.html) type to
-/// use with the primitive
-pub trait Primitive<A>: Debug + Send + Sync
-where
-    A: Aabb<Scalar = Real>,
-{
+pub trait Primitive: Debug + Send + Sync {
+    /// Vector type used by the primitive
+    type Vector: VectorSpace<Scalar = Real> + ElementWise + Array<Element = Real>;
+
+    /// Point type used by the primitive
+    type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector> + MinMax;
+
+    /// Bounding box type used by the primitive
+    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point> + Clone;
+
     /// Get the furthest point from the origin on the shape in a given direction.
     ///
     /// # Parameters
@@ -122,12 +124,12 @@ where
     /// # Type parameters
     ///
     /// - `P`: Transform type
-    fn get_far_point<P>(&self, direction: &A::Diff, transform: &P) -> A::Point
+    fn get_far_point<T>(&self, direction: &Self::Vector, transform: &T) -> Self::Point
     where
-        P: Pose<A::Point>;
+        T: Pose<Self::Point>;
 
     /// Get the bounding box of the primitive in local space coordinates.
-    fn get_bound(&self) -> A;
+    fn get_bound(&self) -> Self::Aabb;
 }
 
 /// Collision primitive with local to model transform.
@@ -136,21 +138,20 @@ where
 /// [`Primitive`](trait.Primitive.html), both the base bounding box in model space coordinates,
 /// and the transformed bounding box in world space coordinates.
 #[derive(Debug)]
-pub struct CollisionPrimitive<P, A, T>
+pub struct CollisionPrimitive<P, T>
 where
-    A: Aabb,
+    P: Primitive,
 {
     local_transform: T,
-    base_bound: A,
-    transformed_bound: A,
+    base_bound: P::Aabb,
+    transformed_bound: P::Aabb,
     primitive: P,
 }
 
-impl<P, A, T> CollisionPrimitive<P, A, T>
+impl<P, T> CollisionPrimitive<P, T>
 where
-    A: Aabb<Scalar = Real> + Clone,
-    P: Primitive<A>,
-    T: Pose<A::Point>,
+    P: Primitive,
+    T: Pose<P::Point>,
 {
     /// Create a new collision primitive, with an identity local-to-model transform.
     ///
@@ -198,7 +199,7 @@ where
     ///
     /// Returns the furthest point on the primitive in the given search direction, after applying
     /// the given model-to-world transformation.
-    pub fn get_far_point(&self, direction: &A::Diff, transform: &T) -> A::Point {
+    pub fn get_far_point(&self, direction: &P::Vector, transform: &T) -> P::Point {
         let t = transform.concat(&self.local_transform);
         self.primitive.get_far_point(direction, &t)
     }
@@ -217,25 +218,22 @@ where
 ///
 /// Also have details about what collision strategy to use for contact resolution with this shape.
 #[derive(Debug)]
-pub struct CollisionShape<P, A, T>
+pub struct CollisionShape<P, T>
 where
-    A: Aabb,
-    A::Diff: Debug,
+    P: Primitive,
 {
     /// Enable/Disable collision detection for this shape
     pub enabled: bool,
-    base_bound: A,
-    transformed_bound: A,
-    primitives: Vec<CollisionPrimitive<P, A, T>>,
+    base_bound: P::Aabb,
+    transformed_bound: P::Aabb,
+    primitives: Vec<CollisionPrimitive<P, T>>,
     strategy: CollisionStrategy,
 }
 
-impl<P, A, T> CollisionShape<P, A, T>
+impl<P, T> CollisionShape<P, T>
 where
-    A: Aabb<Scalar = Real> + Clone,
-    A::Diff: Debug,
-    P: Primitive<A>,
-    T: Pose<A::Point>,
+    P: Primitive,
+    T: Pose<P::Point>,
 {
     /// Create a new collision shape, with multiple collision primitives.
     ///
@@ -248,7 +246,7 @@ where
     /// - `primitives`: List of all primitives that make up this shape.
     pub fn new_complex(
         strategy: CollisionStrategy,
-        primitives: Vec<CollisionPrimitive<P, A, T>>,
+        primitives: Vec<CollisionPrimitive<P, T>>,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
@@ -299,13 +297,12 @@ where
     }
 }
 
-fn get_bound<P, A, T>(primitives: &Vec<CollisionPrimitive<P, A, T>>) -> A
+fn get_bound<P, T>(primitives: &Vec<CollisionPrimitive<P, T>>) -> P::Aabb
 where
-    A: Aabb<Scalar = Real>,
-    P: Primitive<A>,
+    P: Primitive,
 {
     primitives.iter().map(|p| &p.base_bound).fold(
-        A::zero(),
+        P::Aabb::zero(),
         |bound, b| {
             bound.union(b)
         },

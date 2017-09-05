@@ -20,11 +20,11 @@ pub type Contacts2D = Contacts<Vector2<Real>>;
 
 /// Collision primitive for 2D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
 /// for more information.
-pub type CollisionPrimitive2D<T> = CollisionPrimitive<Primitive2D, Aabb2<Real>, T>;
+pub type CollisionPrimitive2D<T> = CollisionPrimitive<Primitive2D, T>;
 
 /// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
-pub type CollisionShape2D<T> = CollisionShape<Primitive2D, Aabb2<Real>, T>;
+pub type CollisionShape2D<T> = CollisionShape<Primitive2D, T>;
 
 /// Broad phase collision information for 2D, see
 /// [BroadCollisionInfo](../collide/broad/struct.BroadCollisionInfo.html) for more information.
@@ -43,7 +43,7 @@ pub type GJK2D<T> = GJK<Point2<Real>, T, SimplexProcessor2D, EPA2D>;
 
 /// ECS collision system for 2D, see [CollisionSystem](../collide/ecs/struct.CollisionSystem.html)
 /// for more information.
-pub type CollisionSystem2D<T> = CollisionSystem<Primitive2D, Aabb2<Real>, T>;
+pub type CollisionSystem2D<T> = CollisionSystem<Primitive2D, T>;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;

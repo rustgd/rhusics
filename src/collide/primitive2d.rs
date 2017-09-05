@@ -122,7 +122,11 @@ impl Into<Primitive2D> for ConvexPolygon {
     }
 }
 
-impl Primitive<Aabb2<Real>> for Primitive2D {
+impl Primitive for Primitive2D {
+    type Vector = Vector2<Real>;
+    type Point = Point2<Real>;
+    type Aabb = Aabb2<Real>;
+
     fn get_bound(&self) -> Aabb2<Real> {
         match *self {
             Primitive2D::Circle(ref circle) => {

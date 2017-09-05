@@ -1,6 +1,5 @@
 use cgmath::{Vector2, Point2};
 use cgmath::num_traits::Float;
-use collision::Aabb2;
 
 use super::*;
 use {Pose, Real};
@@ -18,15 +17,14 @@ where
 {
     type Vector = Vector2<Real>;
     type Point = Point2<Real>;
-    type Aabb = Aabb2<Real>;
     type Primitive = Primitive2D;
 
     fn process(
         &self,
         simplex: &mut Vec<SupportPoint<Point2<Real>>>,
-        left: &CollisionPrimitive<Primitive2D, Aabb2<Real>, T>,
+        left: &CollisionPrimitive<Primitive2D, T>,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive2D, Aabb2<Real>, T>,
+        right: &CollisionPrimitive<Primitive2D, T>,
         right_transform: &T,
     ) -> Vec<Contact<Vector2<Real>>> {
         let mut i = 0;

@@ -1,5 +1,4 @@
 use cgmath::{Vector3, Point3};
-use collision::Aabb3;
 
 use super::*;
 use {Pose, Real};
@@ -17,15 +16,14 @@ where
 {
     type Vector = Vector3<Real>;
     type Point = Point3<Real>;
-    type Aabb = Aabb3<Real>;
     type Primitive = Primitive3D;
 
     fn process(
         &self,
         mut simplex: &mut Vec<SupportPoint<Point3<Real>>>,
-        left: &CollisionPrimitive<Primitive3D, Aabb3<Real>, T>,
+        left: &CollisionPrimitive<Primitive3D, T>,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive3D, Aabb3<Real>, T>,
+        right: &CollisionPrimitive<Primitive3D, T>,
         right_transform: &T,
     ) -> Vec<Contact<Vector3<Real>>> {
         if simplex.len() < 4 {
