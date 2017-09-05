@@ -68,7 +68,6 @@ pub fn main() {
 
 # TODO:
 
-* Improved sweep and prune
 * Dynamic Bounding Volume Tree
 * Spatial sorting to the CollisionSystem
 * Raycasting + picking
