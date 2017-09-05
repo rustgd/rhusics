@@ -80,9 +80,6 @@ extern crate cgmath;
 extern crate collision;
 extern crate specs;
 
-#[macro_use]
-extern crate log;
-
 #[cfg(test)]
 #[macro_use]
 extern crate assert_approx_eq;

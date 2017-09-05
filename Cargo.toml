@@ -19,8 +19,6 @@ double = []
 cgmath = "0.15"
 collision = "0.11"
 specs = "0.9"
-"specs-derive" = "0.1"
-log = "0.3"
 
 [dev-dependencies]
 assert_approx_eq = "1"

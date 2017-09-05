@@ -60,8 +60,6 @@ where
             return pairs;
         }
 
-        debug!("Starting sweep and prune");
-        debug!("Sweep axis is {}", self.sweep_axis);
         shapes.sort_by(|a, b| if a.bound.min()[self.sweep_axis] !=
             b.bound.min()[self.sweep_axis]
         {
@@ -73,7 +71,6 @@ where
                 .partial_cmp(&b.bound.max()[self.sweep_axis])
                 .unwrap_or(Ordering::Equal)
         });
-        debug!("Sorted vector {:?}", shapes);
 
         self.variance.clear();
         self.variance.add_to_sum(
@@ -81,7 +78,6 @@ where
             &shapes[0].bound.max(),
         );
 
-        debug!("starting checks");
         let mut active = vec![0];
         for index in 1..shapes.len() {
             let mut i = 0;
