@@ -83,12 +83,12 @@ impl Box {
 /// Can contain any number of vertices, but a high number of vertices will
 /// affect performance of course.
 #[derive(Debug, Clone)]
-pub struct ConvexPolyhedron {
+pub struct ConvexPolytope {
     /// Vertices of the convex polyhedron
     pub vertices: Vec<Point3<Real>>,
 }
 
-impl ConvexPolyhedron {
+impl ConvexPolytope {
     /// Create a new convex polyhedron from the given vertices.
     pub fn new(vertices: Vec<Point3<Real>>) -> Self {
         Self { vertices }
@@ -105,7 +105,7 @@ pub enum Primitive3D {
     Box(Box),
 
     /// Convex polyhedron variant
-    ConvexPolyhedron(ConvexPolyhedron),
+    ConvexPolytope(ConvexPolytope),
     // TODO: more primitives
 }
 
@@ -121,9 +121,9 @@ impl Into<Primitive3D> for Box {
     }
 }
 
-impl Into<Primitive3D> for ConvexPolyhedron {
+impl Into<Primitive3D> for ConvexPolytope {
     fn into(self) -> Primitive3D {
-        Primitive3D::ConvexPolyhedron(self)
+        Primitive3D::ConvexPolytope(self)
     }
 }
 
@@ -143,7 +143,7 @@ impl Primitive for Primitive3D {
             Primitive3D::Box(ref b) => {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
-            Primitive3D::ConvexPolyhedron(ref c) => ::util::get_bound(&c.vertices),
+            Primitive3D::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
         }
     }
 
@@ -157,7 +157,7 @@ impl Primitive for Primitive3D {
                 transform.position() + direction.normalize_to(sphere.radius)
             }
             Primitive3D::Box(ref b) => ::util::get_max_point(&b.corners, direction, transform),
-            Primitive3D::ConvexPolyhedron(ref c) => {
+            Primitive3D::ConvexPolytope(ref c) => {
                 ::util::get_max_point(&c.vertices, direction, transform)
             }
         }
