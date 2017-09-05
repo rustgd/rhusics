@@ -8,6 +8,7 @@ use collide::narrow::gjk::{support, SupportPoint};
 use collide::primitive3d::Primitive3D;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
+#[derive(Debug)]
 pub struct EPA3D;
 
 impl<T> EPA<T> for EPA3D
@@ -89,7 +90,6 @@ impl<'a> Polytope<'a> {
     }
 
     pub fn add(&mut self, sup: SupportPoint<Point3<Real>>) {
-
         // remove faces that can see the point
         let mut edges = Vec::default();
         let mut i = 0;

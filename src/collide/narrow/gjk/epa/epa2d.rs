@@ -9,6 +9,7 @@ use collide::narrow::gjk::support;
 use collide::primitive2d::Primitive2D;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
+#[derive(Debug)]
 pub struct EPA2D;
 
 impl<T> EPA<T> for EPA2D
@@ -109,7 +110,6 @@ fn closest_edge(simplex: &Vec<SupportPoint<Point2<Real>>>) -> Option<Edge> {
 
 #[cfg(test)]
 mod tests {
-
     use cgmath::{Point2, Vector2, Rotation2, Rad};
 
     use super::*;

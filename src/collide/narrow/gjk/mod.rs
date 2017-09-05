@@ -53,6 +53,7 @@ impl RunningAverage {
 ///        [`EPA2D`](struct.EPA2D.html) or
 ///        [`EPA3D`](struct.EPA3D.html)
 ///
+#[derive(Debug)]
 pub struct GJK<P, T, S, E> {
     simplex_processor: S,
     epa: E,
@@ -84,16 +85,15 @@ where
 }
 
 impl<ID, P, A, T, S, E> NarrowPhase<ID, P, A, T> for GJK<A::Point, T, S, E>
-where
-    ID: Debug + Clone,
-    A: Aabb<Scalar=Real> + Discrete<A> + Clone,
-    A::Diff: Debug
-        + InnerSpace
-        + Neg<Output = A::Diff>,
-    S: SimplexProcessor<Vector = A::Diff, Point=A::Point>,
-    P: Primitive<A>,
-    T: Pose<A::Point>,
-    E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point>,
+    where
+        ID: Debug + Clone,
+        A: Aabb<Scalar=Real> + Discrete<A> + Clone,
+        A::Diff: Debug + InnerSpace + Neg<Output=A::Diff>,
+        A::Point: Debug,
+        S: SimplexProcessor<Vector=A::Diff, Point=A::Point> + Debug,
+        P: Primitive<A>,
+        T: Pose<A::Point> + Debug,
+        E: EPA<T, Vector=A::Diff, Aabb=A, Primitive=P, Point=A::Point> + Debug,
 {
     fn collide(
         &mut self,
@@ -102,9 +102,9 @@ where
     ) -> Option<ContactSet<ID, A::Diff>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
-        {
-            return None;
-        }
+            {
+                return None;
+            }
 
         let mut contacts = Vec::default();
         for left_primitive in &left.primitives {
@@ -121,9 +121,9 @@ where
                         Some(mut simplex) => {
                             if left.strategy == CollisionStrategy::CollisionOnly ||
                                 right.strategy == CollisionStrategy::CollisionOnly
-                            {
-                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
-                            } else {
+                                {
+                                    contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
+                                } else {
                                 contacts.append(&mut self.epa.process(
                                     &mut simplex,
                                     left_primitive,

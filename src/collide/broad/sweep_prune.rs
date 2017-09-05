@@ -52,7 +52,7 @@ where
     A: Aabb<Scalar = Real> + Discrete<A> + Debug,
     A::Point: EuclideanSpace,
     A::Diff: VectorSpace + ElementWise,
-    V: Variance<Point = A::Point>,
+    V: Variance<Point = A::Point> + Debug,
 {
     fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)> {
         let mut pairs = Vec::<(ID, ID)>::default();
@@ -132,6 +132,7 @@ mod variance {
     }
 
     /// Variance for 2D sweep and prune
+    #[derive(Debug)]
     pub struct Variance2D {
         csum: Vector2<Real>,
         csumsq: Vector2<Real>,
@@ -180,6 +181,7 @@ mod variance {
     }
 
     /// Variance for 3D sweep and prune
+    #[derive(Debug)]
     pub struct Variance3D {
         csum: Vector3<Real>,
         csumsq: Vector3<Real>,
