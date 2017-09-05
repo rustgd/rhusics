@@ -3,29 +3,40 @@ Physics library for use in Specs, using cgmath and collision-rs.
 # Example
 
 ```rust
+extern crate rhusics;
+extern crate cgmath;
+extern crate specs;
+
 use cgmath::{Transform, Rotation2, Rad, Point2};
 use specs::{World, RunNow};
 
-use collide2d::*;
+use rhusics::collide2d::{CollisionShape2D, CollisionSystem2D, BodyPose2D, BroadBruteForce2D,
+                         GJK2D, world_register, Rectangle, Contacts2D, CollisionStrategy};
 
-type Shape = CollisionShape2D<BodyPose2D>;
-type Pose = BodyPose2D;
-type System = CollisionSystem2D<Pose>;
-
-#[test]
-pub fn test_world() {
+pub fn main() {
     let mut world = World::new();
-    world_register::<Pose>(&mut world);
-    world
-        .create_entity()
-        .with(Shape::new_simple(CollisionStrategy::FullResolution, Rectangle::new(10., 10.).into(),))
-        .with(Pose::one());
-    world
-        .create_entity()
-        .with(Shape::new_simple(CollisionStrategy::FullResolution, Rectangle::new(10., 10.).into(),))
-        .with(Pose::new(Point2::new(3., 2.), Rotation2::from_angle(Rad(0.))));
+    world_register::<BodyPose2D>(&mut world);
 
-    let mut system = System::new()
+    world
+        .create_entity()
+        .with(CollisionShape2D::<BodyPose2D>::new_simple(
+            CollisionStrategy::FullResolution,
+            Rectangle::new(10., 10.).into(),
+        ))
+        .with(BodyPose2D::one());
+
+    world
+        .create_entity()
+        .with(CollisionShape2D::<BodyPose2D>::new_simple(
+            CollisionStrategy::FullResolution,
+            Rectangle::new(10., 10.).into(),
+        ))
+        .with(BodyPose2D::new(
+            Point2::new(3., 2.),
+            Rotation2::from_angle(Rad(0.)),
+        ));
+
+    let mut system = CollisionSystem2D::<BodyPose2D>::new()
         .with_broad_phase(BroadBruteForce2D::default())
         .with_narrow_phase(GJK2D::new());
     system.run_now(&world.res);
