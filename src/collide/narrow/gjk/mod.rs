@@ -237,7 +237,7 @@ where
         sup_b: r,
     }
 }
-/*
+
 #[cfg(test)]
 mod tests {
     use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
@@ -311,9 +311,9 @@ mod tests {
 
     #[test]
     fn test_gjk_3d_hit() {
-        let left = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let left = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let right = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
         let right_transform = transform_3d(7., 2., 0., 0.);
         let processor = SimplexProcessor3D::new();
         let mut average = RunningAverage::new();
@@ -371,12 +371,12 @@ mod tests {
     fn test_gjk_3d_shape_hit() {
         let left = CollisionShape3D::new_simple(
             CollisionStrategy::CollisionOnly,
-            Box::new(10., 10., 10.).into(),
+            Cuboid::new(10., 10., 10.).into(),
         );
         let left_transform = transform_3d(15., 0., 0., 0.);
         let right = CollisionShape3D::new_simple(
             CollisionStrategy::CollisionOnly,
-            Box::new(10., 10., 10.).into(),
+            Cuboid::new(10., 10., 10.).into(),
         );
         let right_transform = transform_3d(7., 2., 0., 0.);
         let mut gjk = GJK3D::new();
@@ -473,4 +473,3 @@ mod tests {
         assert_eq!(2, contact_set.contacts.len());
     }
 }
-*/

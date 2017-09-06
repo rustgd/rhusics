@@ -53,7 +53,7 @@ pub fn main() {
     * Convex polygon with any number of vertices
   * 3D
     * Sphere
-    * Box
+    * Cuboid
     * Convex polytope with any number of vertices
 * Two different broad phase collision detection implementations:
   * Brute force
