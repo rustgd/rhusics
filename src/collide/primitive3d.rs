@@ -12,7 +12,7 @@
 //! ```
 //! # use rhusics::collide::primitive3d::*;
 //! use rhusics::collide::Primitive;
-//! let p : Primitive3D = Box::new(10., 34., 22.).into();
+//! let p : Primitive3D = Cuboid::new(10., 34., 22.).into();
 //! p.get_bound();
 //! ```
 
@@ -37,7 +37,7 @@ impl Sphere {
     }
 }
 
-/// Box primitive.
+/// Cuboid primitive.
 ///
 /// Have a cached set of corner points to speed up computation.
 #[derive(Debug, Clone)]
@@ -101,7 +101,7 @@ pub enum Primitive3D {
     /// Sphere variant
     Sphere(Sphere),
 
-    /// Box variant
+    /// Cuboid variant
     Cuboid(Cuboid),
 
     /// Convex polyhedron variant
