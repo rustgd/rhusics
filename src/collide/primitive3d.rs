@@ -41,14 +41,14 @@ impl Sphere {
 ///
 /// Have a cached set of corner points to speed up computation.
 #[derive(Debug, Clone)]
-pub struct Box {
+pub struct Cuboid {
     /// Dimensions of the box
     pub dim: Vector3<Real>,
     half_dim: Vector3<Real>,
     corners: Vec<Point3<Real>>,
 }
 
-impl Box {
+impl Cuboid {
     /// Create a new rectangle primitive from component dimensions
     pub fn new(dim_x: Real, dim_y: Real, dim_z: Real) -> Self {
         Self::new_impl(Vector3::new(dim_x, dim_y, dim_z))
@@ -102,7 +102,7 @@ pub enum Primitive3D {
     Sphere(Sphere),
 
     /// Box variant
-    Box(Box),
+    Cuboid(Cuboid),
 
     /// Convex polyhedron variant
     ConvexPolytope(ConvexPolytope),
@@ -115,9 +115,9 @@ impl Into<Primitive3D> for Sphere {
     }
 }
 
-impl Into<Primitive3D> for Box {
+impl Into<Primitive3D> for Cuboid {
     fn into(self) -> Primitive3D {
-        Primitive3D::Box(self)
+        Primitive3D::Cuboid(self)
     }
 }
 
@@ -140,7 +140,7 @@ impl Primitive for Primitive3D {
                     Point3::from_value(sphere.radius),
                 )
             }
-            Primitive3D::Box(ref b) => {
+            Primitive3D::Cuboid(ref b) => {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
             Primitive3D::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
@@ -156,7 +156,7 @@ impl Primitive for Primitive3D {
                 let direction = transform.inverse_rotation().rotate_vector(*direction);
                 transform.position() + direction.normalize_to(sphere.radius)
             }
-            Primitive3D::Box(ref b) => ::util::get_max_point(&b.corners, direction, transform),
+            Primitive3D::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
             Primitive3D::ConvexPolytope(ref c) => {
                 ::util::get_max_point(&c.vertices, direction, transform)
             }
@@ -236,7 +236,7 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r: Primitive3D = Box::new(10., 10., 10.).into();
+        let r: Primitive3D = Cuboid::new(10., 10., 10.).into();
         assert_eq!(bound(-5., -5., -5., 5., 5., 5.), r.get_bound())
     }
 

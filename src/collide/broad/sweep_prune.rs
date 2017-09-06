@@ -86,7 +86,8 @@ where
             // for those, and add to pairs if the bounds intersect.
             while i < active.len() {
                 if shapes[active[i]].bound.max()[self.sweep_axis] <
-                    shapes[index].bound.min()[self.sweep_axis] {
+                    shapes[index].bound.min()[self.sweep_axis]
+                {
                     active.remove(i);
                 } else {
                     if shapes[active[i]].bound.intersects(&shapes[index].bound) {

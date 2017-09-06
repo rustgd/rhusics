@@ -93,7 +93,11 @@ impl<'a> Polytope<'a> {
         let mut i = 0;
         while i < self.faces.len() {
             let dot = self.faces[i].normal.dot(
-                sup.v - self.vertices[self.faces[i].vertices[0]].v,
+                sup.v -
+                    self.vertices[self.faces[i]
+                                      .vertices
+                                      [0]]
+                        .v,
             );
             if dot > 0. {
                 let face = self.faces.swap_remove(i);
@@ -247,9 +251,9 @@ mod tests {
 
     #[test]
     fn test_epa_3d() {
-        let left = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let left = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3D::new(Box::new(10., 10., 10.).into());
+        let right = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
         let right_transform = transform_3d(7., 2., 0., 0.);
         let mut simplex = vec![
             sup(18., -12., 0.),
