@@ -140,9 +140,11 @@ impl Primitive for Primitive3D {
                     Point3::from_value(sphere.radius),
                 )
             }
+
             Primitive3D::Cuboid(ref b) => {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
+
             Primitive3D::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
         }
     }
@@ -153,13 +155,15 @@ impl Primitive for Primitive3D {
     {
         match *self {
             Primitive3D::Sphere(ref sphere) => {
-                let direction = transform.inverse_rotation().rotate_vector(*direction);
                 transform.position() + direction.normalize_to(sphere.radius)
             }
+
             Primitive3D::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
+
             Primitive3D::ConvexPolytope(ref c) => {
                 ::util::get_max_point(&c.vertices, direction, transform)
             }
+
         }
     }
 }
@@ -194,15 +198,7 @@ mod tests {
 
     #[test]
     fn test_sphere_far_3() {
-        test_sphere(
-            1.,
-            0.,
-            0.,
-            7.071067,
-            7.0710683,
-            0.,
-            -std::f64::consts::PI as Real / 4.,
-        );
+        test_sphere(1., 0., 0., 10., 0., 0., -std::f64::consts::PI as Real / 4.);
     }
 
     #[test]

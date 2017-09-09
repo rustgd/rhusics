@@ -141,6 +141,7 @@ impl Primitive for Primitive2D {
                     Point2::from_vec(rectangle.half_dim),
                 )
             }
+
             Primitive2D::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),
         }
     }
@@ -151,12 +152,13 @@ impl Primitive for Primitive2D {
     {
         match *self {
             Primitive2D::Circle(ref circle) => {
-                let direction = transform.inverse_rotation().rotate_vector(*direction);
                 transform.position() + direction.normalize_to(circle.radius)
             }
+
             Primitive2D::Rectangle(Rectangle { ref corners, .. }) => {
                 ::util::get_max_point(corners, direction, transform)
             }
+
             Primitive2D::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => {
                 ::util::get_max_point(vertices, direction, transform)
             }
@@ -186,13 +188,7 @@ mod tests {
 
     #[test]
     fn test_circle_far_3() {
-        test_circle(
-            1.,
-            0.,
-            7.0710683,
-            7.0710683,
-            -std::f64::consts::PI as Real / 4.,
-        );
+        test_circle(1., 0., 10., 0., -std::f64::consts::PI as Real / 4.);
     }
 
     #[test]
