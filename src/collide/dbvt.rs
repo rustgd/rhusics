@@ -24,13 +24,19 @@
 //! #[derive(Debug, Clone)]
 //! struct Value {
 //!     index: usize,
-//!     id: u32,
-//!     aabb: Aabb2<f32>,
+//!     pub id: u32,
+//!     pub aabb: Aabb2<f32>,
+//!     fat_aabb: Aabb2<f32>,
 //! }
 //!
 //! impl Value {
 //!     pub fn new(id: u32, aabb: Aabb2<f32>) -> Self {
-//!         Self { index: 0, id, aabb }
+//!         Self {
+//!             index: 0,
+//!             id,
+//!             fat_aabb : aabb.add_margin(Vector2::new(3., 3.)),
+//!             aabb,
+//!         }
 //!     }
 //! }
 //!
@@ -42,8 +48,8 @@
 //!         &self.aabb
 //!     }
 //!
-//!     fn fat_bound(&self, factor: &Vector2<f32>) -> Aabb2<f32> {
-//!         self.aabb.add_margin(*factor)
+//!     fn fat_bound(&self) -> Aabb2<f32> {
+//!         self.fat_aabb.clone()
 //!     }
 //!
 //!     fn set_index(&mut self, index: usize) {
@@ -60,7 +66,7 @@
 //! }
 //!
 //! fn main() {
-//!     let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+//!     let mut tree = DynamicBoundingVolumeTree::<Value>::new();
 //!     tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
 //!     tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
 //!     tree.do_refit();
@@ -100,9 +106,10 @@ pub trait TreeValue: Clone + Debug {
     /// Return the bounding volume of the value
     fn bound(&self) -> &Self::Bound;
 
-    /// Return a fattened bounding volume, the fat factor can be used at the user's discretion, or
-    /// ignored.
-    fn fat_bound(&self, factor: &Self::Vector) -> Self::Bound;
+    /// Return a fattened bounding volume. For shapes that do not move, this can be the same as the
+    /// base bounding volume. It is recommended for moving shapes to have a larger fat bound, so
+    /// tree rotations don't have to be performed every frame.
+    fn fat_bound(&self) -> Self::Bound;
 
     /// Used to feed the node index into the value. It is vitally important that this is kept.
     fn set_index(&mut self, index: usize);
@@ -143,13 +150,19 @@ pub trait TreeValue: Clone + Debug {
 /// #[derive(Debug, Clone)]
 /// struct Value {
 ///     index: usize,
-///     id: u32,
-///     aabb: Aabb2<f32>,
+///     pub id: u32,
+///     pub aabb: Aabb2<f32>,
+///     fat_aabb: Aabb2<f32>,
 /// }
 ///
 /// impl Value {
 ///     pub fn new(id: u32, aabb: Aabb2<f32>) -> Self {
-///         Self { index: 0, id, aabb }
+///         Self {
+///             index: 0,
+///             id,
+///             fat_aabb : aabb.add_margin(Vector2::new(3., 3.)),
+///             aabb,
+///         }
 ///     }
 /// }
 ///
@@ -161,8 +174,8 @@ pub trait TreeValue: Clone + Debug {
 ///         &self.aabb
 ///     }
 ///
-///     fn fat_bound(&self, factor: &Vector2<f32>) -> Aabb2<f32> {
-///         self.aabb.add_margin(*factor)
+///     fn fat_bound(&self) -> Aabb2<f32> {
+///         self.fat_aabb.clone()
 ///     }
 ///
 ///     fn set_index(&mut self, index: usize) {
@@ -179,7 +192,7 @@ pub trait TreeValue: Clone + Debug {
 /// }
 ///
 /// fn main() {
-///     let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+///     let mut tree = DynamicBoundingVolumeTree::<Value>::new();
 ///     tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
 ///     tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
 ///     tree.do_refit();
@@ -200,7 +213,6 @@ pub struct DynamicBoundingVolumeTree<T: TreeValue> {
     nodes: Vec<Node<T::Bound>>,
     values: Vec<T>,
     free_list: Vec<usize>,
-    fat_factor: T::Vector,
     root_index: usize,
     refit_nodes: Vec<(u32, usize)>,
 }
@@ -240,11 +252,7 @@ where
         + Union<T::Bound, Output = T::Bound>
         + SurfaceArea<Real>,
 {
-    /// Create a new DBVT, with the given fat factor.
-    ///
-    /// TODO: fat factor should probably be handled internally in the TreeValue, so there can be
-    /// different fat factors for different shapes. A common heuristic is to have a fat factor that
-    /// is based on how much the shape moves.
+    /// Create a new tree.
     ///
     /// ### Type parameters:
     ///
@@ -254,21 +262,16 @@ where
     /// - `T::Bound`: Bounding volume type that implements the following collision-rs traits:
     ///              [`Contains`][1] on itself, [`Union`][2] on itself, and [`SurfaceArea`][3].
     ///
-    /// ### Parameters
-    ///
-    /// - `fat_factor`: The fat factor to use on tree values.
-    ///
     /// [1]: https://docs.rs/collision/0.11.0/collision/trait.Contains.html
     /// [2]: https://docs.rs/collision/0.11.0/collision/trait.Union.html
     /// [3]: https://docs.rs/collision/0.11.0/collision/trait.SurfaceArea.html
     ///
-    pub fn new(fat_factor: T::Vector) -> Self {
+    pub fn new() -> Self {
         Self {
             // we do this so only the root node can have parent = 0
             nodes: vec![Node::Nil],
             values: Vec::default(),
             free_list: Vec::default(),
-            fat_factor,
             root_index: 0,
             refit_nodes: Vec::default(),
         }
@@ -468,11 +471,11 @@ where
         values
     }
 
-    /// Check and update the fat bounds in the tree, and also recalculate any bounds/heights that
-    /// might have been changed by insertions/removals/rotations.
+    /// Check and update the fat bounds in the tree.
     ///
     /// After updating values in the values list, it is possible that some of the leafs values have
-    /// outgrown their fat bounds. If so, they may need to be moved in the tree.
+    /// outgrown their fat bounds. If so, they may need to be moved in the tree. This is done during
+    /// refitting.
     ///
     /// Note that no parents have their bounds/height updated directly by this function, instead
     /// [`do_refit`](struct.DynamicBoundingVolumeTree.html#method.do_refit) should be called after
@@ -497,7 +500,7 @@ where
         for (node_index, parent_index) in node_indices {
             match self.nodes[node_index] {
                 Node::Leaf(ref mut leaf) => {
-                    leaf.bound = self.values[leaf.value].fat_bound(&self.fat_factor);
+                    leaf.bound = self.values[leaf.value].fat_bound();
                 }
                 _ => (),
             };
@@ -527,7 +530,7 @@ where
     /// The node index of the inserted value. This value should never change after insertion.
     ///
     pub fn insert(&mut self, value: T) -> usize {
-        let fat_bound = value.fat_bound(&self.fat_factor);
+        let fat_bound = value.fat_bound();
         let value_index = self.values.len();
         self.values.push(value);
 
@@ -811,7 +814,9 @@ where
             }
             _ => (),
         }
-        // TODO: only sometimes
+
+        // Only do rotations occasionally, as they are fairly expensive, and shouldn't be overused.
+        // For most scenarios, the majority of shapes will not have moved, so this is fine.
         if rand::thread_rng().gen_range(0, 100) < 2 {
             self.rotate(node_index);
         }
@@ -1217,11 +1222,17 @@ mod tests {
         index: usize,
         pub id: u32,
         pub aabb: Aabb2<Real>,
+        fat_aabb: Aabb2<Real>,
     }
 
     impl Value {
         pub fn new(id: u32, aabb: Aabb2<Real>) -> Self {
-            Self { index: 0, id, aabb }
+            Self {
+                index: 0,
+                id,
+                fat_aabb: aabb.add_margin(Vector2::new(3., 3.)),
+                aabb,
+            }
         }
     }
 
@@ -1233,8 +1244,8 @@ mod tests {
             &self.aabb
         }
 
-        fn fat_bound(&self, factor: &Vector2<Real>) -> Aabb2<Real> {
-            self.aabb.add_margin(*factor)
+        fn fat_bound(&self) -> Aabb2<Real> {
+            self.fat_aabb.clone()
         }
 
         fn set_index(&mut self, index: usize) {
@@ -1248,7 +1259,7 @@ mod tests {
 
     #[test]
     fn test_add_1() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         assert_eq!(1, tree.values().len());
         assert_eq!(1, tree.size());
@@ -1257,7 +1268,7 @@ mod tests {
 
     #[test]
     fn test_add_2() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.do_refit();
@@ -1268,7 +1279,7 @@ mod tests {
 
     #[test]
     fn test_add_3() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1280,7 +1291,7 @@ mod tests {
 
     #[test]
     fn test_add_5() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1294,7 +1305,7 @@ mod tests {
 
     #[test]
     fn test_remove_leaf_right_side() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1311,7 +1322,7 @@ mod tests {
 
     #[test]
     fn test_remove_leaf_left_side() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1328,7 +1339,7 @@ mod tests {
 
     #[test]
     fn test_remove_leaf_left_side_2() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1347,7 +1358,7 @@ mod tests {
 
     #[test]
     fn test_remove_leaf_left_side_3() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1368,7 +1379,7 @@ mod tests {
 
     #[test]
     fn test_remove_leaf_left_right() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1389,7 +1400,7 @@ mod tests {
 
     #[test]
     fn test_remove_second_to_last() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1412,7 +1423,7 @@ mod tests {
 
     #[test]
     fn test_remove_last() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.insert(Value::new(12, aabb2(-12., -1., 0., 0.)));
@@ -1437,7 +1448,7 @@ mod tests {
 
     #[test]
     fn test_ray_discrete() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.do_refit();
@@ -1453,7 +1464,7 @@ mod tests {
 
     #[test]
     fn test_ray_continuous() {
-        let mut tree = DynamicBoundingVolumeTree::<Value>::new(Vector2::new(3., 3.));
+        let mut tree = DynamicBoundingVolumeTree::<Value>::new();
         tree.insert(Value::new(10, aabb2(5., 5., 10., 10.)));
         tree.insert(Value::new(11, aabb2(21., 14., 23., 16.)));
         tree.do_refit();
