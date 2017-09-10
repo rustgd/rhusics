@@ -5,11 +5,12 @@ pub mod narrow;
 pub mod primitive2d;
 pub mod primitive3d;
 pub mod ecs;
+pub mod dbvt;
 
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::{Aabb, MinMax};
+use collision::{Aabb, MinMax, Union};
 
 use {Pose, Real};
 
@@ -108,7 +109,9 @@ pub trait Primitive: Debug + Send + Sync {
     type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector> + MinMax;
 
     /// Bounding box type used by the primitive
-    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point> + Clone;
+    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point>
+        + Clone
+        + Union<Self::Aabb, Output = Self::Aabb>;
 
     /// Get the furthest point from the origin on the shape in a given direction.
     ///
