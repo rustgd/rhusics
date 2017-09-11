@@ -5,11 +5,12 @@ pub use collide::primitive3d::*;
 
 use cgmath::{Vector3, Quaternion, Point3};
 use collision::Aabb3;
-use specs::{World, Component};
+use specs::{World, Component, Entity};
 
 use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape};
 use collide::broad::{BroadCollisionInfo, BruteForce, SweepAndPrune, Variance3D};
+use collide::dbvt::DynamicBoundingVolumeTree;
 use collide::ecs::{Contacts, BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 use collide::narrow::{GJK, EPA3D, SimplexProcessor3D};
 
@@ -75,4 +76,29 @@ where
     world.register::<T>();
     world.register::<CollisionShape3D<T>>();
     world.add_resource(Contacts3D::default());
+}
+
+/// Utility method for registering 3D components and resources with
+/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
+///
+/// Will include components and resources needed for spatial sorting/collision detection.
+/// Will call [`world_register`](fn.world_register.html).
+///
+/// # Parameters
+///
+/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
+/// to register components/resources in.
+///
+/// # Type parameters
+///
+/// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
+///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+pub fn world_register_with_spatial<T>(mut world: &mut World)
+where
+    T: Pose<Point3<Real>> + Component + Send + Sync + 'static,
+{
+    world_register::<T>(&mut world);
+    world.add_resource(
+        DynamicBoundingVolumeTree::<BroadCollisionInfo3D<Entity>>::new(),
+    );
 }
