@@ -57,6 +57,9 @@ pub type SpatialCollisionSystem3D<T> = SpatialCollisionSystem<Primitive3D, T>;
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose3D = BodyPose<Point3<Real>, Quaternion<Real>>;
 
+/// Dynamic bounding volume tree for 3D
+pub type DynamicBoundingVolumeTree3D<ID> = DynamicBoundingVolumeTree<BroadCollisionInfo3D<ID>>;
+
 /// Utility method for registering 3D components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
 ///
@@ -98,7 +101,5 @@ where
     T: Pose<Point3<Real>> + Component + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
-    world.add_resource(
-        DynamicBoundingVolumeTree::<BroadCollisionInfo3D<Entity>>::new(),
-    );
+    world.add_resource(DynamicBoundingVolumeTree3D::<Entity>::new());
 }

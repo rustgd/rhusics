@@ -60,7 +60,7 @@ impl<ID, A> TreeValue for BroadCollisionInfo<ID, A>
 where
     ID: Clone + Debug,
     A: Aabb<Scalar = Real> + Clone + Debug,
-    A::Diff: VectorSpace<Scalar=Real>,
+    A::Diff: VectorSpace<Scalar = Real>,
 {
     type Bound = A;
     type Vector = A::Diff;

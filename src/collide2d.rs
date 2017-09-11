@@ -58,6 +58,9 @@ pub type SpatialCollisionSystem2D<T> = SpatialCollisionSystem<Primitive2D, T>;
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;
 
+/// Dynamic bounding volume tree for 2D
+pub type DynamicBoundingVolumeTree2D<ID> = DynamicBoundingVolumeTree<BroadCollisionInfo2D<ID>>;
+
 /// Utility method for registering 2D components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
 ///
@@ -99,7 +102,5 @@ where
     T: Pose<Point2<Real>> + Component + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
-    world.add_resource(
-        DynamicBoundingVolumeTree::<BroadCollisionInfo2D<Entity>>::new(),
-    );
+    world.add_resource(DynamicBoundingVolumeTree2D::<Entity>::new());
 }

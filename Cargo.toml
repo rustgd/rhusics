@@ -17,7 +17,7 @@ double = []
 
 [dependencies]
 cgmath = "0.15"
-collision = { git = "https://github.com/kvark/collision-rs/" }
+collision = { path = "../collision-rs/" }
 specs = "0.9"
 rand = "0.3"
 

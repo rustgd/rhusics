@@ -1,13 +1,26 @@
 extern crate rhusics;
 extern crate cgmath;
 extern crate specs;
+extern crate collision;
 
-use cgmath::{Transform, Rotation3, Rad, Point3, Quaternion};
-use specs::{World, RunNow};
+use cgmath::{Transform, Rotation3, Rad, Point3, Quaternion, Vector3};
+use collision::Ray3;
+use specs::{World, RunNow, System, Entity, Fetch};
 
 use rhusics::collide3d::{CollisionShape3D, SpatialSortingSystem3D, SpatialCollisionSystem3D,
-                         BodyPose3D, BroadBruteForce3D,
-                         GJK3D, world_register_with_spatial, Cuboid, Contacts3D, CollisionStrategy};
+                         BodyPose3D, BroadBruteForce3D, DynamicBoundingVolumeTree3D, GJK3D,
+                         world_register_with_spatial, Cuboid, Contacts3D, CollisionStrategy};
+
+struct RayCastSystem;
+
+impl<'a> System<'a> for RayCastSystem {
+    type SystemData = (Fetch<'a, DynamicBoundingVolumeTree3D<Entity>>,);
+
+    fn run(&mut self, (tree,): Self::SystemData) {
+        let ray = Ray3::new(Point3::new(-4., 10., 0.), Vector3::new(0., -1., 0.));
+        println!("{:?}", tree.query_discrete(&ray));
+    }
+}
 
 pub fn main() {
     let mut world = World::new();
@@ -36,7 +49,9 @@ pub fn main() {
     let mut collide = SpatialCollisionSystem3D::<BodyPose3D>::new()
         .with_broad_phase(BroadBruteForce3D::default())
         .with_narrow_phase(GJK3D::new());
+    let mut raycast = RayCastSystem;
     sort.run_now(&world.res);
     collide.run_now(&world.res);
     println!("Contacts: {:?}", *world.read_resource::<Contacts3D>());
+    raycast.run_now(&world.res);
 }
