@@ -10,7 +10,7 @@ use specs::{World, Component};
 use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape};
 use collide::broad::{BroadCollisionInfo, BruteForce, SweepAndPrune, Variance3D};
-use collide::ecs::{Contacts, CollisionSystem};
+use collide::ecs::{Contacts, BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 use collide::narrow::{GJK, EPA3D, SimplexProcessor3D};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
@@ -40,9 +40,18 @@ pub type SweepAndPrune3D = SweepAndPrune<Variance3D>;
 /// GJK algorithm for 3D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
 pub type GJK3D<T> = GJK<Point3<Real>, T, SimplexProcessor3D, EPA3D>;
 
-/// ECS collision system for 3D, see [CollisionSystem](../collide/ecs/struct.CollisionSystem.html)
-/// for more information.
-pub type CollisionSystem3D<T> = CollisionSystem<Primitive3D, T>;
+/// ECS collision system for 3D, see
+/// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+pub type BasicCollisionSystem3D<T> = BasicCollisionSystem<Primitive3D, T>;
+
+/// Spatial sorting system for 3D, see
+/// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+pub type SpatialSortingSystem3D<T> = SpatialSortingSystem<Primitive3D, T>;
+
+/// Spatial collision system for 3D, see
+/// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
+/// information.
+pub type SpatialCollisionSystem3D<T> = SpatialCollisionSystem<Primitive3D, T>;
 
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose3D = BodyPose<Point3<Real>, Quaternion<Real>>;

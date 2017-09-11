@@ -65,14 +65,13 @@ pub fn main() {
   Library supplies a transform implementation for convenience.
 * Uses single precision as default, can be changed to double precision with the `double`
   feature.
+* Has support for spatial sorting using a dynamic bounding volume tree.
 
 # TODO:
 
-* Dynamic Bounding Volume Tree (WIP)
-* Spatial sorting to the CollisionSystem
 * Raycasting/picking
 * Broad phase using DBVT
 * Frustum coloring
 * Contact manifold with contact points
 * Better primitive type for convex polytope (adjacent edge)
-* Impulse solver with both equality and non-equality constraints
+* Impulse solver

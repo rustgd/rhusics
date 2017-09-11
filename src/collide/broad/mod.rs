@@ -16,7 +16,9 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
+use Real;
 use collide::{CollisionShape, Primitive};
+use collide::dbvt::TreeValue;
 
 mod sweep_prune;
 mod brute_force;
@@ -27,16 +29,21 @@ mod brute_force;
 ///
 /// - `ID`: id type of collision shapes
 /// - `A`: Aabb bounding box type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BroadCollisionInfo<ID, A> {
     id: ID,
     bound: A,
+    index: usize,
 }
 
 impl<ID, A> BroadCollisionInfo<ID, A> {
     /// Create a new collision info
     pub fn new(id: ID, bound: A) -> Self {
-        Self { id, bound }
+        Self {
+            id,
+            bound,
+            index: 0,
+        }
     }
 }
 
@@ -46,6 +53,31 @@ where
 {
     fn from((id, shape): (ID, CollisionShape<P, T>)) -> Self {
         Self::new(id, shape.transformed_bound.clone())
+    }
+}
+
+impl<ID, A> TreeValue for BroadCollisionInfo<ID, A>
+where
+    ID: Clone + Debug,
+    A: Aabb<Scalar = Real> + Clone + Debug,
+{
+    type Bound = A;
+    type Vector = A::Diff;
+
+    fn bound(&self) -> &A {
+        &self.bound
+    }
+
+    fn fat_bound(&self) -> A {
+        self.bound.clone()
+    }
+
+    fn set_index(&mut self, index: usize) {
+        self.index = index;
+    }
+
+    fn index(&self) -> usize {
+        self.index
     }
 }
 

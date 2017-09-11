@@ -10,7 +10,7 @@ use specs::{World, Component};
 use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape};
 use collide::broad::{BroadCollisionInfo, BruteForce, SweepAndPrune, Variance2D};
-use collide::ecs::{Contacts, CollisionSystem};
+use collide::ecs::{Contacts, BasicCollisionSystem, SpatialSortingSystem, SpatialCollisionSystem};
 use collide::narrow::{GJK, EPA2D, SimplexProcessor2D};
 use collide::primitive2d::Primitive2D;
 
@@ -41,9 +41,18 @@ pub type SweepAndPrune2D = SweepAndPrune<Variance2D>;
 /// GJK algorithm for 2D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
 pub type GJK2D<T> = GJK<Point2<Real>, T, SimplexProcessor2D, EPA2D>;
 
-/// ECS collision system for 2D, see [CollisionSystem](../collide/ecs/struct.CollisionSystem.html)
-/// for more information.
-pub type CollisionSystem2D<T> = CollisionSystem<Primitive2D, T>;
+/// Basic collision system for 2D, see
+/// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+pub type BasicCollisionSystem2D<T> = BasicCollisionSystem<Primitive2D, T>;
+
+/// Spatial sorting system for 2D, see
+/// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+pub type SpatialSortingSystem2D<T> = SpatialSortingSystem<Primitive2D, T>;
+
+/// Spatial collision system for 2D, see
+/// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
+/// information.
+pub type SpatialCollisionSystem2D<T> = SpatialCollisionSystem<Primitive2D, T>;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose2D = BodyPose<Point2<Real>, Basis2<Real>>;

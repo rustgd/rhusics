@@ -225,6 +225,7 @@ pub struct DynamicBoundingVolumeTree<T: TreeValue> {
     nodes: Vec<Node<T::Bound>>,
     values: Vec<T>,
     free_list: Vec<usize>,
+    updated_list: Vec<usize>,
     root_index: usize,
     refit_nodes: Vec<(u32, usize)>,
 }
@@ -280,10 +281,11 @@ where
     ///
     pub fn new() -> Self {
         Self {
-            // we do this so only the root node can have parent = 0
+            // we add Nil to first position so only the root node can have parent = 0
             nodes: vec![Node::Nil],
             values: Vec::default(),
             free_list: Vec::default(),
+            updated_list: Vec::default(),
             root_index: 0,
             refit_nodes: Vec::default(),
         }
@@ -483,7 +485,45 @@ where
         values
     }
 
-    /// Check and update the fat bounds in the tree.
+    /// Update a node in the tree with a new value.
+    ///
+    /// The node will be fed its node_index after updating in the tree, so there is no need to
+    /// add that manually in the value.
+    ///
+    /// Will cause the node to be updated and be flagged as updated, which will cause
+    /// [`update`](struct.DynamicBoundingVolumeTree.html#method.update) to process the node the next
+    /// time it is called.
+    ///
+    /// ### Parameters
+    ///
+    /// - `node_index`: index of the node to update
+    /// - `new_value`: the new value to write in that node
+    ///
+    pub fn update_node(&mut self, node_index: usize, new_value: T) {
+        match self.nodes[node_index] {
+            Node::Leaf(ref mut leaf) => {
+                self.values[leaf.value] = new_value;
+                self.values[leaf.value].set_index(node_index);
+            }
+            _ => (),
+        };
+        self.flag_updated(node_index);
+    }
+
+    /// Flag a node as having been updated (moved/rotated).
+    ///
+    /// Will cause [`update`](struct.DynamicBoundingVolumeTree.html#method.update) to process the
+    /// node the next time it is called.
+    ///
+    /// ### Parameters
+    ///
+    /// - `node_index`: the node index of the updated node
+    ///
+    pub fn flag_updated(&mut self, node_index: usize) {
+        self.updated_list.push(node_index);
+    }
+
+    /// Go through the updated list and check the fat bounds in the tree.
     ///
     /// After updating values in the values list, it is possible that some of the leafs values have
     /// outgrown their fat bounds. If so, they may need to be moved in the tree. This is done during
@@ -493,31 +533,31 @@ where
     /// [`do_refit`](struct.DynamicBoundingVolumeTree.html#method.do_refit) should be called after
     /// all insert/remove/updates have been performed this frame.
     ///
-    /// This function have complexity O(n)
-    ///
     pub fn update(&mut self) {
-        let node_indices = self.values
+        let nodes = self.updated_list
             .iter()
-            .filter_map(|v| if let Node::Leaf(ref l) = self.nodes[v.index()] {
-                if !l.bound.contains(v.bound()) {
-                    Some((v.index(), l.parent))
+            .filter_map(|index| if let Node::Leaf(ref l) = self.nodes[*index] {
+                if !l.bound.contains(self.values[l.value].bound()) {
+                    Some((index.clone(), l.parent, self.values[l.value].fat_bound()))
                 } else {
                     None
                 }
             } else {
                 None
             })
-            .collect::<Vec<(usize, usize)>>();
+            .collect::<Vec<(usize, usize, T::Bound)>>();
 
-        for (node_index, parent_index) in node_indices {
+        for (node_index, parent_index, fat_bound) in nodes {
             match self.nodes[node_index] {
                 Node::Leaf(ref mut leaf) => {
-                    leaf.bound = self.values[leaf.value].fat_bound();
+                    leaf.bound = fat_bound;
                 }
                 _ => (),
             };
             self.mark_for_refit(parent_index, 2);
         }
+
+        self.updated_list.clear();
     }
 
     /// Insert a value into the tree.

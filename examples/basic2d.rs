@@ -5,7 +5,7 @@ extern crate specs;
 use cgmath::{Transform, Rotation2, Rad, Point2};
 use specs::{World, RunNow};
 
-use rhusics::collide2d::{CollisionShape2D, CollisionSystem2D, BodyPose2D, BroadBruteForce2D,
+use rhusics::collide2d::{CollisionShape2D, BasicCollisionSystem2D, BodyPose2D, BroadBruteForce2D,
                          GJK2D, world_register, Rectangle, Contacts2D, CollisionStrategy};
 
 pub fn main() {
@@ -31,7 +31,7 @@ pub fn main() {
             Rotation2::from_angle(Rad(0.)),
         ));
 
-    let mut system = CollisionSystem2D::<BodyPose2D>::new()
+    let mut system = BasicCollisionSystem2D::<BodyPose2D>::new()
         .with_broad_phase(BroadBruteForce2D::default())
         .with_narrow_phase(GJK2D::new());
     system.run_now(&world.res);
