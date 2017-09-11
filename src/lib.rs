@@ -8,13 +8,13 @@
 //!
 //! * Collision detection primitives for 2D and 3D:
 //!   * 2D
-//!     * Circle
-//!     * Rectangle
-//!     * Convex polygon with any number of vertices
+//!     - Circle
+//!     - Rectangle
+//!     - Convex polygon with any number of vertices
 //!   * 3D
-//!     * Sphere
-//!     * Cuboid
-//!     * Convex polyhedron with any number of vertices
+//!     - Sphere
+//!     - Cuboid
+//!     - Convex polyhedron with any number of vertices
 //! * Two different broad phase collision detection implementations:
 //!   * Brute force
 //!   * Sweep and Prune
@@ -79,6 +79,7 @@ unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
 extern crate cgmath;
 extern crate collision;
 extern crate specs;
+extern crate rand;
 
 #[cfg(test)]
 #[macro_use]

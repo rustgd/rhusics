@@ -17,8 +17,9 @@ double = []
 
 [dependencies]
 cgmath = "0.15"
-collision = "0.11"
+collision = { git = "https://github.com/kvark/collision-rs/" }
 specs = "0.9"
+rand = "0.3"
 
 [dev-dependencies]
 assert_approx_eq = "1"
