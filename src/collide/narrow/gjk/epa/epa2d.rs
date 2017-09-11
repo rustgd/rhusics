@@ -5,26 +5,26 @@ use super::*;
 use {Pose, Real};
 use collide::{CollisionPrimitive, Contact, CollisionStrategy};
 use collide::narrow::gjk::support;
-use collide::primitive2d::Primitive2D;
+use collide::primitive2d::Primitive2;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
-pub struct EPA2D;
+pub struct EPA2;
 
-impl<T> EPA<T> for EPA2D
+impl<T> EPA<T> for EPA2
 where
     T: Pose<Point2<Real>>,
 {
     type Vector = Vector2<Real>;
     type Point = Point2<Real>;
-    type Primitive = Primitive2D;
+    type Primitive = Primitive2;
 
     fn process(
         &self,
         simplex: &mut Vec<SupportPoint<Point2<Real>>>,
-        left: &CollisionPrimitive<Primitive2D, T>,
+        left: &CollisionPrimitive<Primitive2, T>,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive2D, T>,
+        right: &CollisionPrimitive<Primitive2, T>,
         right_transform: &T,
     ) -> Vec<Contact<Vector2<Real>>> {
         let mut i = 0;
@@ -142,83 +142,67 @@ mod tests {
         assert_approx_eq!(-0.7682213, edge.normal.y);
     }
 
-    // let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
-    // let left_transform = transform(15., 0., 0.);
-    // let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
-    // let right_transform = transform(7., 2., 0.);
-    // let mut simplex = vec![
-    //  SupportPoint { v: Vector2 [-2, 8], sup_a: Point2 [10, 5], sup_b: Point2 [12, -3] },
-    //  SupportPoint { v: Vector2 [18, -12], sup_a: Point2 [20, -5], sup_b: Point2 [2, 7] },
-    //  SupportPoint { v: Vector2 [-2, -12], sup_a: Point2 [10, -5], sup_b: Point2 [12, 7] }
-    // ]
-
     #[test]
     fn test_epa_0() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
         assert!(
-            EPA2D
-                .process(
-                    &mut vec![],
-                    &left,
-                    &left_transform,
-                    &right,
-                    &right_transform,
-                )
-                .is_empty()
+            EPA2.process(
+                &mut vec![],
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+            ).is_empty()
         );
     }
 
     #[test]
     fn test_epa_1() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.)];
         assert!(
-            EPA2D
-                .process(
-                    &mut simplex,
-                    &left,
-                    &left_transform,
-                    &right,
-                    &right_transform,
-                )
-                .is_empty()
+            EPA2.process(
+                &mut simplex,
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+            ).is_empty()
         );
     }
 
     #[test]
     fn test_epa_2() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.), sup(18., -12.)];
         assert!(
-            EPA2D
-                .process(
-                    &mut simplex,
-                    &left,
-                    &left_transform,
-                    &right,
-                    &right_transform,
-                )
-                .is_empty()
+            EPA2.process(
+                &mut simplex,
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+            ).is_empty()
         );
     }
 
     #[test]
     fn test_epa_3() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.), sup(18., -12.), sup(-2., -12.)];
-        let contacts = EPA2D.process(
+        let contacts = EPA2.process(
             &mut simplex,
             &left,
             &left_transform,
@@ -236,7 +220,7 @@ mod tests {
         s
     }
 
-    fn transform(x: Real, y: Real, angle: Real) -> BodyPose2D {
-        BodyPose2D::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
+    fn transform(x: Real, y: Real, angle: Real) -> BodyPose2 {
+        BodyPose2::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
     }
 }

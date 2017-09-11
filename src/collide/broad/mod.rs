@@ -8,7 +8,7 @@
 //!
 
 pub use self::brute_force::BruteForce;
-pub use self::sweep_prune::{SweepAndPrune, Variance2D, Variance3D};
+pub use self::sweep_prune::{SweepAndPrune, Variance2, Variance3};
 
 use std::clone::Clone;
 use std::fmt::Debug;

@@ -9,9 +9,9 @@ use collide::narrow::gjk::SupportPoint;
 
 /// Simplex processor implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
-pub struct SimplexProcessor2D;
+pub struct SimplexProcessor2;
 
-impl SimplexProcessor for SimplexProcessor2D {
+impl SimplexProcessor for SimplexProcessor2 {
     type Vector = Vector2<Real>;
     type Point = Point2<Real>;
 
@@ -72,7 +72,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_empty() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_single() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![sup(40., 0.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_edge() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![sup(40., 10.), sup(-10., 10.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -103,7 +103,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_triangle_outside_ac() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![sup(40., 10.), sup(-10., 10.), sup(0., 3.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -114,7 +114,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_triangle_outside_ab() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![sup(40., 10.), sup(10., 10.), sup(3., -3.)];
         assert!(!processor.check_origin(&mut simplex, &mut direction));
@@ -125,7 +125,7 @@ mod tests {
 
     #[test]
     fn test_check_origin_triangle_hit() {
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut direction = Vector2::new(1., 0.);
         let mut simplex = vec![sup(40., 10.), sup(-10., 10.), sup(0., -3.)];
         assert!(processor.check_origin(&mut simplex, &mut direction));

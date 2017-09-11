@@ -43,7 +43,7 @@ mod tests {
 
     use super::*;
     use Real;
-    use collide2d::BroadCollisionInfo2D;
+    use collide2d::BroadCollisionInfo2;
 
     #[test]
     fn no_intersection_for_miss() {
@@ -98,8 +98,8 @@ mod tests {
         min_y: Real,
         max_x: Real,
         max_y: Real,
-    ) -> BroadCollisionInfo2D<u32> {
-        BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
+    ) -> BroadCollisionInfo2<u32> {
+        BroadCollisionInfo2::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
     fn bound(min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> Aabb2<Real> {

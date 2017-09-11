@@ -21,7 +21,7 @@ use collide::broad::*;
 /// # Type parameters:
 ///
 /// - `V`: Variance type used for computing what axis to use on the next iteration. Should be either
-///        [`Variance2D`](struct.Variance2D.html) or [`Variance3D`](struct.Variance3D.html)
+///        [`Variance2`](struct.Variance2.html) or [`Variance3`](struct.Variance3.html)
 #[derive(Debug)]
 pub struct SweepAndPrune<V> {
     sweep_axis: usize,
@@ -132,12 +132,12 @@ mod variance {
 
     /// Variance for 2D sweep and prune
     #[derive(Debug)]
-    pub struct Variance2D {
+    pub struct Variance2 {
         csum: Vector2<Real>,
         csumsq: Vector2<Real>,
     }
 
-    impl Variance for Variance2D {
+    impl Variance for Variance2 {
         type Point = Point2<Real>;
 
         fn new() -> Self {
@@ -181,12 +181,12 @@ mod variance {
 
     /// Variance for 3D sweep and prune
     #[derive(Debug)]
-    pub struct Variance3D {
+    pub struct Variance3 {
         csum: Vector3<Real>,
         csumsq: Vector3<Real>,
     }
 
-    impl Variance for Variance3D {
+    impl Variance for Variance3 {
         type Point = Point3<Real>;
 
         fn new() -> Self {
@@ -236,7 +236,7 @@ mod tests {
 
     use super::*;
     use Real;
-    use collide2d::{BroadCollisionInfo2D, SweepAndPrune2D};
+    use collide2d::{BroadCollisionInfo2, SweepAndPrune2};
 
     #[test]
     fn no_intersection_for_miss() {
@@ -244,7 +244,7 @@ mod tests {
 
         let right = coll(2, 12., 13., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![left, right]);
         assert_eq!(0, potentials.len());
     }
@@ -255,7 +255,7 @@ mod tests {
 
         let right = coll(2, 12., 13., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![right, left]);
         assert_eq!(0, potentials.len());
     }
@@ -266,7 +266,7 @@ mod tests {
 
         let right = coll(2, 9., 10., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![left, right]);
         assert_eq!(1, potentials.len());
         assert_eq!((1, 2), potentials[0]);
@@ -278,7 +278,7 @@ mod tests {
 
         let right = coll(222, 9., 10., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![right, left]);
         assert_eq!(1, potentials.len());
         assert_eq!((1, 222), potentials[0]);
@@ -291,8 +291,8 @@ mod tests {
         min_y: Real,
         max_x: Real,
         max_y: Real,
-    ) -> BroadCollisionInfo2D<u32> {
-        BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
+    ) -> BroadCollisionInfo2<u32> {
+        BroadCollisionInfo2::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
     fn bound(min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> Aabb2<Real> {
