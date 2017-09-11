@@ -92,8 +92,10 @@
 use std::cmp::max;
 use std::fmt::Debug;
 
-use cgmath::VectorSpace;
-use collision::{Discrete, Continuous, Contains, Union, SurfaceArea};
+use cgmath::num_traits::Float;
+use cgmath::prelude::*;
+use collision::Ray;
+use collision::prelude::*;
 use rand;
 use rand::Rng;
 
@@ -483,6 +485,41 @@ where
             }
         }
         values
+    }
+
+    /// Query for the closest intersection with the given ray.
+    ///
+    /// ### Parameters
+    ///
+    /// - `ray`: The ray to cast on the tree.
+    ///
+    /// ### Returns
+    ///
+    /// None if no intersection was found, else it will return a tuple with the intersected value,
+    /// and the actual intersection point.
+    pub fn query_ray_closest<P>(&self, ray: &Ray<Real, P, P::Diff>) -> Option<(&T, P)>
+    where
+        P: EuclideanSpace<Scalar = Real>,
+        P::Diff: VectorSpace<Scalar = Real> + InnerSpace,
+        T::Bound: Clone
+            + Debug
+            + Contains<T::Bound>
+            + SurfaceArea<Real>
+            + Union<T::Bound, Output = T::Bound>
+            + Continuous<Ray<Real, P, P::Diff>, Result = P>
+            + Discrete<Ray<Real, P, P::Diff>>,
+    {
+        let mut saved = None;
+        let mut tmin = Real::infinity();
+        for (value, point) in self.query_continuous(ray) {
+            let offset = point - ray.origin;
+            let t = offset.dot(ray.direction);
+            if t < tmin {
+                tmin = t;
+                saved = Some((value, point.clone()));
+            }
+        }
+        saved
     }
 
     /// Update a node in the tree with a new value.

@@ -18,7 +18,7 @@ impl<'a> System<'a> for RayCastSystem {
 
     fn run(&mut self, (tree,): Self::SystemData) {
         let ray = Ray3::new(Point3::new(-4., 10., 0.), Vector3::new(0., -1., 0.));
-        println!("{:?}", tree.query_discrete(&ray));
+        println!("{:?}", tree.query_ray_closest(&ray));
     }
 }
 
