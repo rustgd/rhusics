@@ -16,6 +16,12 @@
 //! # extern crate rhusics;
 //! # extern crate collision;
 //!
+//! #[cfg(not(feature = "double"))]
+//! pub type Real = f32;
+//!
+//! #[cfg(feature = "double")]
+//! pub type Real = f64;
+//!
 //! use cgmath::{Point2, Vector2, InnerSpace};
 //! use collision::{Aabb, Aabb2, Ray2};
 //!
@@ -25,12 +31,12 @@
 //! struct Value {
 //!     index: usize,
 //!     pub id: u32,
-//!     pub aabb: Aabb2<f32>,
-//!     fat_aabb: Aabb2<f32>,
+//!     pub aabb: Aabb2<Real>,
+//!     fat_aabb: Aabb2<Real>,
 //! }
 //!
 //! impl Value {
-//!     pub fn new(id: u32, aabb: Aabb2<f32>) -> Self {
+//!     pub fn new(id: u32, aabb: Aabb2<Real>) -> Self {
 //!         Self {
 //!             index: 0,
 //!             id,
@@ -41,14 +47,14 @@
 //! }
 //!
 //! impl TreeValue for Value {
-//!     type Vector = Vector2<f32>;
-//!     type Bound = Aabb2<f32>;
+//!     type Vector = Vector2<Real>;
+//!     type Bound = Aabb2<Real>;
 //!
-//!     fn bound(&self) -> &Aabb2<f32> {
+//!     fn bound(&self) -> &Aabb2<Real> {
 //!         &self.aabb
 //!     }
 //!
-//!     fn fat_bound(&self) -> Aabb2<f32> {
+//!     fn fat_bound(&self) -> Aabb2<Real> {
 //!         self.fat_aabb.clone()
 //!     }
 //!
@@ -61,7 +67,7 @@
 //!    }
 //! }
 //!
-//! fn aabb2(minx: f32, miny: f32, maxx: f32, maxy: f32) -> Aabb2<f32> {
+//! fn aabb2(minx: Real, miny: Real, maxx: Real, maxy: Real) -> Aabb2<Real> {
 //!    Aabb2::new(Point2::new(minx, miny), Point2::new(maxx, maxy))
 //! }
 //!
@@ -147,16 +153,22 @@ pub trait TreeValue: Clone + Debug {
 ///
 /// use rhusics::collide::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 ///
+/// #[cfg(not(feature = "double"))]
+/// pub type Real = f32;
+///
+/// #[cfg(feature = "double")]
+/// pub type Real = f64;
+///
 /// #[derive(Debug, Clone)]
 /// struct Value {
 ///     index: usize,
 ///     pub id: u32,
-///     pub aabb: Aabb2<f32>,
-///     fat_aabb: Aabb2<f32>,
+///     pub aabb: Aabb2<Real>,
+///     fat_aabb: Aabb2<Real>,
 /// }
 ///
 /// impl Value {
-///     pub fn new(id: u32, aabb: Aabb2<f32>) -> Self {
+///     pub fn new(id: u32, aabb: Aabb2<Real>) -> Self {
 ///         Self {
 ///             index: 0,
 ///             id,
@@ -167,14 +179,14 @@ pub trait TreeValue: Clone + Debug {
 /// }
 ///
 /// impl TreeValue for Value {
-///     type Vector = Vector2<f32>;
-///     type Bound = Aabb2<f32>;
+///     type Vector = Vector2<Real>;
+///     type Bound = Aabb2<Real>;
 ///
-///     fn bound(&self) -> &Aabb2<f32> {
+///     fn bound(&self) -> &Aabb2<Real> {
 ///         &self.aabb
 ///     }
 ///
-///     fn fat_bound(&self) -> Aabb2<f32> {
+///     fn fat_bound(&self) -> Aabb2<Real> {
 ///         self.fat_aabb.clone()
 ///     }
 ///
@@ -187,7 +199,7 @@ pub trait TreeValue: Clone + Debug {
 ///    }
 /// }
 ///
-/// fn aabb2(minx: f32, miny: f32, maxx: f32, maxy: f32) -> Aabb2<f32> {
+/// fn aabb2(minx: Real, miny: Real, maxx: Real, maxy: Real) -> Aabb2<Real> {
 ///    Aabb2::new(Point2::new(minx, miny), Point2::new(maxx, maxy))
 /// }
 ///
