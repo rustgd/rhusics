@@ -3,8 +3,8 @@ use std::fmt::Debug;
 use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
 
 use Pose;
-use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive};
-use collide::broad::{BroadPhase, BroadCollisionInfo};
+use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
+use collide::broad::{BroadPhase, BroadCollisionData};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -19,20 +19,21 @@ use collide::narrow::NarrowPhase;
 /// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 ///
 #[derive(Debug)]
-pub struct BasicCollisionSystem<P, T>
+pub struct BasicCollisionSystem<P, T, D>
 where
     P: Primitive,
     P::Aabb: Clone + Debug,
 {
     narrow: Option<Box<NarrowPhase<Entity, P, T>>>,
-    broad: Option<Box<BroadPhase<Entity, P::Aabb>>>,
+    broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T> BasicCollisionSystem<P, T>
+impl<P, T, D> BasicCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone + Debug + Send + Sync + 'static,
     T: Pose<P::Point> + Component,
+    D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -49,13 +50,13 @@ where
     }
 
     /// Specify what broad phase algorithm to use
-    pub fn with_broad_phase<B: BroadPhase<Entity, P::Aabb> + 'static>(mut self, broad: B) -> Self {
+    pub fn with_broad_phase<B: BroadPhase<D> + 'static>(mut self, broad: B) -> Self {
         self.broad = Some(Box::new(broad));
         self
     }
 }
 
-impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T>
+impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P, T>>
     where
         P: Primitive + Send + Sync + 'static,
         P::Aabb: Clone
@@ -63,11 +64,12 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T>
         + Send
         + Sync
         + 'static,
-        P::Vector: Send + Sync + 'static,
+        P::Vector: Debug + Send + Sync + 'static,
         T: Component
         + Pose<P::Point>
         + Send
         + Sync
+        + Clone
         + 'static,
 {
     type SystemData = (Entities<'a>,
@@ -80,13 +82,10 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T>
 
         if let Some(ref mut broad) = self.broad {
 
-            let mut info: Vec<BroadCollisionInfo<Entity, P::Aabb>> = Vec::default();
+            let mut info: Vec<ContainerShapeWrapper<Entity, P, T>> = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose);
-                info.push(BroadCollisionInfo::new(
-                    entity,
-                    shape.transformed_bound.clone(),
-                ));
+                info.push(ContainerShapeWrapper::new(entity, shape.clone()));
             }
             let potentials = broad.compute(&mut info);
 

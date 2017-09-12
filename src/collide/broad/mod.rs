@@ -10,75 +10,48 @@
 pub use self::brute_force::BruteForce;
 pub use self::sweep_prune::{SweepAndPrune, Variance2, Variance3};
 
-use std::clone::Clone;
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
-use Real;
-use collide::{CollisionShape, Primitive};
-use collide::dbvt::TreeValue;
+use Pose;
+use collide::{Primitive, ContainerShapeWrapper};
 
 mod sweep_prune;
 mod brute_force;
 
-/// Collision info data that the broad phase algorithms work with.
-///
-/// # Type parameters:
-///
-/// - `ID`: id type of collision shapes
-/// - `A`: Aabb bounding box type
-#[derive(Debug, Clone)]
-pub struct BroadCollisionInfo<ID, A> {
-    id: ID,
-    bound: A,
-    index: usize,
+/// Trait used by values for broad phase
+pub trait BroadCollisionData {
+    /// Id type
+    type Id;
+
+    /// Bounding volume type
+    type Bound;
+
+    /// Return the id of the shape
+    fn id(&self) -> &Self::Id;
+
+    /// Return the bounding volume of the shape
+    fn bound(&self) -> &Self::Bound;
 }
 
-impl<ID, A> BroadCollisionInfo<ID, A> {
-    /// Create a new collision info
-    pub fn new(id: ID, bound: A) -> Self {
-        Self {
-            id,
-            bound,
-            index: 0,
-        }
-    }
-}
-
-impl<ID, P, T> From<(ID, CollisionShape<P, T>)> for BroadCollisionInfo<ID, P::Aabb>
-where
-    P: Primitive,
+impl <ID, P, T> BroadCollisionData for ContainerShapeWrapper<ID, P, T>
+    where
+        P: Primitive,
+        P::Aabb: Debug,
+        P::Vector: VectorSpace + Debug,
+        T: Pose<<P as Primitive>::Point>,
 {
-    fn from((id, shape): (ID, CollisionShape<P, T>)) -> Self {
-        Self::new(id, shape.transformed_bound.clone())
-    }
-}
+    type Id = ID;
+    type Bound = P::Aabb;
 
-impl<ID, A> TreeValue for BroadCollisionInfo<ID, A>
-where
-    ID: Clone + Debug,
-    A: Aabb<Scalar = Real> + Clone + Debug,
-    A::Diff: VectorSpace<Scalar = Real>,
-{
-    type Bound = A;
-    type Vector = A::Diff;
-
-    fn bound(&self) -> &A {
-        &self.bound
+    fn id(&self) -> &ID {
+        &self.id
     }
 
-    fn fat_bound(&self) -> A {
-        self.bound.clone()
-    }
-
-    fn set_index(&mut self, index: usize) {
-        self.index = index;
-    }
-
-    fn index(&self) -> usize {
-        self.index
+    fn bound(&self) -> &P::Aabb {
+        &self.shape.bound()
     }
 }
 
@@ -89,7 +62,10 @@ where
 /// - `ID`: id type of collision shapes
 /// - `A`: Aabb bounding box type
 ///
-pub trait BroadPhase<ID, A>: Debug {
+pub trait BroadPhase<D>: Debug
+where
+    D: BroadCollisionData,
+{
     /// Compute a list of potentially colliding shapes.
     ///
     /// # Parameters:
@@ -99,5 +75,5 @@ pub trait BroadPhase<ID, A>: Debug {
     /// # Returns
     ///
     /// Returns a list of potentially colliding shape pairs
-    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)>;
+    fn compute(&mut self, shapes: &mut Vec<D>) -> Vec<(D::Id, D::Id)>;
 }

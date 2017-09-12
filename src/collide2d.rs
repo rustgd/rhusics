@@ -3,13 +3,14 @@
 pub use collide::CollisionStrategy;
 pub use collide::primitive2d::*;
 
+use std::fmt::Debug;
+
 use cgmath::{Vector2, Basis2, Point2};
-use collision::Aabb2;
 use specs::{World, Component, Entity};
 
 use {BodyPose, Real, Pose};
-use collide::{CollisionPrimitive, CollisionShape};
-use collide::broad::{BroadCollisionInfo, BruteForce, SweepAndPrune, Variance2};
+use collide::{CollisionPrimitive, CollisionShape, ContainerShapeWrapper};
+use collide::broad::{BruteForce, SweepAndPrune, Variance2};
 use collide::dbvt::DynamicBoundingVolumeTree;
 use collide::ecs::{Contacts, BasicCollisionSystem, SpatialSortingSystem, SpatialCollisionSystem};
 use collide::narrow::{GJK, EPA2, SimplexProcessor2};
@@ -27,10 +28,6 @@ pub type CollisionPrimitive2<T> = CollisionPrimitive<Primitive2, T>;
 /// information
 pub type CollisionShape2<T> = CollisionShape<Primitive2, T>;
 
-/// Broad phase collision information for 2D, see
-/// [BroadCollisionInfo](../collide/broad/struct.BroadCollisionInfo.html) for more information.
-pub type BroadCollisionInfo2<ID> = BroadCollisionInfo<ID, Aabb2<Real>>;
-
 /// Broad phase brute force algorithm for 2D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
 pub type BroadBruteForce2 = BruteForce;
@@ -44,7 +41,15 @@ pub type GJK2<T> = GJK<Point2<Real>, T, SimplexProcessor2, EPA2>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
-pub type BasicCollisionSystem2<T> = BasicCollisionSystem<Primitive2, T>;
+pub type BasicCollisionSystem2<T> = BasicCollisionSystem<
+    Primitive2,
+    T,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+        T,
+    >,
+>;
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
@@ -53,13 +58,23 @@ pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2, T>;
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
-pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<Primitive2, T>;
+pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
+    Primitive2,
+    T,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+        T,
+    >,
+>;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 
 /// Dynamic bounding volume tree for 2D
-pub type DynamicBoundingVolumeTree2<ID> = DynamicBoundingVolumeTree<BroadCollisionInfo2<ID>>;
+
+pub type DynamicBoundingVolumeTree2<T> =
+    DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, Primitive2, T>>;
 
 /// Utility method for registering 2D components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -99,8 +114,8 @@ where
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 pub fn world_register_with_spatial<T>(mut world: &mut World)
 where
-    T: Pose<Point2<Real>> + Component + Send + Sync + 'static,
+    T: Pose<Point2<Real>> + Component + Clone + Debug + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
-    world.add_resource(DynamicBoundingVolumeTree2::<Entity>::new());
+    world.add_resource(DynamicBoundingVolumeTree2::<T>::new());
 }

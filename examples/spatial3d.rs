@@ -5,20 +5,23 @@ extern crate collision;
 
 use cgmath::{Transform, Rotation3, Rad, Point3, Quaternion, Vector3};
 use collision::Ray3;
-use specs::{World, RunNow, System, Entity, Fetch};
+use specs::{World, RunNow, System, Fetch};
 
 use rhusics::collide3d::{CollisionShape3, SpatialSortingSystem3, SpatialCollisionSystem3,
-                         BodyPose3, BroadBruteForce3, DynamicBoundingVolumeTree3, GJK3,
-                         world_register_with_spatial, Cuboid, Contacts3, CollisionStrategy};
+                         BodyPose3, DynamicBoundingVolumeTree3, GJK3, world_register_with_spatial,
+                         Cuboid, Contacts3, CollisionStrategy};
+use rhusics::collide::broad::BroadCollisionData;
 
 struct RayCastSystem;
 
 impl<'a> System<'a> for RayCastSystem {
-    type SystemData = (Fetch<'a, DynamicBoundingVolumeTree3<Entity>>,);
+    type SystemData = (Fetch<'a, DynamicBoundingVolumeTree3<BodyPose3>>,);
 
     fn run(&mut self, (tree,): Self::SystemData) {
         let ray = Ray3::new(Point3::new(-4., 10., 0.), Vector3::new(0., -1., 0.));
-        println!("{:?}", tree.query_ray_closest(&ray));
+        if let Some((v, p)) = tree.query_ray_closest(&ray) {
+            println!("hit bounding volume of {:?} at point {:?}", v.id(), p);
+        }
     }
 }
 
@@ -46,9 +49,7 @@ pub fn main() {
         ));
 
     let mut sort = SpatialSortingSystem3::<BodyPose3>::new();
-    let mut collide = SpatialCollisionSystem3::<BodyPose3>::new()
-        .with_broad_phase(BroadBruteForce3::default())
-        .with_narrow_phase(GJK3::new());
+    let mut collide = SpatialCollisionSystem3::<BodyPose3>::new().with_narrow_phase(GJK3::new());
     let mut raycast = RayCastSystem;
     sort.run_now(&world.res);
     collide.run_now(&world.res);

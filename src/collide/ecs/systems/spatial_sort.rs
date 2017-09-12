@@ -6,15 +6,14 @@ use collision::prelude::*;
 use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
 
 use {Pose, Real};
-use collide::{CollisionShape, Primitive};
-use collide::broad::BroadCollisionInfo;
+use collide::{CollisionShape, Primitive, ContainerShapeWrapper};
 use collide::dbvt::DynamicBoundingVolumeTree;
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
 ///
 /// Will perform spatial sorting of the collision world. Uses a Dynamic Bounding Volume Tree for
-/// sorting.
+/// sorting. Will update entries in the tree where the pose is dirty.
 ///
 /// Can handle any transform component type, as long as the type implements
 /// [`Pose`](../../trait.Pose.html) and
@@ -46,8 +45,10 @@ where
         + 'static
         + Contains<P::Aabb>
         + SurfaceArea<Real>,
-    P::Vector: Send + Sync + 'static,
+    P::Vector: Debug + Send + Sync + 'static,
     T: Component
+        + Clone
+        + Debug
         + Pose<P::Point>
         + Send
         + Sync
@@ -56,7 +57,7 @@ where
     type SystemData = (Entities<'a>,
      ReadStorage<'a, T>,
      WriteStorage<'a, CollisionShape<P, T>>,
-     FetchMut<'a, DynamicBoundingVolumeTree<BroadCollisionInfo<Entity, P::Aabb>>>);
+     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P, T>>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
@@ -79,17 +80,14 @@ where
                     if pose.dirty() {
                         tree.update_node(
                             node_index,
-                            BroadCollisionInfo::new(entity, shape.transformed_bound.clone()),
+                            ContainerShapeWrapper::new(entity, shape.clone()),
                         );
                     }
                 }
 
                 // entity does not exist in tree, add it to the tree and entities map
                 None => {
-                    let node_index = tree.insert(BroadCollisionInfo::new(
-                        entity,
-                        shape.transformed_bound.clone(),
-                    ));
+                    let node_index = tree.insert(ContainerShapeWrapper::new(entity, shape.clone()));
                     self.entities.insert(entity, node_index);
                 }
             }

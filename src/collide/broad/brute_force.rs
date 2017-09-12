@@ -8,26 +8,27 @@ use collide::broad::*;
 #[derive(Debug, Default)]
 pub struct BruteForce;
 
-impl<ID, A> BroadPhase<ID, A> for BruteForce
+impl<D> BroadPhase<D> for BruteForce
 where
-    ID: Clone,
-    A: Aabb + Discrete<A>,
+    D: BroadCollisionData,
+    D::Bound: Aabb + Discrete<D::Bound>,
+    D::Id: Clone,
 {
-    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)> {
-        let mut pairs = Vec::<(ID, ID)>::default();
+    fn compute(&mut self, shapes: &mut Vec<D>) -> Vec<(D::Id, D::Id)> {
+        let mut pairs = Vec::<(D::Id, D::Id)>::default();
         if shapes.len() <= 1 {
             return pairs;
         }
 
         for left_index in 0..(shapes.len() - 1) {
             for right_index in 1..shapes.len() {
-                if shapes[left_index].bound.intersects(
-                    &shapes[right_index].bound,
+                if shapes[left_index].bound().intersects(
+                    &shapes[right_index].bound(),
                 )
                 {
                     pairs.push((
-                        shapes[left_index].id.clone(),
-                        shapes[right_index].id.clone(),
+                        shapes[left_index].id().clone(),
+                        shapes[right_index].id().clone(),
                     ));
                 }
             }
@@ -42,8 +43,42 @@ mod tests {
     use collision::Aabb2;
 
     use super::*;
+    use collide::broad::BroadCollisionData;
     use Real;
-    use collide2d::BroadCollisionInfo2;
+
+    #[derive(Debug, Clone)]
+    pub struct BroadCollisionInfo2 {
+        /// The id
+        pub id: u32,
+
+        /// The bounding volume
+        pub bound: Aabb2<Real>,
+        index: usize,
+    }
+
+    impl BroadCollisionInfo2 {
+        /// Create a new collision info
+        pub fn new(id: u32, bound: Aabb2<Real>) -> Self {
+            Self {
+                id,
+                bound,
+                index: 0,
+            }
+        }
+    }
+
+    impl BroadCollisionData for BroadCollisionInfo2 {
+        type Id = u32;
+        type Bound = Aabb2<Real>;
+
+        fn id(&self) -> &u32 {
+            &self.id
+        }
+
+        fn bound(&self) -> &Aabb2<Real> {
+            &self.bound
+        }
+    }
 
     #[test]
     fn no_intersection_for_miss() {
@@ -98,7 +133,7 @@ mod tests {
         min_y: Real,
         max_x: Real,
         max_y: Real,
-    ) -> BroadCollisionInfo2<u32> {
+    ) -> BroadCollisionInfo2 {
         BroadCollisionInfo2::new(id, bound(min_x, min_y, max_x, max_y))
     }
 

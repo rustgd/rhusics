@@ -69,9 +69,10 @@ pub fn main() {
 
 # TODO:
 
-* Raycasting/picking
 * Broad phase using DBVT
 * Frustum coloring
 * Contact manifold with contact points
 * Better primitive type for convex polytope (adjacent edge)
+* Continuous collision detection
+* Ray intersection tests with actual geometry
 * Impulse solver
