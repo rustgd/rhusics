@@ -69,7 +69,7 @@ where
     }
 }
 
-impl<'a, P, T> System<'a> for SpatialCollisionSystem<P, T, ContainerShapeWrapper<Entity, P, T>>
+impl<'a, P, T> System<'a> for SpatialCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -93,7 +93,7 @@ where
      ReadStorage<'a, T>,
      ReadStorage<'a, CollisionShape<P, T>>,
      FetchMut<'a, Contacts<P::Vector>>,
-     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P, T>>>);
+     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
     fn run(&mut self, (entities, poses, shapes, mut contacts, mut tree): Self::SystemData) {
         contacts.clear();

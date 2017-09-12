@@ -57,7 +57,7 @@ where
     type SystemData = (Entities<'a>,
      ReadStorage<'a, T>,
      WriteStorage<'a, CollisionShape<P, T>>,
-     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P, T>>>);
+     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
@@ -80,14 +80,14 @@ where
                     if pose.dirty() {
                         tree.update_node(
                             node_index,
-                            ContainerShapeWrapper::new(entity, shape.clone()),
+                            ContainerShapeWrapper::new(entity, shape.bound()),
                         );
                     }
                 }
 
                 // entity does not exist in tree, add it to the tree and entities map
                 None => {
-                    let node_index = tree.insert(ContainerShapeWrapper::new(entity, shape.clone()));
+                    let node_index = tree.insert(ContainerShapeWrapper::new(entity, shape.bound()));
                     self.entities.insert(entity, node_index);
                 }
             }

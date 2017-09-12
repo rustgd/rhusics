@@ -308,57 +308,56 @@ where
 
 /// Shape wrapper for use with containers
 #[derive(Debug, Clone)]
-pub struct ContainerShapeWrapper<ID, P, T>
+pub struct ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
     P::Aabb: Debug,
     P::Vector: VectorSpace + Debug,
 {
     id: ID,
-    shape: CollisionShape<P, T>,
+    bound: P::Aabb,
     fat_factor: P::Vector,
     index: usize,
 }
 
-impl<ID, P, T> ContainerShapeWrapper<ID, P, T>
+impl<ID, P> ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
-    P::Aabb: Debug,
+    P::Aabb: Debug + Clone,
     P::Vector: VectorSpace<Scalar = Real> + Debug,
 {
     /// Create a new shape
-    pub fn new_impl(id: ID, shape: CollisionShape<P, T>, fat_factor: P::Vector) -> Self {
+    pub fn new_impl(id: ID, bound: &P::Aabb, fat_factor: P::Vector) -> Self {
         Self {
             id,
-            shape,
+            bound: bound.clone(),
             fat_factor,
             index: 0,
         }
     }
 
     /// Create a new shape
-    pub fn new(id: ID, shape: CollisionShape<P, T>) -> Self {
-        Self::new_impl(id, shape, P::Vector::from_value(Real::one()))
+    pub fn new(id: ID, bound: &P::Aabb) -> Self {
+        Self::new_impl(id, bound, P::Vector::from_value(Real::one()))
     }
 }
 
-impl<ID, P, T> TreeValue for ContainerShapeWrapper<ID, P, T>
+impl<ID, P> TreeValue for ContainerShapeWrapper<ID, P>
 where
     ID: Clone + Debug,
     P: Primitive,
     P::Aabb: Aabb + Debug,
     P::Vector: VectorSpace + Debug,
-    T: Pose<P::Point> + Clone + Debug,
 {
     type Bound = P::Aabb;
     type Vector = <P::Aabb as Aabb>::Diff;
 
     fn bound(&self) -> &Self::Bound {
-        &self.shape.bound()
+        &self.bound
     }
 
     fn fat_bound(&self) -> Self::Bound {
-        self.shape.bound().add_margin(self.fat_factor)
+        self.bound.add_margin(self.fat_factor)
     }
 
     fn set_index(&mut self, index: usize) {

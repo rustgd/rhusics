@@ -56,7 +56,7 @@ where
     }
 }
 
-impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P, T>>
+impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
     where
         P: Primitive + Send + Sync + 'static,
         P::Aabb: Clone
@@ -82,10 +82,10 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
 
         if let Some(ref mut broad) = self.broad {
 
-            let mut info: Vec<ContainerShapeWrapper<Entity, P, T>> = Vec::default();
+            let mut info: Vec<ContainerShapeWrapper<Entity, P>> = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose);
-                info.push(ContainerShapeWrapper::new(entity, shape.clone()));
+                info.push(ContainerShapeWrapper::new(entity, shape.bound()));
             }
             let potentials = broad.compute(&mut info);
 

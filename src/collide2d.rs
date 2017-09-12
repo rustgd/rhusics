@@ -44,11 +44,7 @@ pub type GJK2<T> = GJK<Point2<Real>, T, SimplexProcessor2, EPA2>;
 pub type BasicCollisionSystem2<T> = BasicCollisionSystem<
     Primitive2,
     T,
-    ContainerShapeWrapper<
-        Entity,
-        Primitive2,
-        T,
-    >,
+    ContainerShapeWrapper<Entity, Primitive2>,
 >;
 
 /// Spatial sorting system for 2D, see
@@ -64,7 +60,6 @@ pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
     ContainerShapeWrapper<
         Entity,
         Primitive2,
-        T,
     >,
 >;
 
@@ -73,8 +68,12 @@ pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 
 /// Dynamic bounding volume tree for 2D
 
-pub type DynamicBoundingVolumeTree2<T> =
-    DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, Primitive2, T>>;
+pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
+    ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+    >,
+>;
 
 /// Utility method for registering 2D components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -117,5 +116,5 @@ where
     T: Pose<Point2<Real>> + Component + Clone + Debug + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
-    world.add_resource(DynamicBoundingVolumeTree2::<T>::new());
+    world.add_resource(DynamicBoundingVolumeTree2::new());
 }
