@@ -91,10 +91,11 @@
 
 use std::cmp::max;
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 use cgmath::num_traits::Float;
 use cgmath::prelude::*;
-use collision::Ray;
+use collision::{Ray, Frustum, Relation, Bound};
 use collision::prelude::*;
 use rand;
 use rand::Rng;
@@ -125,6 +126,18 @@ pub trait TreeValue: Clone + Debug {
     /// Return the node index of this value. This must return the value that was last given with
     /// [`set_index`](trait.TreeValue.html#tymethod.set_index).
     fn index(&self) -> usize;
+}
+
+/// Visitor trait used for query_visitor
+pub trait Visitor {
+    /// Bounding volume accepted by the visitor
+    type Bound;
+
+    /// Result returned by the acceptance test
+    type Result;
+
+    /// Acceptance test function
+    fn accept(&self, bound: &Self::Bound) -> Option<Self::Result>;
 }
 
 /// A dynamic bounding volume tree, index based (not pointer based).
@@ -385,39 +398,10 @@ where
     where
         T::Bound: Discrete<B>,
     {
-        let mut stack = [0; 256];
-        stack[0] = self.root_index;
-        let mut stack_pointer = 1;
-        let mut values = Vec::default();
-
-        while stack_pointer > 0 {
-            // depth search, use last added as next test subject
-            stack_pointer -= 1;
-            let node_index = stack[stack_pointer];
-            let ref node = self.nodes[node_index];
-
-            match *node {
-                // if we encounter a leaf, do a real bound intersection test, and add to return
-                // values if there's an intersection
-                Node::Leaf(ref leaf) => {
-                    if self.values[leaf.value].bound().intersects(other) {
-                        values.push(&self.values[leaf.value]);
-                    }
-                }
-
-                // if we encounter a branch, do intersection test, and push the children if the
-                // branch intersected
-                Node::Branch(ref branch) => {
-                    if branch.bound.intersects(other) {
-                        stack[stack_pointer] = branch.left;
-                        stack[stack_pointer + 1] = branch.right;
-                        stack_pointer += 2;
-                    }
-                }
-                Node::Nil => (),
-            }
-        }
-        values
+        self.query(&DiscreteVisitor::<B, T>::new(other))
+            .iter()
+            .map(|&(v, _)| v)
+            .collect()
     }
 
     /// Query the tree for all leafs that has an intersection with the given construct.
@@ -449,6 +433,35 @@ where
     where
         T::Bound: Continuous<B> + Discrete<B>,
     {
+        self.query(&ContinuousVisitor::<B, T>::new(other))
+    }
+
+    /// Do frustum query on the tree.
+    ///
+    /// ### Parameters:
+    ///
+    /// - `frustum`: the frustum to check for containment
+    ///
+    /// ### Returns
+    ///
+    /// Returns all leafs that are atleast partially inside the frustum. Also returns the relation
+    /// to the frustum, Cross for partially inside, In for completely inside.
+    ///
+    pub fn query_frustum(&self, frustum: &Frustum<Real>) -> Vec<(&T, Relation)>
+    where
+        T::Bound: Bound<Real>,
+    {
+        self.query(&FrustumVisitor::<T>::new(frustum))
+    }
+
+    /// Query tree with the given visitor.
+    ///
+    /// Will return a list of tuples of values accepted and the result returned by the visitor for
+    /// the acceptance test.
+    pub fn query<V>(&self, visitor: &V) -> Vec<(&T, V::Result)>
+    where
+        V: Visitor<Bound = T::Bound>,
+    {
         let mut stack = [0; 256];
         stack[0] = self.root_index;
         let mut stack_pointer = 1;
@@ -464,21 +477,22 @@ where
                 Node::Leaf(ref leaf) => {
                     // if we encounter a leaf, do a real bound intersection test, and add to return
                     // values if there's an intersection
-                    match self.values[leaf.value].bound().intersection(&other) {
-                        Some(result) => {
-                            values.push((&self.values[leaf.value], result));
-                        }
-                        None => (),
-                    };
+                    match visitor.accept(&self.values[leaf.value].bound()) {
+                        Some(result) => values.push((&self.values[leaf.value], result)),
+                        _ => (),
+                    }
                 }
 
                 // if we encounter a branch, do intersection test, and push the children if the
                 // branch intersected
                 Node::Branch(ref branch) => {
-                    if branch.bound.intersects(other) {
-                        stack[stack_pointer] = branch.left;
-                        stack[stack_pointer + 1] = branch.right;
-                        stack_pointer += 2;
+                    match visitor.accept(&branch.bound) {
+                        Some(_) => {
+                            stack[stack_pointer] = branch.left;
+                            stack[stack_pointer + 1] = branch.right;
+                            stack_pointer += 2;
+                        }
+                        _ => (),
                     }
                 }
                 Node::Nil => (),
@@ -1085,6 +1099,98 @@ where
         }
 
         Some(parent_index)
+    }
+}
+
+
+
+/// Internal visitor used by query_continuous
+struct ContinuousVisitor<'a, B: 'a, T> {
+    bound: &'a B,
+    marker: PhantomData<T>,
+}
+
+impl<'a, B: 'a, T> ContinuousVisitor<'a, B, T> {
+    pub fn new(bound: &'a B) -> Self {
+        Self {
+            bound,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, B: 'a, T> Visitor for ContinuousVisitor<'a, B, T>
+where
+    T: TreeValue,
+    T::Bound: Continuous<B> + Discrete<B>,
+{
+    type Bound = T::Bound;
+    type Result = <T::Bound as Continuous<B>>::Result;
+
+    fn accept(&self, bound: &Self::Bound) -> Option<Self::Result> {
+        bound.intersection(self.bound)
+    }
+}
+
+/// Internal visitor used by query_discrete
+struct DiscreteVisitor<'a, B: 'a, T> {
+    bound: &'a B,
+    marker: PhantomData<T>,
+}
+
+impl<'a, B: 'a, T> DiscreteVisitor<'a, B, T> {
+    pub fn new(bound: &'a B) -> Self {
+        Self {
+            bound,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, B: 'a, T> Visitor for DiscreteVisitor<'a, B, T>
+where
+    T: TreeValue,
+    T::Bound: Discrete<B>,
+{
+    type Bound = T::Bound;
+    type Result = ();
+
+    fn accept(&self, bound: &Self::Bound) -> Option<()> {
+        if bound.intersects(self.bound) {
+            Some(())
+        } else {
+            None
+        }
+    }
+}
+
+/// Internal visitor used by query_frustum
+#[derive(Debug)]
+struct FrustumVisitor<'a, T> {
+    frustum: &'a Frustum<Real>,
+    marker: PhantomData<T>,
+}
+
+impl<'a, T> FrustumVisitor<'a, T> {
+    pub fn new(frustum: &'a Frustum<Real>) -> Self {
+        Self {
+            frustum,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'a, T> Visitor for FrustumVisitor<'a, T>
+where
+    T: TreeValue,
+    T::Bound: Bound<Real>,
+{
+    type Bound = T::Bound;
+    type Result = Relation;
+
+    fn accept(&self, bound: &Self::Bound) -> Option<Relation> {
+        let r = self.frustum.contains(bound);
+        if r == Relation::Out { None } else { Some(r) }
     }
 }
 

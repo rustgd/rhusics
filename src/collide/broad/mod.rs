@@ -15,7 +15,6 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
-use Pose;
 use collide::{Primitive, ContainerShapeWrapper};
 
 mod sweep_prune;
@@ -36,12 +35,11 @@ pub trait BroadCollisionData {
     fn bound(&self) -> &Self::Bound;
 }
 
-impl <ID, P, T> BroadCollisionData for ContainerShapeWrapper<ID, P, T>
-    where
-        P: Primitive,
-        P::Aabb: Debug,
-        P::Vector: VectorSpace + Debug,
-        T: Pose<<P as Primitive>::Point>,
+impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
+where
+    P: Primitive,
+    P::Aabb: Debug,
+    P::Vector: VectorSpace + Debug,
 {
     type Id = ID;
     type Bound = P::Aabb;
@@ -51,7 +49,7 @@ impl <ID, P, T> BroadCollisionData for ContainerShapeWrapper<ID, P, T>
     }
 
     fn bound(&self) -> &P::Aabb {
-        &self.shape.bound()
+        &self.bound
     }
 }
 

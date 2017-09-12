@@ -43,11 +43,7 @@ pub type GJK3<T> = GJK<Point3<Real>, T, SimplexProcessor3, EPA3>;
 pub type BasicCollisionSystem3<T> = BasicCollisionSystem<
     Primitive3,
     T,
-    ContainerShapeWrapper<
-        Entity,
-        Primitive3,
-        T,
-    >,
+    ContainerShapeWrapper<Entity, Primitive3>,
 >;
 
 /// Spatial sorting system for 3D, see
@@ -63,7 +59,6 @@ pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
     ContainerShapeWrapper<
         Entity,
         Primitive3,
-        T,
     >,
 >;
 
@@ -71,8 +66,12 @@ pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
 pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;
 
 /// Dynamic bounding volume tree for 3D
-pub type DynamicBoundingVolumeTree3<T> =
-    DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, Primitive3, T>>;
+pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
+    ContainerShapeWrapper<
+        Entity,
+        Primitive3,
+    >,
+>;
 
 /// Utility method for registering 3D components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -115,5 +114,5 @@ where
     T: Pose<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
-    world.add_resource(DynamicBoundingVolumeTree3::<T>::new());
+    world.add_resource(DynamicBoundingVolumeTree3::new());
 }

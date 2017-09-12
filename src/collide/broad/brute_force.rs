@@ -43,8 +43,8 @@ mod tests {
     use collision::Aabb2;
 
     use super::*;
-    use collide::broad::BroadCollisionData;
     use Real;
+    use collide::broad::BroadCollisionData;
 
     #[derive(Debug, Clone)]
     pub struct BroadCollisionInfo2 {
@@ -127,13 +127,7 @@ mod tests {
     }
 
     // util
-    fn coll(
-        id: u32,
-        min_x: Real,
-        min_y: Real,
-        max_x: Real,
-        max_y: Real,
-    ) -> BroadCollisionInfo2 {
+    fn coll(id: u32, min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> BroadCollisionInfo2 {
         BroadCollisionInfo2::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
