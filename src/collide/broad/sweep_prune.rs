@@ -21,7 +21,7 @@ use collide::broad::*;
 /// # Type parameters:
 ///
 /// - `V`: Variance type used for computing what axis to use on the next iteration. Should be either
-///        [`Variance2D`](struct.Variance2D.html) or [`Variance3D`](struct.Variance3D.html)
+///        [`Variance2`](struct.Variance2.html) or [`Variance3`](struct.Variance3.html)
 #[derive(Debug)]
 pub struct SweepAndPrune<V> {
     sweep_axis: usize,
@@ -46,68 +46,69 @@ where
     }
 }
 
-impl<ID, A, V> BroadPhase<ID, A> for SweepAndPrune<V>
+impl<D, V> BroadPhase<D> for SweepAndPrune<V>
 where
-    ID: Clone + Debug,
-    A: Aabb<Scalar = Real> + Discrete<A> + Debug,
-    A::Point: EuclideanSpace,
-    A::Diff: VectorSpace + ElementWise,
-    V: Variance<Point = A::Point> + Debug,
+    D: BroadCollisionData,
+    D::Id: Clone + Debug,
+    D::Bound: Aabb<Scalar =Real> + Discrete<D::Bound> + Debug,
+    <D::Bound as Aabb>::Point: EuclideanSpace,
+    <D::Bound as Aabb>::Diff: VectorSpace + ElementWise,
+    V: Variance<Point = <D::Bound as Aabb>::Point> + Debug,
 {
-    fn compute(&mut self, shapes: &mut Vec<BroadCollisionInfo<ID, A>>) -> Vec<(ID, ID)> {
-        let mut pairs = Vec::<(ID, ID)>::default();
+    fn compute(&mut self, shapes: &mut Vec<D>) -> Vec<(D::Id, D::Id)> {
+        let mut pairs = Vec::<(D::Id, D::Id)>::default();
         if shapes.len() <= 1 {
             return pairs;
         }
 
-        shapes.sort_by(|a, b| if a.bound.min()[self.sweep_axis] !=
-            b.bound.min()[self.sweep_axis]
+        shapes.sort_by(|a, b| if a.bound().min()[self.sweep_axis] !=
+            b.bound().min()[self.sweep_axis]
         {
-            a.bound.min()[self.sweep_axis]
-                .partial_cmp(&b.bound.min()[self.sweep_axis])
+            a.bound().min()[self.sweep_axis]
+                .partial_cmp(&b.bound().min()[self.sweep_axis])
                 .unwrap_or(Ordering::Equal)
         } else {
-            a.bound.max()[self.sweep_axis]
-                .partial_cmp(&b.bound.max()[self.sweep_axis])
+            a.bound().max()[self.sweep_axis]
+                .partial_cmp(&b.bound().max()[self.sweep_axis])
                 .unwrap_or(Ordering::Equal)
         });
 
         self.variance.clear();
         self.variance.add_to_sum(
-            &shapes[0].bound.min(),
-            &shapes[0].bound.max(),
+            &shapes[0].bound().min(),
+            &shapes[0].bound().max(),
         );
 
         let mut active = vec![0];
         for index in 1..shapes.len() {
             let mut i = 0;
-            // for all currently active bounds, go through and remove any that are to the left of
-            // the current bound, any others are potential hits, do a real bound intersection test
-            // for those, and add to pairs if the bounds intersect.
+// for all currently active bounds, go through and remove any that are to the left of
+// the current bound, any others are potential hits, do a real bound intersection test
+// for those, and add to pairs if the bounds intersect.
             while i < active.len() {
-                if shapes[active[i]].bound.max()[self.sweep_axis] <
-                    shapes[index].bound.min()[self.sweep_axis]
+                if shapes[active[i]].bound().max()[self.sweep_axis] <
+                    shapes[index].bound().min()[self.sweep_axis]
                 {
                     active.remove(i);
                 } else {
-                    if shapes[active[i]].bound.intersects(&shapes[index].bound) {
-                        pairs.push((shapes[active[i]].id.clone(), shapes[index].id.clone()));
+                    if shapes[active[i]].bound().intersects(&shapes[index].bound()) {
+                        pairs.push((shapes[active[i]].id().clone(), shapes[index].id().clone()));
                     }
                     i += 1;
                 }
             }
 
-            // current bound should be active for the next iteration
+// current bound should be active for the next iteration
             active.push(index);
 
-            // update variance
+// update variance
             self.variance.add_to_sum(
-                &shapes[index].bound.min(),
-                &shapes[index].bound.max(),
+                &shapes[index].bound().min(),
+                &shapes[index].bound().max(),
             );
         }
 
-        // compute sweep axis for the next iteration
+// compute sweep axis for the next iteration
         let (axis, _) = self.variance.compute_axis(shapes.len() as Real);
         self.sweep_axis = axis;
 
@@ -132,12 +133,12 @@ mod variance {
 
     /// Variance for 2D sweep and prune
     #[derive(Debug)]
-    pub struct Variance2D {
+    pub struct Variance2 {
         csum: Vector2<Real>,
         csumsq: Vector2<Real>,
     }
 
-    impl Variance for Variance2D {
+    impl Variance for Variance2 {
         type Point = Point2<Real>;
 
         fn new() -> Self {
@@ -181,12 +182,12 @@ mod variance {
 
     /// Variance for 3D sweep and prune
     #[derive(Debug)]
-    pub struct Variance3D {
+    pub struct Variance3 {
         csum: Vector3<Real>,
         csumsq: Vector3<Real>,
     }
 
-    impl Variance for Variance3D {
+    impl Variance for Variance3 {
         type Point = Point3<Real>;
 
         fn new() -> Self {
@@ -235,8 +236,43 @@ mod tests {
     use collision::Aabb2;
 
     use super::*;
+    use collide2d::SweepAndPrune2;
+    use collide::broad::BroadCollisionData;
     use Real;
-    use collide2d::{BroadCollisionInfo2D, SweepAndPrune2D};
+
+    #[derive(Debug, Clone)]
+    pub struct BroadCollisionInfo2 {
+        /// The id
+        pub id: u32,
+
+        /// The bounding volume
+        pub bound: Aabb2<Real>,
+        index: usize,
+    }
+
+    impl BroadCollisionInfo2 {
+        /// Create a new collision info
+        pub fn new(id: u32, bound: Aabb2<Real>) -> Self {
+            Self {
+                id,
+                bound,
+                index: 0,
+            }
+        }
+    }
+
+    impl BroadCollisionData for BroadCollisionInfo2 {
+        type Id = u32;
+        type Bound = Aabb2<Real>;
+
+        fn id(&self) -> &u32 {
+            &self.id
+        }
+
+        fn bound(&self) -> &Aabb2<Real> {
+            &self.bound
+        }
+    }
 
     #[test]
     fn no_intersection_for_miss() {
@@ -244,7 +280,7 @@ mod tests {
 
         let right = coll(2, 12., 13., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![left, right]);
         assert_eq!(0, potentials.len());
     }
@@ -255,7 +291,7 @@ mod tests {
 
         let right = coll(2, 12., 13., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![right, left]);
         assert_eq!(0, potentials.len());
     }
@@ -266,7 +302,7 @@ mod tests {
 
         let right = coll(2, 9., 10., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![left, right]);
         assert_eq!(1, potentials.len());
         assert_eq!((1, 2), potentials[0]);
@@ -278,7 +314,7 @@ mod tests {
 
         let right = coll(222, 9., 10., 18., 18.);
 
-        let mut sweep = SweepAndPrune2D::new();
+        let mut sweep = SweepAndPrune2::new();
         let potentials = sweep.compute(&mut vec![right, left]);
         assert_eq!(1, potentials.len());
         assert_eq!((1, 222), potentials[0]);
@@ -291,8 +327,8 @@ mod tests {
         min_y: Real,
         max_x: Real,
         max_y: Real,
-    ) -> BroadCollisionInfo2D<u32> {
-        BroadCollisionInfo2D::new(id, bound(min_x, min_y, max_x, max_y))
+    ) -> BroadCollisionInfo2 {
+        BroadCollisionInfo2::new(id, bound(min_x, min_y, max_x, max_y))
     }
 
     fn bound(min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> Aabb2<Real> {

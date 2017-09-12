@@ -10,6 +10,7 @@ pub mod dbvt;
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
+use collide::dbvt::TreeValue;
 use collision::{Aabb, MinMax, Union};
 
 use {Pose, Real};
@@ -19,7 +20,7 @@ use {Pose, Real};
 /// This is used both to specify what collision strategy to use for each shape, and also each
 /// found contact will have this returned on it, detailing what data is relevant in the
 /// [`Contact`](struct.Contact.html).
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum CollisionStrategy {
     /// Compute full contact manifold for the collision
     FullResolution,
@@ -101,7 +102,7 @@ where
 /// See [primitive2d](primitive2d/index.html) and [primitive3d](primitive3d/index.html)
 /// for more information about supported primitives.
 ///
-pub trait Primitive: Debug + Send + Sync {
+pub trait Primitive: Debug + Clone + Send + Sync {
     /// Vector type used by the primitive
     type Vector: VectorSpace<Scalar = Real> + ElementWise + Array<Element = Real>;
 
@@ -140,7 +141,7 @@ pub trait Primitive: Debug + Send + Sync {
 /// Contains cached information about the bounding box of the contained
 /// [`Primitive`](trait.Primitive.html), both the base bounding box in model space coordinates,
 /// and the transformed bounding box in world space coordinates.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CollisionPrimitive<P, T>
 where
     P: Primitive,
@@ -208,7 +209,6 @@ where
     }
 }
 
-
 /// Collision shape describing a complete collision object in the collision world.
 ///
 /// Can handle both convex shapes, and concave shapes, by subdividing the concave shapes into
@@ -220,7 +220,7 @@ where
 /// in world space coordinates.
 ///
 /// Also have details about what collision strategy to use for contact resolution with this shape.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CollisionShape<P, T>
 where
     P: Primitive,
@@ -297,6 +297,76 @@ where
         for mut primitive in &mut self.primitives {
             primitive.update(transform)
         }
+    }
+
+    /// Return the current transformed bound for the shape
+    ///
+    pub fn bound(&self) -> &P::Aabb {
+        &self.transformed_bound
+    }
+}
+
+/// Shape wrapper for use with containers
+#[derive(Debug, Clone)]
+pub struct ContainerShapeWrapper<ID, P, T>
+where
+    P: Primitive,
+    P::Aabb: Debug,
+    P::Vector: VectorSpace + Debug,
+{
+    id: ID,
+    shape: CollisionShape<P, T>,
+    fat_factor: P::Vector,
+    index: usize,
+}
+
+impl<ID, P, T> ContainerShapeWrapper<ID, P, T>
+where
+    P: Primitive,
+    P::Aabb: Debug,
+    P::Vector: VectorSpace<Scalar = Real> + Debug,
+{
+    /// Create a new shape
+    pub fn new_impl(id: ID, shape: CollisionShape<P, T>, fat_factor: P::Vector) -> Self {
+        Self {
+            id,
+            shape,
+            fat_factor,
+            index: 0,
+        }
+    }
+
+    /// Create a new shape
+    pub fn new(id: ID, shape: CollisionShape<P, T>) -> Self {
+        Self::new_impl(id, shape, P::Vector::from_value(Real::one()))
+    }
+}
+
+impl<ID, P, T> TreeValue for ContainerShapeWrapper<ID, P, T>
+where
+    ID: Clone + Debug,
+    P: Primitive,
+    P::Aabb: Aabb + Debug,
+    P::Vector: VectorSpace + Debug,
+    T: Pose<P::Point> + Clone + Debug,
+{
+    type Bound = P::Aabb;
+    type Vector = <P::Aabb as Aabb>::Diff;
+
+    fn bound(&self) -> &Self::Bound {
+        &self.shape.bound()
+    }
+
+    fn fat_bound(&self) -> Self::Bound {
+        self.shape.bound().add_margin(self.fat_factor)
+    }
+
+    fn set_index(&mut self, index: usize) {
+        self.index = index;
+    }
+
+    fn index(&self) -> usize {
+        self.index
     }
 }
 

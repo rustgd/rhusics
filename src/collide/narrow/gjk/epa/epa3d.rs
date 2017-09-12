@@ -4,26 +4,26 @@ use super::*;
 use {Pose, Real};
 use collide::{CollisionPrimitive, Contact, CollisionStrategy};
 use collide::narrow::gjk::{support, SupportPoint};
-use collide::primitive3d::Primitive3D;
+use collide::primitive3d::Primitive3;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
-pub struct EPA3D;
+pub struct EPA3;
 
-impl<T> EPA<T> for EPA3D
+impl<T> EPA<T> for EPA3
 where
     T: Pose<Point3<Real>>,
 {
     type Vector = Vector3<Real>;
     type Point = Point3<Real>;
-    type Primitive = Primitive3D;
+    type Primitive = Primitive3;
 
     fn process(
         &self,
         mut simplex: &mut Vec<SupportPoint<Point3<Real>>>,
-        left: &CollisionPrimitive<Primitive3D, T>,
+        left: &CollisionPrimitive<Primitive3, T>,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive3D, T>,
+        right: &CollisionPrimitive<Primitive3, T>,
         right_transform: &T,
     ) -> Vec<Contact<Vector3<Real>>> {
         if simplex.len() < 4 {
@@ -251,9 +251,9 @@ mod tests {
 
     #[test]
     fn test_epa_3d() {
-        let left = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
+        let left = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
+        let right = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
         let right_transform = transform_3d(7., 2., 0., 0.);
         let mut simplex = vec![
             sup(18., -12., 0.),
@@ -261,7 +261,7 @@ mod tests {
             sup(-2., -12., 0.),
             sup(8., -2., -10.),
         ];
-        let contacts = EPA3D.process(
+        let contacts = EPA3.process(
             &mut simplex,
             &left,
             &left_transform,
@@ -296,7 +296,7 @@ mod tests {
         s
     }
 
-    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3D {
-        BodyPose3D::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
+    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3 {
+        BodyPose3::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
     }
 }

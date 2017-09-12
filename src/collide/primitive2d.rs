@@ -1,18 +1,18 @@
 //! Collision primitives for 2D.
 //!
 //! These are the building blocks of all collision detection for 2D.
-//! The enum [`Primitive2D`](enum.Primitive2D.html) is the main type, that implements the
+//! The enum [`Primitive2`](enum.Primitive2.html) is the main type, that implements the
 //! [`Primitive`](../trait.Primitive.html) trait.
 //!
 //! All primitive types have `Into` implementations to turn them into enum variants for
-//! [`Primitive2D`](enum.Primitive2D.html).
+//! [`Primitive2`](enum.Primitive2.html).
 //!
 //! # Example
 //!
 //! ```
 //! # use rhusics::collide::primitive2d::*;
 //! use rhusics::collide::Primitive;
-//! let p : Primitive2D = Rectangle::new(10., 34.).into();
+//! let p : Primitive2 = Rectangle::new(10., 34.).into();
 //! p.get_bound();
 //! ```
 
@@ -93,7 +93,7 @@ impl ConvexPolygon {
 
 /// Base enum for all 2D primitives
 #[derive(Debug, Clone)]
-pub enum Primitive2D {
+pub enum Primitive2 {
     /// Circle variant
     Circle(Circle),
 
@@ -104,45 +104,45 @@ pub enum Primitive2D {
     ConvexPolygon(ConvexPolygon),
 }
 
-impl Into<Primitive2D> for Circle {
-    fn into(self) -> Primitive2D {
-        Primitive2D::Circle(self)
+impl Into<Primitive2> for Circle {
+    fn into(self) -> Primitive2 {
+        Primitive2::Circle(self)
     }
 }
 
-impl Into<Primitive2D> for Rectangle {
-    fn into(self) -> Primitive2D {
-        Primitive2D::Rectangle(self)
+impl Into<Primitive2> for Rectangle {
+    fn into(self) -> Primitive2 {
+        Primitive2::Rectangle(self)
     }
 }
 
-impl Into<Primitive2D> for ConvexPolygon {
-    fn into(self) -> Primitive2D {
-        Primitive2D::ConvexPolygon(self)
+impl Into<Primitive2> for ConvexPolygon {
+    fn into(self) -> Primitive2 {
+        Primitive2::ConvexPolygon(self)
     }
 }
 
-impl Primitive for Primitive2D {
+impl Primitive for Primitive2 {
     type Vector = Vector2<Real>;
     type Point = Point2<Real>;
     type Aabb = Aabb2<Real>;
 
     fn get_bound(&self) -> Aabb2<Real> {
         match *self {
-            Primitive2D::Circle(ref circle) => {
+            Primitive2::Circle(ref circle) => {
                 Aabb2::new(
                     Point2::from_value(-circle.radius),
                     Point2::from_value(circle.radius),
                 )
             }
-            Primitive2D::Rectangle(ref rectangle) => {
+            Primitive2::Rectangle(ref rectangle) => {
                 Aabb2::new(
                     Point2::from_vec(-rectangle.half_dim),
                     Point2::from_vec(rectangle.half_dim),
                 )
             }
 
-            Primitive2D::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),
+            Primitive2::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),
         }
     }
 
@@ -151,15 +151,15 @@ impl Primitive for Primitive2D {
         T: Pose<Point2<Real>>,
     {
         match *self {
-            Primitive2D::Circle(ref circle) => {
+            Primitive2::Circle(ref circle) => {
                 transform.position() + direction.normalize_to(circle.radius)
             }
 
-            Primitive2D::Rectangle(Rectangle { ref corners, .. }) => {
+            Primitive2::Rectangle(Rectangle { ref corners, .. }) => {
                 ::util::get_max_point(corners, direction, transform)
             }
 
-            Primitive2D::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => {
+            Primitive2::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => {
                 ::util::get_max_point(vertices, direction, transform)
             }
         }
@@ -193,7 +193,7 @@ mod tests {
 
     #[test]
     fn test_circle_far_4() {
-        let circle: Primitive2D = Circle::new(10.).into();
+        let circle: Primitive2 = Circle::new(10.).into();
         let direction = Vector2::new(1., 0.);
         let transform: BodyPose<Point2<Real>, Basis2<Real>> =
             BodyPose::new(Point2::new(0., 10.), Rotation2::from_angle(Rad(0.)));
@@ -203,12 +203,12 @@ mod tests {
 
     #[test]
     fn test_circle_bound() {
-        let circle: Primitive2D = Circle::new(10.).into();
+        let circle: Primitive2 = Circle::new(10.).into();
         assert_eq!(bound(-10., -10., 10., 10.), circle.get_bound())
     }
 
     fn test_circle(dx: Real, dy: Real, px: Real, py: Real, rot: Real) {
-        let circle: Primitive2D = Circle::new(10.).into();
+        let circle: Primitive2 = Circle::new(10.).into();
         let direction = Vector2::new(dx, dy);
         let transform: BodyPose<Point2<Real>, Basis2<Real>> =
             BodyPose::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(rot)));
@@ -221,7 +221,7 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r: Primitive2D = Rectangle::new(10., 10.).into();
+        let r: Primitive2 = Rectangle::new(10., 10.).into();
         assert_eq!(bound(-5., -5., 5., 5.), r.get_bound())
     }
 

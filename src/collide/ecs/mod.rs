@@ -3,7 +3,7 @@
 //!
 
 pub use self::resources::Contacts;
-pub use self::system::CollisionSystem;
+pub use self::systems::*;
 
 mod resources;
-mod system;
+mod systems;

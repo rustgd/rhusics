@@ -1,5 +1,5 @@
-pub use self::epa2d::EPA2D;
-pub use self::epa3d::EPA3D;
+pub use self::epa2d::EPA2;
+pub use self::epa3d::EPA3;
 
 mod epa2d;
 mod epa3d;

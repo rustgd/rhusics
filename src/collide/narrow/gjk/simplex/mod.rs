@@ -1,5 +1,5 @@
-pub use self::simplex2d::SimplexProcessor2D;
-pub use self::simplex3d::SimplexProcessor3D;
+pub use self::simplex2d::SimplexProcessor2;
+pub use self::simplex3d::SimplexProcessor3;
 
 mod simplex2d;
 mod simplex3d;

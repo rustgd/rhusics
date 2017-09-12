@@ -1,5 +1,5 @@
-pub use self::epa::{EPA2D, EPA3D};
-pub use self::simplex::{SimplexProcessor2D, SimplexProcessor3D};
+pub use self::epa::{EPA2, EPA3};
+pub use self::simplex::{SimplexProcessor2, SimplexProcessor3};
 
 use std;
 use std::fmt::Debug;
@@ -47,11 +47,11 @@ impl RunningAverage {
 /// - `P`: collision primitive type.
 /// - `T`: transform type
 /// - `S`: simplex processor type. Should be either
-///        [`SimplexProcessor2D`](struct.SimplexProcessor2D.html) or
-///        [`SimplexProcessor3D`](struct.SimplexProcessor3D.html)
+///        [`SimplexProcessor2`](struct.SimplexProcessor2.html) or
+///        [`SimplexProcessor3`](struct.SimplexProcessor3.html)
 /// - `E`: EPA algorithm implementation type. Should be either
-///        [`EPA2D`](struct.EPA2D.html) or
-///        [`EPA3D`](struct.EPA3D.html)
+///        [`EPA2`](struct.EPA2.html) or
+///        [`EPA3`](struct.EPA3.html)
 ///
 #[derive(Debug)]
 pub struct GJK<P, T, S, E> {
@@ -243,25 +243,25 @@ mod tests {
     use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
 
     use super::{gjk, support, RunningAverage};
-    use super::simplex::{SimplexProcessor2D, SimplexProcessor, SimplexProcessor3D};
+    use super::simplex::{SimplexProcessor2, SimplexProcessor, SimplexProcessor3};
     use Real;
     use collide::narrow::NarrowPhase;
     use collide2d::*;
     use collide3d::*;
 
-    fn transform(x: Real, y: Real, angle: Real) -> BodyPose2D {
-        BodyPose2D::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
+    fn transform(x: Real, y: Real, angle: Real) -> BodyPose2 {
+        BodyPose2::new(Point2::new(x, y), Rotation2::from_angle(Rad(angle)))
     }
 
-    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3D {
-        BodyPose3D::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
+    fn transform_3d(x: Real, y: Real, z: Real, angle_z: Real) -> BodyPose3 {
+        BodyPose3::new(Point3::new(x, y, z), Quaternion::from_angle_z(Rad(angle_z)))
     }
 
     #[test]
     fn test_support() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(-15., 0., 0.);
         let direction = Vector2::new(1., 0.);
         assert_eq!(
@@ -272,11 +272,11 @@ mod tests {
 
     #[test]
     fn test_gjk_miss() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(-15., 0., 0.);
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut average = RunningAverage::new();
         assert!(
             gjk(
@@ -292,11 +292,11 @@ mod tests {
 
     #[test]
     fn test_gjk_hit() {
-        let left = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2D::new(Rectangle::new(10., 10.).into());
+        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
         let right_transform = transform(7., 2., 0.);
-        let processor = SimplexProcessor2D::new();
+        let processor = SimplexProcessor2::new();
         let mut average = RunningAverage::new();
         let simplex = gjk(
             &left,
@@ -311,11 +311,11 @@ mod tests {
 
     #[test]
     fn test_gjk_3d_hit() {
-        let left = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
+        let left = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3D::new(Cuboid::new(10., 10., 10.).into());
+        let right = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
         let right_transform = transform_3d(7., 2., 0., 0.);
-        let processor = SimplexProcessor3D::new();
+        let processor = SimplexProcessor3::new();
         let mut average = RunningAverage::new();
         let simplex = gjk(
             &left,
@@ -330,17 +330,17 @@ mod tests {
 
     #[test]
     fn test_gjk_shape_simple_miss() {
-        let left = CollisionShape2D::new_simple(
+        let left = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionShape2D::new_simple(
+        let right = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(-15., 0., 0.);
-        let mut gjk = GJK2D::new();
+        let mut gjk = GJK2::new();
         assert!(
             gjk.collide((1, &left, &left_transform), (2, &right, &right_transform))
                 .is_none()
@@ -349,17 +349,17 @@ mod tests {
 
     #[test]
     fn test_gjk_shape_simple_hit() {
-        let left = CollisionShape2D::new_simple(
+        let left = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionShape2D::new_simple(
+        let right = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 2., 0.);
-        let mut gjk = GJK2D::new();
+        let mut gjk = GJK2::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();
@@ -369,17 +369,17 @@ mod tests {
 
     #[test]
     fn test_gjk_3d_shape_hit() {
-        let left = CollisionShape3D::new_simple(
+        let left = CollisionShape3::new_simple(
             CollisionStrategy::CollisionOnly,
             Cuboid::new(10., 10., 10.).into(),
         );
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionShape3D::new_simple(
+        let right = CollisionShape3::new_simple(
             CollisionStrategy::CollisionOnly,
             Cuboid::new(10., 10., 10.).into(),
         );
         let right_transform = transform_3d(7., 2., 0., 0.);
-        let mut gjk = GJK3D::new();
+        let mut gjk = GJK3::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();
@@ -389,26 +389,26 @@ mod tests {
 
     #[test]
     fn test_gjk_shape_complex_miss() {
-        let left = CollisionShape2D::new_complex(
+        let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., -5., 0.)
                 ),
             ],
         );
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionShape2D::new_simple(
+        let right = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(-15., 0., 0.);
-        let mut gjk = GJK2D::new();
+        let mut gjk = GJK2::new();
         assert!(
             gjk.collide((1, &left, &left_transform), (2, &right, &right_transform))
                 .is_none()
@@ -417,26 +417,26 @@ mod tests {
 
     #[test]
     fn test_gjk_shape_complex_hit_single() {
-        let left = CollisionShape2D::new_complex(
+        let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., -5., 0.)
                 ),
             ],
         );
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionShape2D::new_simple(
+        let right = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 6., 0.);
-        let mut gjk = GJK2D::new();
+        let mut gjk = GJK2::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();
@@ -446,26 +446,26 @@ mod tests {
 
     #[test]
     fn test_gjk_shape_complex_hit_both() {
-        let left = CollisionShape2D::new_complex(
+        let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2D::new_impl(
+                CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
                     transform(0., -5., 0.)
                 ),
             ],
         );
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionShape2D::new_simple(
+        let right = CollisionShape2::new_simple(
             CollisionStrategy::CollisionOnly,
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 4., 0.);
-        let mut gjk = GJK2D::new();
+        let mut gjk = GJK2::new();
         let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
         assert!(set.is_some());
         let contact_set = set.unwrap();

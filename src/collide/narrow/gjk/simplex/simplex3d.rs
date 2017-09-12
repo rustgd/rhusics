@@ -9,9 +9,9 @@ use collide::narrow::gjk::SupportPoint;
 
 /// Simplex processor implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
-pub struct SimplexProcessor3D;
+pub struct SimplexProcessor3;
 
-impl SimplexProcessor for SimplexProcessor3D {
+impl SimplexProcessor for SimplexProcessor3 {
     type Vector = Vector3<Real>;
     type Point = Point3<Real>;
 
@@ -295,7 +295,7 @@ mod tests {
 
     fn test_check_origin(simplex: &mut Vec<SupportPoint<Point3<Real>>>) -> (bool, Vector3<Real>) {
         let mut v = Vector3::zero();
-        let b = SimplexProcessor3D.check_origin(simplex, &mut v);
+        let b = SimplexProcessor3.check_origin(simplex, &mut v);
         (b, v)
     }
 

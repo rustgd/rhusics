@@ -12,7 +12,7 @@
 //! ```
 //! # use rhusics::collide::primitive3d::*;
 //! use rhusics::collide::Primitive;
-//! let p : Primitive3D = Cuboid::new(10., 34., 22.).into();
+//! let p : Primitive3 = Cuboid::new(10., 34., 22.).into();
 //! p.get_bound();
 //! ```
 
@@ -97,7 +97,7 @@ impl ConvexPolytope {
 
 /// Base enum for all 3D primitives
 #[derive(Debug, Clone)]
-pub enum Primitive3D {
+pub enum Primitive3 {
     /// Sphere variant
     Sphere(Sphere),
 
@@ -109,43 +109,43 @@ pub enum Primitive3D {
     // TODO: more primitives
 }
 
-impl Into<Primitive3D> for Sphere {
-    fn into(self) -> Primitive3D {
-        Primitive3D::Sphere(self)
+impl Into<Primitive3> for Sphere {
+    fn into(self) -> Primitive3 {
+        Primitive3::Sphere(self)
     }
 }
 
-impl Into<Primitive3D> for Cuboid {
-    fn into(self) -> Primitive3D {
-        Primitive3D::Cuboid(self)
+impl Into<Primitive3> for Cuboid {
+    fn into(self) -> Primitive3 {
+        Primitive3::Cuboid(self)
     }
 }
 
-impl Into<Primitive3D> for ConvexPolytope {
-    fn into(self) -> Primitive3D {
-        Primitive3D::ConvexPolytope(self)
+impl Into<Primitive3> for ConvexPolytope {
+    fn into(self) -> Primitive3 {
+        Primitive3::ConvexPolytope(self)
     }
 }
 
-impl Primitive for Primitive3D {
+impl Primitive for Primitive3 {
     type Vector = Vector3<Real>;
     type Point = Point3<Real>;
     type Aabb = Aabb3<Real>;
 
     fn get_bound(&self) -> Aabb3<Real> {
         match *self {
-            Primitive3D::Sphere(ref sphere) => {
+            Primitive3::Sphere(ref sphere) => {
                 Aabb3::new(
                     Point3::from_value(-sphere.radius),
                     Point3::from_value(sphere.radius),
                 )
             }
 
-            Primitive3D::Cuboid(ref b) => {
+            Primitive3::Cuboid(ref b) => {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
 
-            Primitive3D::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
+            Primitive3::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
         }
     }
 
@@ -154,13 +154,13 @@ impl Primitive for Primitive3D {
         T: Pose<Point3<Real>>,
     {
         match *self {
-            Primitive3D::Sphere(ref sphere) => {
+            Primitive3::Sphere(ref sphere) => {
                 transform.position() + direction.normalize_to(sphere.radius)
             }
 
-            Primitive3D::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
+            Primitive3::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
 
-            Primitive3D::ConvexPolytope(ref c) => {
+            Primitive3::ConvexPolytope(ref c) => {
                 ::util::get_max_point(&c.vertices, direction, transform)
             }
 
@@ -203,7 +203,7 @@ mod tests {
 
     #[test]
     fn test_sphere_far_4() {
-        let sphere: Primitive3D = Sphere::new(10.).into();
+        let sphere: Primitive3 = Sphere::new(10.).into();
         let direction = Vector3::new(1., 0., 0.);
         let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
             BodyPose::new(Point3::new(0., 10., 0.), Quaternion::from_angle_z(Rad(0.)));
@@ -213,12 +213,12 @@ mod tests {
 
     #[test]
     fn test_sphere_bound() {
-        let sphere: Primitive3D = Sphere::new(10.).into();
+        let sphere: Primitive3 = Sphere::new(10.).into();
         assert_eq!(bound(-10., -10., -10., 10., 10., 10.), sphere.get_bound())
     }
 
     fn test_sphere(dx: Real, dy: Real, dz: Real, px: Real, py: Real, pz: Real, rot: Real) {
-        let sphere: Primitive3D = Sphere::new(10.).into();
+        let sphere: Primitive3 = Sphere::new(10.).into();
         let direction = Vector3::new(dx, dy, dz);
         let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
             BodyPose::new(Point3::new(0., 0., 0.), Quaternion::from_angle_z(Rad(rot)));
@@ -232,7 +232,7 @@ mod tests {
     // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r: Primitive3D = Cuboid::new(10., 10., 10.).into();
+        let r: Primitive3 = Cuboid::new(10., 10., 10.).into();
         assert_eq!(bound(-5., -5., -5., 5., 5., 5.), r.get_bound())
     }
 

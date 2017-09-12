@@ -2,7 +2,7 @@
 //!
 //! Currently only supports GJK/EPA.
 
-pub use self::gjk::{GJK, EPA2D, EPA3D, SimplexProcessor2D, SimplexProcessor3D};
+pub use self::gjk::{GJK, EPA2, EPA3, SimplexProcessor2, SimplexProcessor3};
 
 use std::fmt::Debug;
 
