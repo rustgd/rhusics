@@ -8,6 +8,7 @@ use collision::Ray3;
 use specs::{World, RunNow, System, Fetch};
 
 use rhusics::collide::broad::BroadCollisionData;
+use rhusics::collide::dbvt::util::query_ray_closest;
 use rhusics::collide3d::{CollisionShape3, SpatialSortingSystem3, SpatialCollisionSystem3,
                          BodyPose3, DynamicBoundingVolumeTree3, GJK3, world_register_with_spatial,
                          Cuboid, Contacts3, CollisionStrategy};
@@ -19,7 +20,7 @@ impl<'a> System<'a> for RayCastSystem {
 
     fn run(&mut self, (tree,): Self::SystemData) {
         let ray = Ray3::new(Point3::new(-4., 10., 0.), Vector3::new(0., -1., 0.));
-        if let Some((v, p)) = tree.query_ray_closest(&ray) {
+        if let Some((v, p)) = query_ray_closest(&*tree, &ray) {
             println!("hit bounding volume of {:?} at point {:?}", v.id(), p);
         }
     }
