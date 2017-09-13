@@ -64,12 +64,19 @@ pub fn main() {
   detection working on user supplied transform, and shape components.
   Can optionally use broad and/or narrow phase detection.
   Library supplies a transform implementation for convenience.
+* [`specs::System`](https://docs.rs/specs/0.9.5/specs/trait.System.html) for spatial
+  sorting on user supplied transform, and shape components.
 * Uses single precision as default, can be changed to double precision with the `double`
   feature.
-* Has support for spatial sorting using a dynamic bounding volume tree.
-* Can perform continuous, discrete, frustum queries on the DBVT
-* Can perform custom queries on the DBVT
-* Support for doing broad phase using DBVT.
+* Has an implementation of a Bounding Volume Hierarchy, specifically a 
+  dynamic bounding volume tree.
+    * Support for dynamic updates it the values in the tree
+    * Uses surface are of the bounding volumes as the main heuristic for balancing the tree.
+    * Support for custom queries using the visitor pattern
+    * Has concrete query implementations for discrete and continuous intersection testing
+      using any bounding volume.
+    * Has a concrete query implementation for frustum intersection testing.
+* Support for doing broad phase using the DBVT.
 
 # TODO:
 

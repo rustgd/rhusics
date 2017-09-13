@@ -7,6 +7,7 @@ use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
 use collide::broad::{BroadPhase, BroadCollisionData};
 use collide::dbvt::DynamicBoundingVolumeTree;
+use collide::dbvt::visitor::DiscreteVisitor;
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -69,6 +70,17 @@ where
     }
 }
 
+fn discrete_visitor<P>(
+    bound: &P::Aabb,
+) -> DiscreteVisitor<P::Aabb, ContainerShapeWrapper<Entity, P>>
+where
+    P: Primitive,
+    P::Aabb: Debug + Discrete<P::Aabb>,
+    P::Vector: Debug,
+{
+    DiscreteVisitor::<P::Aabb, ContainerShapeWrapper<Entity, P>>::new(bound)
+}
+
 impl<'a, P, T> System<'a> for SpatialCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
 where
     P: Primitive + Send + Sync + 'static,
@@ -109,8 +121,7 @@ where
             // find changed values, do intersection tests against tree for each
             for (entity, pose, shape) in (&*entities, &poses, &shapes).join() {
                 if pose.dirty() {
-
-                    for v in tree.query_discrete(shape.bound()) {
+                    for (v, _) in tree.query(&discrete_visitor::<P>(shape.bound())) {
                         if entity != v.id {
                             let n = if entity < v.id {
                                 (entity, v.id.clone())

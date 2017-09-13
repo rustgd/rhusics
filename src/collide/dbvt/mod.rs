@@ -26,6 +26,7 @@
 //! use collision::{Aabb, Aabb2, Ray2};
 //!
 //! use rhusics::collide::dbvt::{DynamicBoundingVolumeTree, TreeValue};
+//! use rhusics::collide::dbvt::visitor::ContinuousVisitor;
 //!
 //! #[derive(Debug, Clone)]
 //! struct Value {
@@ -78,10 +79,12 @@
 //!     tree.do_refit();
 //!
 //!     let ray = Ray2::new(Point2::new(0., 0.), Vector2::new(-1., -1.).normalize());
-//!     assert_eq!(0, tree.query_continuous(&ray).len());
+//!     let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+//!     assert_eq!(0, tree.query(&visitor).len());
 //!
 //!     let ray = Ray2::new(Point2::new(6., 0.), Vector2::new(0., 1.).normalize());
-//!     let results = tree.query_continuous(&ray);
+//!     let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+//!     let results = tree.query(&visitor);
 //!     assert_eq!(1, results.len());
 //!     assert_eq!(10, results[0].0.id);
 //!     assert_eq!(Point2::new(6., 5.), results[0].1);
@@ -89,13 +92,13 @@
 //! ```
 //!
 
+pub mod visitor;
+pub mod util;
+
 use std::cmp::max;
 use std::fmt::Debug;
-use std::marker::PhantomData;
 
-use cgmath::num_traits::Float;
 use cgmath::prelude::*;
-use collision::{Ray, Frustum, Relation, Bound};
 use collision::prelude::*;
 use rand;
 use rand::Rng;
@@ -167,6 +170,7 @@ pub trait Visitor {
 /// use collision::{Aabb, Aabb2, Ray2};
 ///
 /// use rhusics::collide::dbvt::{DynamicBoundingVolumeTree, TreeValue};
+/// use rhusics::collide::dbvt::visitor::ContinuousVisitor;
 ///
 /// #[cfg(not(feature = "double"))]
 /// pub type Real = f32;
@@ -225,10 +229,12 @@ pub trait Visitor {
 ///     tree.do_refit();
 ///
 ///     let ray = Ray2::new(Point2::new(0., 0.), Vector2::new(-1., -1.).normalize());
-///     assert_eq!(0, tree.query_continuous(&ray).len());
+///     let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+///     assert_eq!(0, tree.query(&visitor).len());
 ///
 ///     let ray = Ray2::new(Point2::new(6., 0.), Vector2::new(0., 1.).normalize());
-///     let results = tree.query_continuous(&ray);
+///     let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+///     let results = tree.query(&visitor);
 ///     assert_eq!(1, results.len());
 ///     assert_eq!(10, results[0].0.id);
 ///     assert_eq!(Point2::new(6., 5.), results[0].1);
@@ -373,91 +379,26 @@ where
         self.values.clear();
     }
 
-    /// Query the tree for all leafs that intersect with the given construct.
+    /// Query the tree for all leafs that the given visitor accepts.
     ///
-    /// Will do a depth first search. Will only return boolean results, i.e. the values of the leafs
-    /// that intersected the given construct.
-    ///
-    /// This function have approximate complexity O(log^2 n).
-    ///
-    /// ### Parameters:
-    ///
-    /// - `other`: The construct to do intersection tests with.
-    ///
-    /// ### Type parameters:
-    ///
-    /// - `B`: Construct that `T::Bound` has an implementation of
-    ///        [`Discrete`](https://docs.rs/collision/0.11.0/trait.Discrete.html) for, i.e.
-    ///        `impl Discrete<B> for T::Bound {}`.
-    ///
-    /// ### Returns
-    ///
-    /// A list of references to the values that intersected the given construct.
-    ///
-    pub fn query_discrete<B>(&self, other: &B) -> Vec<&T>
-    where
-        T::Bound: Discrete<B>,
-    {
-        self.query(&DiscreteVisitor::<B, T>::new(other))
-            .iter()
-            .map(|&(v, _)| v)
-            .collect()
-    }
-
-    /// Query the tree for all leafs that has an intersection with the given construct.
-    ///
-    /// Will do a depth first search and return the actual intersection results, rather than just
-    /// boolean results.
+    /// Will do a depth first search of the tree and pass all bounding volumes on the way to the
+    /// visitor.
     ///
     /// This function have approximate complexity O(log^2 n).
     ///
     /// ### Parameters:
     ///
-    /// - `other`: The construct to do intersection tests with.
+    /// - `visitor`: The visitor to check for bounding volume tests.
     ///
     /// ### Type parameters:
     ///
-    /// - `B`: Construct that `T::Bound` has an implementation of
-    ///        [`Discrete`](https://docs.rs/collision/0.11.0/trait.Continuous.html) for, i.e.
-    ///        `impl Continuous<B> for T::Bound {}`. Also requires
-    ///        [`Discrete`](https://docs.rs/collision/0.11.0/trait.Discrete.html) to be implemented,
-    ///        because that will be used for the branch intersection tests where a boolean test is
-    ///        enough.
+    /// - `V`: Type that implements of [`Visitor`](trait.Visitor.html)
     ///
     /// ### Returns
-    ///
-    /// A list of references to the values that intersected the given construct, and the
-    /// intersection results for those intersected values.
-    ///
-    pub fn query_continuous<B>(&self, other: &B) -> Vec<(&T, <T::Bound as Continuous<B>>::Result)>
-    where
-        T::Bound: Continuous<B> + Discrete<B>,
-    {
-        self.query(&ContinuousVisitor::<B, T>::new(other))
-    }
-
-    /// Do frustum query on the tree.
-    ///
-    /// ### Parameters:
-    ///
-    /// - `frustum`: the frustum to check for containment
-    ///
-    /// ### Returns
-    ///
-    /// Returns all leafs that are atleast partially inside the frustum. Also returns the relation
-    /// to the frustum, Cross for partially inside, In for completely inside.
-    ///
-    pub fn query_frustum(&self, frustum: &Frustum<Real>) -> Vec<(&T, Relation)>
-    where
-        T::Bound: Bound<Real>,
-    {
-        self.query(&FrustumVisitor::<T>::new(frustum))
-    }
-
-    /// Query tree with the given visitor.
     ///
     /// Will return a list of tuples of values accepted and the result returned by the visitor for
     /// the acceptance test.
+    ///
     pub fn query<V>(&self, visitor: &V) -> Vec<(&T, V::Result)>
     where
         V: Visitor<Bound = T::Bound>,
@@ -499,41 +440,6 @@ where
             }
         }
         values
-    }
-
-    /// Query for the closest intersection with the given ray.
-    ///
-    /// ### Parameters
-    ///
-    /// - `ray`: The ray to cast on the tree.
-    ///
-    /// ### Returns
-    ///
-    /// None if no intersection was found, else it will return a tuple with the intersected value,
-    /// and the actual intersection point.
-    pub fn query_ray_closest<P>(&self, ray: &Ray<Real, P, P::Diff>) -> Option<(&T, P)>
-    where
-        P: EuclideanSpace<Scalar = Real>,
-        P::Diff: VectorSpace<Scalar = Real> + InnerSpace,
-        T::Bound: Clone
-            + Debug
-            + Contains<T::Bound>
-            + SurfaceArea<Real>
-            + Union<T::Bound, Output = T::Bound>
-            + Continuous<Ray<Real, P, P::Diff>, Result = P>
-            + Discrete<Ray<Real, P, P::Diff>>,
-    {
-        let mut saved = None;
-        let mut tmin = Real::infinity();
-        for (value, point) in self.query_continuous(ray) {
-            let offset = point - ray.origin;
-            let t = offset.dot(ray.direction);
-            if t < tmin {
-                tmin = t;
-                saved = Some((value, point.clone()));
-            }
-        }
-        saved
     }
 
     /// Update a node in the tree with a new value.
@@ -1102,98 +1008,6 @@ where
     }
 }
 
-
-
-/// Internal visitor used by query_continuous
-struct ContinuousVisitor<'a, B: 'a, T> {
-    bound: &'a B,
-    marker: PhantomData<T>,
-}
-
-impl<'a, B: 'a, T> ContinuousVisitor<'a, B, T> {
-    pub fn new(bound: &'a B) -> Self {
-        Self {
-            bound,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, B: 'a, T> Visitor for ContinuousVisitor<'a, B, T>
-where
-    T: TreeValue,
-    T::Bound: Continuous<B> + Discrete<B>,
-{
-    type Bound = T::Bound;
-    type Result = <T::Bound as Continuous<B>>::Result;
-
-    fn accept(&self, bound: &Self::Bound) -> Option<Self::Result> {
-        bound.intersection(self.bound)
-    }
-}
-
-/// Internal visitor used by query_discrete
-struct DiscreteVisitor<'a, B: 'a, T> {
-    bound: &'a B,
-    marker: PhantomData<T>,
-}
-
-impl<'a, B: 'a, T> DiscreteVisitor<'a, B, T> {
-    pub fn new(bound: &'a B) -> Self {
-        Self {
-            bound,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, B: 'a, T> Visitor for DiscreteVisitor<'a, B, T>
-where
-    T: TreeValue,
-    T::Bound: Discrete<B>,
-{
-    type Bound = T::Bound;
-    type Result = ();
-
-    fn accept(&self, bound: &Self::Bound) -> Option<()> {
-        if bound.intersects(self.bound) {
-            Some(())
-        } else {
-            None
-        }
-    }
-}
-
-/// Internal visitor used by query_frustum
-#[derive(Debug)]
-struct FrustumVisitor<'a, T> {
-    frustum: &'a Frustum<Real>,
-    marker: PhantomData<T>,
-}
-
-impl<'a, T> FrustumVisitor<'a, T> {
-    pub fn new(frustum: &'a Frustum<Real>) -> Self {
-        Self {
-            frustum,
-            marker: PhantomData,
-        }
-    }
-}
-
-impl<'a, T> Visitor for FrustumVisitor<'a, T>
-where
-    T: TreeValue,
-    T::Bound: Bound<Real>,
-{
-    type Bound = T::Bound;
-    type Result = Relation;
-
-    fn accept(&self, bound: &Self::Bound) -> Option<Relation> {
-        let r = self.frustum.contains(bound);
-        if r == Relation::Out { None } else { Some(r) }
-    }
-}
-
 enum Rotation {
     None,
     LeftRightLeft,
@@ -1410,6 +1224,7 @@ mod tests {
     use collision::{Aabb, Aabb2, Ray2};
 
     use super::{DynamicBoundingVolumeTree, TreeValue};
+    use super::visitor::{DiscreteVisitor, ContinuousVisitor};
     use Real;
 
     #[derive(Debug, Clone)]
@@ -1649,12 +1464,14 @@ mod tests {
         tree.do_refit();
 
         let ray = Ray2::new(Point2::new(0., 0.), Vector2::new(-1., -1.).normalize());
-        assert_eq!(0, tree.query_discrete(&ray).len());
+        let visitor = DiscreteVisitor::<Ray2<Real>, Value>::new(&ray);
+        assert_eq!(0, tree.query(&visitor).len());
 
         let ray = Ray2::new(Point2::new(6., 0.), Vector2::new(0., 1.).normalize());
-        let results = tree.query_discrete(&ray);
+        let visitor = DiscreteVisitor::<Ray2<Real>, Value>::new(&ray);
+        let results = tree.query(&visitor);
         assert_eq!(1, results.len());
-        assert_eq!(10, results[0].id);
+        assert_eq!(10, results[0].0.id);
     }
 
     #[test]
@@ -1665,10 +1482,12 @@ mod tests {
         tree.do_refit();
 
         let ray = Ray2::new(Point2::new(0., 0.), Vector2::new(-1., -1.).normalize());
-        assert_eq!(0, tree.query_continuous(&ray).len());
+        let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+        assert_eq!(0, tree.query(&visitor).len());
 
         let ray = Ray2::new(Point2::new(6., 0.), Vector2::new(0., 1.).normalize());
-        let results = tree.query_continuous(&ray);
+        let visitor = ContinuousVisitor::<Ray2<Real>, Value>::new(&ray);
+        let results = tree.query(&visitor);
         assert_eq!(1, results.len());
         assert_eq!(10, results[0].0.id);
         assert_eq!(Point2::new(6., 5.), results[0].1);

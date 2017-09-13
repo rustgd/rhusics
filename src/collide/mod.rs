@@ -314,8 +314,11 @@ where
     P::Aabb: Debug,
     P::Vector: VectorSpace + Debug,
 {
-    id: ID,
-    bound: P::Aabb,
+    /// The id
+    pub id: ID,
+
+    /// The bounding volume
+    pub bound: P::Aabb,
     fat_factor: P::Vector,
     index: usize,
 }
