@@ -32,6 +32,7 @@ impl<P, T, D> BasicCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone + Debug + Send + Sync + 'static,
+    P::Vector: Debug,
     T: Pose<P::Point> + Component,
     D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
 {
@@ -64,6 +65,7 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
         + Send
         + Sync
         + 'static,
+        P::Point: Debug + Send + Sync + 'static,
         P::Vector: Debug + Send + Sync + 'static,
         T: Component
         + Pose<P::Point>
@@ -75,7 +77,7 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
     type SystemData = (Entities<'a>,
                        ReadStorage<'a, T>,
                        WriteStorage<'a, CollisionShape<P, T>>,
-                       FetchMut<'a, Contacts<P::Vector>>);
+                       FetchMut<'a, Contacts<P::Point>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
         contacts.clear();

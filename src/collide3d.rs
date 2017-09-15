@@ -5,7 +5,7 @@ pub use collide::primitive3d::*;
 
 use std::fmt::Debug;
 
-use cgmath::{Vector3, Quaternion, Point3};
+use cgmath::{Quaternion, Point3};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use specs::{World, Component, Entity};
 
@@ -17,7 +17,7 @@ use collide::narrow::{GJK, EPA3, SimplexProcessor3};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
-pub type Contacts3 = Contacts<Vector3<Real>>;
+pub type Contacts3 = Contacts<Point3<Real>>;
 
 /// Collision primitive for 3D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
 /// for more information.

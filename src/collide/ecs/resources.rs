@@ -1,4 +1,5 @@
 use std::ops::{DerefMut, Deref};
+use std::fmt::Debug;
 
 use cgmath::prelude::*;
 use specs::{Component, VecStorage, Entity};
@@ -20,38 +21,42 @@ where
 ///
 /// # Type parameters:
 ///
-/// - `V`: cgmath vector type
+/// - `P`: cgmath point type
 #[derive(Debug)]
-pub struct Contacts<V>
+pub struct Contacts<P>
 where
-    V: VectorSpace,
+    P: EuclideanSpace,
+    P::Diff: Debug,
 {
-    contacts: Vec<ContactSet<Entity, V>>,
+    contacts: Vec<ContactSet<Entity, P>>,
 }
 
-impl<V> Default for Contacts<V>
+impl<P> Default for Contacts<P>
 where
-    V: VectorSpace,
+    P: EuclideanSpace,
+    P::Diff: Debug,
 {
     fn default() -> Self {
         Self { contacts: Vec::default() }
     }
 }
 
-impl<V> Deref for Contacts<V>
+impl<P> Deref for Contacts<P>
 where
-    V: VectorSpace,
+    P: EuclideanSpace,
+    P::Diff: Debug,
 {
-    type Target = Vec<ContactSet<Entity, V>>;
+    type Target = Vec<ContactSet<Entity, P>>;
 
     fn deref(&self) -> &Self::Target {
         &self.contacts
     }
 }
 
-impl<V> DerefMut for Contacts<V>
+impl<P> DerefMut for Contacts<P>
 where
-    V: VectorSpace,
+    P: EuclideanSpace,
+    P::Diff: Debug,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.contacts

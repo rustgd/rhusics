@@ -26,7 +26,7 @@ where
         left_transform: &T,
         right: &CollisionPrimitive<Primitive2, T>,
         right_transform: &T,
-    ) -> Vec<Contact<Vector2<Real>>> {
+    ) -> Vec<Contact<Point2<Real>>> {
         let mut i = 0;
         if closest_edge(&simplex).is_none() {
             return Vec::default();

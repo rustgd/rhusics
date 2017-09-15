@@ -21,6 +21,7 @@ mod gjk;
 pub trait NarrowPhase<ID, P, T>: Debug
 where
     P: Primitive,
+    P::Vector: Debug,
 {
     /// Check if two shapes collides, and give contact manifolds for any contacts found
     ///
@@ -39,5 +40,5 @@ where
         &mut self,
         left: (ID, &CollisionShape<P, T>, &T),
         right: (ID, &CollisionShape<P, T>, &T),
-    ) -> Option<ContactSet<ID, P::Vector>>;
+    ) -> Option<ContactSet<ID, P::Point>>;
 }

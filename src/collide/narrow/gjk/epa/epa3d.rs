@@ -25,7 +25,7 @@ where
         left_transform: &T,
         right: &CollisionPrimitive<Primitive3, T>,
         right_transform: &T,
-    ) -> Vec<Contact<Vector3<Real>>> {
+    ) -> Vec<Contact<Point3<Real>>> {
         if simplex.len() < 4 {
             return Vec::default();
         }
@@ -52,7 +52,7 @@ where
 }
 
 #[inline]
-fn contact(face: &Face) -> Vec<Contact<Vector3<Real>>> {
+fn contact(face: &Face) -> Vec<Contact<Point3<Real>>> {
     vec![
         Contact::new_impl(
             CollisionStrategy::FullResolution,
