@@ -5,14 +5,15 @@ pub mod narrow;
 pub mod primitive2d;
 pub mod primitive3d;
 pub mod ecs;
-pub mod dbvt;
+//pub mod dbvt;
 
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collide::dbvt::TreeValue;
 use collision::{Aabb, MinMax, Union};
+use collision::dbvt::TreeValue;
 
+use self::broad::BroadCollisionData;
 use {Pose, Real};
 
 /// Collision strategy to use for collisions.
@@ -320,7 +321,6 @@ where
     /// The bounding volume
     pub bound: P::Aabb,
     fat_factor: P::Vector,
-    index: usize,
 }
 
 impl<ID, P> ContainerShapeWrapper<ID, P>
@@ -335,7 +335,6 @@ where
             id,
             bound: bound.clone(),
             fat_factor,
-            index: 0,
         }
     }
 
@@ -353,7 +352,6 @@ where
     P::Vector: VectorSpace + Debug,
 {
     type Bound = P::Aabb;
-    type Vector = <P::Aabb as Aabb>::Diff;
 
     fn bound(&self) -> &Self::Bound {
         &self.bound
@@ -362,13 +360,41 @@ where
     fn fat_bound(&self) -> Self::Bound {
         self.bound.add_margin(self.fat_factor)
     }
+}
 
-    fn set_index(&mut self, index: usize) {
-        self.index = index;
+impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
+where
+    P: Primitive,
+    P::Aabb: Debug,
+    P::Vector: VectorSpace + Debug,
+{
+    type Id = ID;
+    type Bound = P::Aabb;
+
+    fn id(&self) -> &ID {
+        &self.id
     }
 
-    fn index(&self) -> usize {
-        self.index
+    fn bound(&self) -> &P::Aabb {
+        &self.bound
+    }
+}
+
+impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
+    where
+        P: Primitive,
+        P::Aabb: Debug,
+        P::Vector: VectorSpace + Debug,
+{
+    type Id = ID;
+    type Bound = P::Aabb;
+
+    fn id(&self) -> &ID {
+        &self.1.id
+    }
+
+    fn bound(&self) -> &P::Aabb {
+        &self.1.bound
     }
 }
 

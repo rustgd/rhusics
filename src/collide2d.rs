@@ -6,12 +6,12 @@ pub use collide::primitive2d::*;
 use std::fmt::Debug;
 
 use cgmath::{Vector2, Basis2, Point2};
+use collision::dbvt::DynamicBoundingVolumeTree;
 use specs::{World, Component, Entity};
 
 use {BodyPose, Real, Pose};
 use collide::{CollisionPrimitive, CollisionShape, ContainerShapeWrapper};
 use collide::broad::{BruteForce, SweepAndPrune, Variance2};
-use collide::dbvt::DynamicBoundingVolumeTree;
 use collide::ecs::{Contacts, BasicCollisionSystem, SpatialSortingSystem, SpatialCollisionSystem};
 use collide::narrow::{GJK, EPA2, SimplexProcessor2};
 use collide::primitive2d::Primitive2;
@@ -57,10 +57,11 @@ pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2, T>;
 pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
     Primitive2,
     T,
-    ContainerShapeWrapper<
+    (usize,
+     ContainerShapeWrapper<
         Entity,
         Primitive2,
-    >,
+    >),
 >;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.

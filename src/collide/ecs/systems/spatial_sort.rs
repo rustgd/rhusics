@@ -2,12 +2,12 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::prelude::*;
 use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
 
 use {Pose, Real};
 use collide::{CollisionShape, Primitive, ContainerShapeWrapper};
-use collide::dbvt::DynamicBoundingVolumeTree;
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
@@ -44,7 +44,7 @@ where
         + Sync
         + 'static
         + Contains<P::Aabb>
-        + SurfaceArea<Real>,
+        + SurfaceArea<Scalar = Real>,
     P::Vector: Debug + Send + Sync + 'static,
     T: Component
         + Clone

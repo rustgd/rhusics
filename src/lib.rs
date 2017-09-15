@@ -27,6 +27,8 @@
 //!    convenience.
 //! * Uses single precision as default, can be changed to double precision with the `double`
 //!   feature.
+//! * Has support for doing spatial sort/collision detection using the collision-rs DBVT.
+//! * Support for doing broad phase using the collision-rs DBVT.
 //!
 //! # Examples
 //!
