@@ -380,8 +380,8 @@ where
     }
 }
 
-// Used for data coming out of the collision DBVT.
-impl<ID, P> for (usize, ContainerShapeWrapper<ID, P>)
+// Used for data coming out of the collision-rs DBVT.
+impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
     where
         P: Primitive,
         P::Aabb: Debug,
