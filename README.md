@@ -73,6 +73,6 @@ pub fn main() {
 
 # TODO:
 
-* Continuous collision detection
 * Ray intersection tests with actual geometry
+* Continuous collision detection
 * Impulse solver
