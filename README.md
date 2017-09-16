@@ -73,8 +73,6 @@ pub fn main() {
 
 # TODO:
 
-* Better primitive types for convex polygon (2D) and polyhedron (3D)
-* Contact manifold with contact points
 * Continuous collision detection
 * Ray intersection tests with actual geometry
 * Impulse solver
