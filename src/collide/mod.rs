@@ -97,22 +97,31 @@ where
     }
 
     /// Create a new contact manifold, with the given collision normal and penetration depth
-    pub fn new_impl(strategy: CollisionStrategy,
-                    normal: P::Diff,
-                    penetration_depth: P::Scalar) -> Self {
-        Self::new_with_point(strategy, normal, penetration_depth, P::from_value(P::Scalar::zero()))
+    pub fn new_impl(
+        strategy: CollisionStrategy,
+        normal: P::Diff,
+        penetration_depth: P::Scalar,
+    ) -> Self {
+        Self::new_with_point(
+            strategy,
+            normal,
+            penetration_depth,
+            P::from_value(P::Scalar::zero()),
+        )
     }
 
     /// Create a new contact manifold, complete with contact point
-    pub fn new_with_point(strategy: CollisionStrategy,
-                          normal: P::Diff,
-                          penetration_depth: P::Scalar,
-                          contact_point: P) -> Self {
+    pub fn new_with_point(
+        strategy: CollisionStrategy,
+        normal: P::Diff,
+        penetration_depth: P::Scalar,
+        contact_point: P,
+    ) -> Self {
         Self {
             strategy,
             normal,
             penetration_depth,
-            contact_point
+            contact_point,
         }
     }
 }

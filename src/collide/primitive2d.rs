@@ -179,7 +179,7 @@ where
 
     // figure out where to start, if the direction is negative for the first vertex,
     // go halfway around the polygon
-    let mut start_index : i32 = 0;
+    let mut start_index: i32 = 0;
     let mut max_dot = vertices[0].dot(direction);
     if max_dot < P::Scalar::zero() {
         start_index = vertices.len() as i32 / 2;
@@ -194,7 +194,7 @@ where
         vertices[0]
     } else {
         // figure out iteration direction
-        let mut add : i32 = 1;
+        let mut add: i32 = 1;
         let mut previous_dot = left_dot;
         if left_dot > max_dot && left_dot > right_dot {
             add = -1;
@@ -233,7 +233,9 @@ where
 
 #[inline]
 fn dot_index<P>(vertices: &Vec<P>, index: i32, direction: &P::Diff) -> Real
-where P : EuclideanSpace<Scalar = Real> {
+where
+    P: EuclideanSpace<Scalar = Real>,
+{
     let index_u = index as usize;
     if index_u == vertices.len() {
         vertices[0].dot(*direction)

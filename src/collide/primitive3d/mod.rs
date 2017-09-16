@@ -16,12 +16,16 @@
 //! p.get_bound();
 //! ```
 
+pub use self::polytope::ConvexPolytope;
+
 use cgmath::{Vector3, Point3};
 use cgmath::prelude::*;
 use collision::Aabb3;
 
 use super::Primitive;
 use {Pose, Real};
+
+mod polytope;
 
 /// Sphere primitive
 #[derive(Debug, Clone)]
@@ -78,22 +82,7 @@ impl Cuboid {
     }
 }
 
-/// Convex polyhedron primitive.
-///
-/// Can contain any number of vertices, but a high number of vertices will
-/// affect performance of course.
-#[derive(Debug, Clone)]
-pub struct ConvexPolytope {
-    /// Vertices of the convex polyhedron
-    pub vertices: Vec<Point3<Real>>,
-}
 
-impl ConvexPolytope {
-    /// Create a new convex polyhedron from the given vertices.
-    pub fn new(vertices: Vec<Point3<Real>>) -> Self {
-        Self { vertices }
-    }
-}
 
 /// Base enum for all 3D primitives
 #[derive(Debug, Clone)]
@@ -145,7 +134,7 @@ impl Primitive for Primitive3 {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
             }
 
-            Primitive3::ConvexPolytope(ref c) => ::util::get_bound(&c.vertices),
+            Primitive3::ConvexPolytope(ref c) => c.get_bound(),
         }
     }
 
@@ -160,9 +149,7 @@ impl Primitive for Primitive3 {
 
             Primitive3::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
 
-            Primitive3::ConvexPolytope(ref c) => {
-                ::util::get_max_point(&c.vertices, direction, transform)
-            }
+            Primitive3::ConvexPolytope(ref c) => c.get_far_point(direction, transform),
 
         }
     }

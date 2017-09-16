@@ -43,7 +43,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e),
+                        point(&simplex, &e)
                     ),
                 ];
             } else {
@@ -56,7 +56,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e),
+                        point(&simplex, &e)
                     ),
                 ];
             }
@@ -70,7 +70,11 @@ where
 
 fn point(simplex: &Vec<SupportPoint<Point2<Real>>>, edge: &Edge) -> Point2<Real> {
     let b = &simplex[edge.index];
-    let a = if edge.index == 0 { &simplex[simplex.len() -1] } else { &simplex[edge.index - 1] };
+    let a = if edge.index == 0 {
+        &simplex[simplex.len() - 1]
+    } else {
+        &simplex[edge.index - 1]
+    };
     let oa = -a.v;
     let ab = b.v - a.v;
     let t = oa.dot(ab) / ab.magnitude2();

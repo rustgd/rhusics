@@ -58,15 +58,17 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
             CollisionStrategy::FullResolution,
             face.normal.clone(), // negate ?
             face.distance,
-            point(polytope, face),
+            point(polytope, face)
         ),
     ]
 }
 
-fn barycentric(p: Vector3<Real>,
-               a: Vector3<Real>,
-               b: Vector3<Real>,
-               c: Vector3<Real>) -> (Real, Real, Real) {
+fn barycentric(
+    p: Vector3<Real>,
+    a: Vector3<Real>,
+    b: Vector3<Real>,
+    c: Vector3<Real>,
+) -> (Real, Real, Real) {
     let v0 = b - a;
     let v1 = c - a;
     let v2 = p - a;
@@ -84,14 +86,16 @@ fn barycentric(p: Vector3<Real>,
 }
 
 fn point(polytope: &Polytope, face: &Face) -> Point3<Real> {
-    let (u, v, w) = barycentric(face.normal * face.distance,
-                                polytope.vertices[face.vertices[0]].v,
-                                polytope.vertices[face.vertices[1]].v,
-                                polytope.vertices[face.vertices[2]].v);
+    let (u, v, w) = barycentric(
+        face.normal * face.distance,
+        polytope.vertices[face.vertices[0]].v,
+        polytope.vertices[face.vertices[1]].v,
+        polytope.vertices[face.vertices[2]].v,
+    );
 
-    polytope.vertices[face.vertices[0]].sup_a * u
-        + polytope.vertices[face.vertices[1]].sup_a.to_vec() * v
-        + polytope.vertices[face.vertices[2]].sup_a.to_vec() * w
+    polytope.vertices[face.vertices[0]].sup_a * u +
+        polytope.vertices[face.vertices[1]].sup_a.to_vec() * v +
+        polytope.vertices[face.vertices[2]].sup_a.to_vec() * w
 }
 
 #[derive(Debug)]
