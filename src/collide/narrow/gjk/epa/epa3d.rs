@@ -25,7 +25,7 @@ where
         left_transform: &T,
         right: &CollisionPrimitive<Primitive3, T>,
         right_transform: &T,
-    ) -> Vec<Contact<Vector3<Real>>> {
+    ) -> Vec<Contact<Point3<Real>>> {
         if simplex.len() < 4 {
             return Vec::default();
         }
@@ -37,7 +37,7 @@ where
                 let p = support(left, left_transform, right, right_transform, &face.normal);
                 let d = p.v.dot(face.normal);
                 if d - face.distance < EPA_TOLERANCE || i >= MAX_ITERATIONS {
-                    return contact(face);
+                    return contact(&polytope, face);
                 }
                 p
             };
@@ -52,14 +52,46 @@ where
 }
 
 #[inline]
-fn contact(face: &Face) -> Vec<Contact<Vector3<Real>>> {
+fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
     vec![
-        Contact::new_impl(
+        Contact::new_with_point(
             CollisionStrategy::FullResolution,
-            face.normal.clone(),
-            face.distance
+            face.normal.clone(), // negate ?
+            face.distance,
+            point(polytope, face),
         ),
     ]
+}
+
+fn barycentric(p: Vector3<Real>,
+               a: Vector3<Real>,
+               b: Vector3<Real>,
+               c: Vector3<Real>) -> (Real, Real, Real) {
+    let v0 = b - a;
+    let v1 = c - a;
+    let v2 = p - a;
+    let d00 = v0.dot(v0);
+    let d01 = v0.dot(v1);
+    let d11 = v1.dot(v1);
+    let d20 = v2.dot(v0);
+    let d21 = v2.dot(v1);
+    let inv_denom = 1. / (d00 * d11 - d01 * d01);
+
+    let v = (d11 * d20 - d01 * d21) * inv_denom;
+    let w = (d00 * d21 - d01 * d20) * inv_denom;
+    let u = 1. - v - w;
+    (u, v, w)
+}
+
+fn point(polytope: &Polytope, face: &Face) -> Point3<Real> {
+    let (u, v, w) = barycentric(face.normal * face.distance,
+                                polytope.vertices[face.vertices[0]].v,
+                                polytope.vertices[face.vertices[1]].v,
+                                polytope.vertices[face.vertices[2]].v);
+
+    polytope.vertices[face.vertices[0]].sup_a * u
+        + polytope.vertices[face.vertices[1]].sup_a.to_vec() * v
+        + polytope.vertices[face.vertices[2]].sup_a.to_vec() * w
 }
 
 #[derive(Debug)]

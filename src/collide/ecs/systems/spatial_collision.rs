@@ -37,6 +37,7 @@ where
 impl<P, T, D> SpatialCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
+    P::Vector: Debug,
     P::Aabb: Clone
         + Debug
         + Send
@@ -93,12 +94,13 @@ where
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
     P::Vector: Debug + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
 {
     type SystemData = (Entities<'a>,
      ReadStorage<'a, T>,
      ReadStorage<'a, CollisionShape<P, T>>,
-     FetchMut<'a, Contacts<P::Vector>>,
+     FetchMut<'a, Contacts<P::Point>>,
      FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
     fn run(&mut self, (entities, poses, shapes, mut contacts, mut tree): Self::SystemData) {

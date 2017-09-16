@@ -26,7 +26,7 @@ pub trait EPA<T> {
         left_transform: &T,
         right: &CollisionPrimitive<Self::Primitive, T>,
         right_transform: &T,
-    ) -> Vec<Contact<Self::Vector>>;
+    ) -> Vec<Contact<Self::Point>>;
 
     fn new() -> Self;
 }

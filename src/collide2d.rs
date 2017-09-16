@@ -5,7 +5,7 @@ pub use collide::primitive2d::*;
 
 use std::fmt::Debug;
 
-use cgmath::{Vector2, Basis2, Point2};
+use cgmath::{Basis2, Point2};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use specs::{World, Component, Entity};
 
@@ -18,7 +18,7 @@ use collide::primitive2d::Primitive2;
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
-pub type Contacts2 = Contacts<Vector2<Real>>;
+pub type Contacts2 = Contacts<Point2<Real>>;
 
 /// Collision primitive for 2D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
 /// for more information.

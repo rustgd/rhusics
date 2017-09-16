@@ -90,7 +90,7 @@ impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
         P: Primitive,
         P::Aabb: Discrete<P::Aabb>,
         P::Point: Debug,
-        P::Vector: InnerSpace + Neg<Output=P::Vector>,
+        P::Vector: InnerSpace + Neg<Output=P::Vector> + Debug,
         S: SimplexProcessor<Vector=P::Vector, Point=P::Point> + Debug,
         T: Pose<P::Point> + Debug,
         E: EPA<T, Vector=P::Vector, Primitive=P, Point=P::Point> + Debug,
@@ -99,7 +99,7 @@ impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
         &mut self,
         (ref left_id, ref left, ref left_transform): (ID, &CollisionShape<P, T>, &T),
         (ref right_id, ref right, ref right_transform): (ID, &CollisionShape<P, T>, &T),
-    ) -> Option<ContactSet<ID, P::Vector>> {
+    ) -> Option<ContactSet<ID, P::Point>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
             {

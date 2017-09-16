@@ -26,7 +26,7 @@ where
         left_transform: &T,
         right: &CollisionPrimitive<Primitive2, T>,
         right_transform: &T,
-    ) -> Vec<Contact<Vector2<Real>>> {
+    ) -> Vec<Contact<Point2<Real>>> {
         let mut i = 0;
         if closest_edge(&simplex).is_none() {
             return Vec::default();
@@ -39,10 +39,11 @@ where
             let d = p.v.dot(e.normal);
             if d - e.distance < EPA_TOLERANCE {
                 return vec![
-                    Contact::new_impl(
+                    Contact::new_with_point(
                         CollisionStrategy::FullResolution,
                         e.normal,
-                        e.distance
+                        e.distance,
+                        point(&simplex, &e),
                     ),
                 ];
             } else {
@@ -51,10 +52,11 @@ where
             i += 1;
             if i >= MAX_ITERATIONS {
                 return vec![
-                    Contact::new_impl(
+                    Contact::new_with_point(
                         CollisionStrategy::FullResolution,
                         e.normal,
-                        e.distance
+                        e.distance,
+                        point(&simplex, &e),
                     ),
                 ];
             }
@@ -63,6 +65,21 @@ where
 
     fn new() -> Self {
         Self {}
+    }
+}
+
+fn point(simplex: &Vec<SupportPoint<Point2<Real>>>, edge: &Edge) -> Point2<Real> {
+    let b = &simplex[edge.index];
+    let a = if edge.index == 0 { &simplex[simplex.len() -1] } else { &simplex[edge.index - 1] };
+    let oa = -a.v;
+    let ab = b.v - a.v;
+    let t = oa.dot(ab) / ab.magnitude2();
+    if t < 0. {
+        a.sup_a.clone()
+    } else if t < 1. {
+        b.sup_a.clone()
+    } else {
+        a.sup_a + (b.sup_a - a.sup_a) * t
     }
 }
 
