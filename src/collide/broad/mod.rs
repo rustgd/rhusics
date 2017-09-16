@@ -15,8 +15,6 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::{Aabb, Discrete};
 
-use collide::{Primitive, ContainerShapeWrapper};
-
 mod sweep_prune;
 mod brute_force;
 
@@ -33,24 +31,6 @@ pub trait BroadCollisionData {
 
     /// Return the bounding volume of the shape
     fn bound(&self) -> &Self::Bound;
-}
-
-impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
-where
-    P: Primitive,
-    P::Aabb: Debug,
-    P::Vector: VectorSpace + Debug,
-{
-    type Id = ID;
-    type Bound = P::Aabb;
-
-    fn id(&self) -> &ID {
-        &self.id
-    }
-
-    fn bound(&self) -> &P::Aabb {
-        &self.bound
-    }
 }
 
 /// Trait implemented by all broad phase algorithms.

@@ -68,20 +68,13 @@ pub fn main() {
   sorting on user supplied transform, and shape components.
 * Uses single precision as default, can be changed to double precision with the `double`
   feature.
-* Has an implementation of a Bounding Volume Hierarchy, specifically a 
-  dynamic bounding volume tree.
-    * Support for dynamic updates it the values in the tree
-    * Uses surface are of the bounding volumes as the main heuristic for balancing the tree.
-    * Support for custom queries using the visitor pattern
-    * Has concrete query implementations for discrete and continuous intersection testing
-      using any bounding volume.
-    * Has a concrete query implementation for frustum intersection testing.
-* Support for doing broad phase using the DBVT.
+* Has support for doing spatial sort/collision detection using the collision-rs DBVT.
+* Support for doing broad phase using the collision-rs DBVT.
 
 # TODO:
 
+* Better primitive types for convex polygon (2D) and polyhedron (3D)
 * Contact manifold with contact points
-* Better primitive type for convex polytope (half edge)
 * Continuous collision detection
 * Ray intersection tests with actual geometry
 * Impulse solver

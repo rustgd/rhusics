@@ -1,13 +1,12 @@
 use std::fmt::Debug;
 
+use collision::dbvt::{DynamicBoundingVolumeTree, DiscreteVisitor};
 use collision::prelude::*;
 use specs::{System, ReadStorage, Entity, FetchMut, Component, Entities, Join};
 
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
 use collide::broad::{BroadPhase, BroadCollisionData};
-use collide::dbvt::DynamicBoundingVolumeTree;
-use collide::dbvt::visitor::DiscreteVisitor;
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -45,7 +44,7 @@ where
         + 'static
         + Union<P::Aabb, Output = P::Aabb>
         + Contains<P::Aabb>
-        + SurfaceArea<Real>,
+        + SurfaceArea<Scalar = Real>,
     T: Pose<P::Point> + Component,
     D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
 {
@@ -81,7 +80,8 @@ where
     DiscreteVisitor::<P::Aabb, ContainerShapeWrapper<Entity, P>>::new(bound)
 }
 
-impl<'a, P, T> System<'a> for SpatialCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
+impl<'a, P, T> System<'a>
+    for SpatialCollisionSystem<P, T, (usize, ContainerShapeWrapper<Entity, P>)>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -91,15 +91,9 @@ where
         + 'static
         + Discrete<P::Aabb>
         + Contains<P::Aabb>
-        + SurfaceArea<Real>,
+        + SurfaceArea<Scalar = Real>,
     P::Vector: Debug + Send + Sync + 'static,
-    T: Component
-        + Clone
-        + Debug
-        + Pose<P::Point>
-        + Send
-        + Sync
-        + 'static,
+    T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
 {
     type SystemData = (Entities<'a>,
      ReadStorage<'a, T>,
@@ -112,7 +106,7 @@ where
 
         let potentials = if let Some(ref mut broad) = self.broad {
             // Overridden broad phase, use that
-            let potentials = broad.compute(&mut tree.values());
+            let potentials = broad.compute(tree.values());
             tree.reindex_values();
             potentials
         } else {
@@ -121,7 +115,7 @@ where
             // find changed values, do intersection tests against tree for each
             for (entity, pose, shape) in (&*entities, &poses, &shapes).join() {
                 if pose.dirty() {
-                    for (v, _) in tree.query(&discrete_visitor::<P>(shape.bound())) {
+                    for (v, _) in tree.query(&mut discrete_visitor::<P>(shape.bound())) {
                         if entity != v.id {
                             let n = if entity < v.id {
                                 (entity, v.id.clone())
