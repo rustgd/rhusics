@@ -1,5 +1,5 @@
-use std::ops::{DerefMut, Deref};
 use std::fmt::Debug;
+use std::ops::{DerefMut, Deref};
 
 use cgmath::prelude::*;
 use specs::{Component, VecStorage, Entity};

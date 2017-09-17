@@ -1,7 +1,7 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
 pub use collide::CollisionStrategy;
-pub use collide::primitive3d::*;
+pub use collide::primitives::primitive3d::*;
 
 use std::fmt::Debug;
 
@@ -10,7 +10,7 @@ use collision::dbvt::DynamicBoundingVolumeTree;
 use specs::{World, Component, Entity};
 
 use {BodyPose, Real, Pose};
-use collide::{CollisionPrimitive, CollisionShape, ContainerShapeWrapper};
+use collide::*;
 use collide::broad::{BruteForce, SweepAndPrune, Variance3};
 use collide::ecs::{Contacts, BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 use collide::narrow::{GJK, EPA3, SimplexProcessor3};
