@@ -1,7 +1,7 @@
 //! Type wrappers and convenience functions for 2D collision detection
 
 pub use collide::CollisionStrategy;
-pub use collide::primitive2d::*;
+pub use collide::primitives::primitive2d::*;
 
 use std::fmt::Debug;
 
@@ -10,11 +10,10 @@ use collision::dbvt::DynamicBoundingVolumeTree;
 use specs::{World, Component, Entity};
 
 use {BodyPose, Real, Pose};
-use collide::{CollisionPrimitive, CollisionShape, ContainerShapeWrapper};
+use collide::*;
 use collide::broad::{BruteForce, SweepAndPrune, Variance2};
 use collide::ecs::{Contacts, BasicCollisionSystem, SpatialSortingSystem, SpatialCollisionSystem};
 use collide::narrow::{GJK, EPA2, SimplexProcessor2};
-use collide::primitive2d::Primitive2;
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.

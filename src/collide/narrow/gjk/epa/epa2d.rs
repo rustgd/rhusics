@@ -5,7 +5,7 @@ use super::*;
 use {Pose, Real};
 use collide::{CollisionPrimitive, Contact, CollisionStrategy};
 use collide::narrow::gjk::support;
-use collide::primitive2d::Primitive2;
+use collide::primitives::primitive2d::Primitive2;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
