@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use cgmath::{Point3, Vector3};
 use cgmath::num_traits::Float;
@@ -75,7 +75,7 @@ impl ConvexPolytope {
 
     /// Create a new convex polyhedron from the given vertices and faces.
     pub fn new_with_faces(vertices: Vec<Point3<Real>>, faces: Vec<(usize, usize, usize)>) -> Self {
-        let (vertices, edges, faces) = half_edges(&vertices, &faces);
+        let (vertices, edges, faces) = build_half_edges(&vertices, &faces);
         Self {
             mode: PolytopeMode::HalfEdge,
             bound: vertices.iter().fold(Aabb3::zero(), |bound, p| {
@@ -99,7 +99,7 @@ impl ConvexPolytope {
     {
         let p = match self.mode {
             PolytopeMode::VertexOnly => {
-                self.simple_far_point(transform.inverse_rotation().rotate_vector(*direction))
+                self.brute_force_far_point(transform.inverse_rotation().rotate_vector(*direction))
             }
 
             PolytopeMode::HalfEdge => {
@@ -109,7 +109,7 @@ impl ConvexPolytope {
         *transform.position() + transform.rotation().rotate_point(p).to_vec()
     }
 
-    fn simple_far_point(&self, direction: Vector3<Real>) -> Point3<Real> {
+    fn brute_force_far_point(&self, direction: Vector3<Real>) -> Point3<Real> {
         let (p, _) = self.vertices
             .iter()
             .map(|v| (v.position, v.position.dot(direction)))
@@ -136,6 +136,7 @@ impl ConvexPolytope {
 
             loop {
                 let vertex_index = self.edges[edge_index].target_vertex;
+
                 let dot = self.vertices[vertex_index].position.dot(direction);
                 if dot > best_dot {
                     best_index = vertex_index;
@@ -158,7 +159,7 @@ impl ConvexPolytope {
 }
 
 /// Create half edge data structure from vertices and faces
-fn half_edges(
+fn build_half_edges(
     vertices: &Vec<Point3<Real>>,
     in_faces: &Vec<(usize, usize, usize)>,
 ) -> (Vec<Vertex>, Vec<Edge>, Vec<Face>) {

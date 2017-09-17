@@ -10,8 +10,8 @@ pub mod primitives;
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::prelude::*;
 use collision::dbvt::TreeValue;
+use collision::prelude::*;
 
 use self::broad::BroadCollisionData;
 use {Pose, Real};

@@ -27,8 +27,8 @@ pub trait Primitive: Debug + Clone + Send + Sync {
 
     /// Bounding box type used by the primitive
     type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point>
-    + Clone
-    + Union<Self::Aabb, Output = Self::Aabb>;
+        + Clone
+        + Union<Self::Aabb, Output = Self::Aabb>;
 
     /// Get the furthest point from the origin on the shape in a given direction.
     ///
@@ -45,8 +45,8 @@ pub trait Primitive: Debug + Clone + Send + Sync {
     ///
     /// - `P`: Transform type
     fn get_far_point<T>(&self, direction: &Self::Vector, transform: &T) -> Self::Point
-        where
-            T: Pose<Self::Point>;
+    where
+        T: Pose<Self::Point>;
 
     /// Get the bounding box of the primitive in local space coordinates.
     fn get_bound(&self) -> Self::Aabb;
