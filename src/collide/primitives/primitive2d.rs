@@ -10,7 +10,7 @@
 //! # Example
 //!
 //! ```
-//! # use rhusics::collide::primitive2d::*;
+//! # use rhusics::collide::primitives::primitive2d::*;
 //! use rhusics::collide::Primitive;
 //! let p : Primitive2 = Rectangle::new(10., 34.).into();
 //! p.get_bound();

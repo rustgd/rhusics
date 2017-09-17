@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use cgmath::{Point3, Vector3};
 use cgmath::num_traits::Float;
@@ -39,7 +39,11 @@ struct Face {
 /// Convex polyhedron primitive.
 ///
 /// Can contain any number of vertices, but a high number of vertices will
-/// affect performance of course.
+/// affect performance of course. It is recommended for high vertex counts, to also provide the
+/// faces, this will cause the support function to use hill climbing on a half edge structure,
+/// resulting in better performance. The breakpoint is around 250 vertices, but the face version is
+/// only marginally slower on lower vertex counts (about 1-2%), while for higher vertex counts it's
+/// about 2-5 times faster.
 #[derive(Debug, Clone)]
 pub struct ConvexPolytope {
     mode: PolytopeMode,
@@ -255,10 +259,11 @@ fn build_half_edges(
 #[cfg(test)]
 mod tests {
 
-    use cgmath::Point3;
+    use cgmath::{Point3, Vector3, Transform};
 
     use super::ConvexPolytope;
     use Real;
+    use collide3d::BodyPose3;
 
     #[test]
     fn test_polytope_half_edge() {
@@ -270,7 +275,29 @@ mod tests {
         ];
         let faces = vec![(0, 1, 2), (0, 2, 3), (0, 3, 1), (3, 2, 1)];
 
-        let polytope = ConvexPolytope::new_with_faces(vertices, faces);
-        println!("{:?}", polytope);
+        let polytope_with_faces = ConvexPolytope::new_with_faces(vertices.clone(), faces);
+        let polytope = ConvexPolytope::new(vertices);
+
+        let transform = BodyPose3::one();
+
+        let direction = Vector3::new(1., 0., 0.);
+        assert_eq!(
+            Point3::new(1., -1., -1.),
+            polytope.get_far_point(&direction, &transform)
+        );
+        assert_eq!(
+            Point3::new(1., -1., -1.),
+            polytope_with_faces.get_far_point(&direction, &transform)
+        );
+
+        let direction = Vector3::new(0., 1., 0.);
+        assert_eq!(
+            Point3::new(0., 1., 0.),
+            polytope.get_far_point(&direction, &transform)
+        );
+        assert_eq!(
+            Point3::new(0., 1., 0.),
+            polytope_with_faces.get_far_point(&direction, &transform)
+        );
     }
 }

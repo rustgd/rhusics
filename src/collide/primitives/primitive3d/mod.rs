@@ -10,7 +10,7 @@
 //! # Example
 //!
 //! ```
-//! # use rhusics::collide::primitive3d::*;
+//! # use rhusics::collide::primitives::primitive3d::*;
 //! use rhusics::collide::Primitive;
 //! let p : Primitive3 = Cuboid::new(10., 34., 22.).into();
 //! p.get_bound();
