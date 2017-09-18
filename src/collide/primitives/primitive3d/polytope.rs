@@ -3,7 +3,9 @@ use std::collections::HashMap;
 use cgmath::{Point3, Vector3};
 use cgmath::num_traits::Float;
 use cgmath::prelude::*;
-use collision::{Aabb, Aabb3};
+use collision::Aabb3;
+use collision::Ray3;
+use collision::prelude::*;
 
 use {Pose, Real};
 
@@ -33,6 +35,7 @@ struct Edge {
 #[derive(Debug, Clone)]
 struct Face {
     edge: usize,
+    normal: Vector3<Real>,
     ready: bool,
 }
 
@@ -90,11 +93,13 @@ impl ConvexPolytope {
         }
     }
 
+    #[inline]
     /// Get the AABB for the polytope
     pub fn get_bound(&self) -> Aabb3<Real> {
         self.bound.clone()
     }
 
+    #[inline]
     /// Get the furthest point from the origin on the shape in a given direction.
     pub fn get_far_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
     where
@@ -112,6 +117,7 @@ impl ConvexPolytope {
         *transform.position() + transform.rotation().rotate_point(p).to_vec()
     }
 
+    #[inline]
     fn brute_force_far_point(&self, direction: Vector3<Real>) -> Point3<Real> {
         let (p, _) = self.vertices
             .iter()
@@ -127,6 +133,7 @@ impl ConvexPolytope {
         p
     }
 
+    #[inline]
     fn hill_climb_far_point(&self, direction: Vector3<Real>) -> Point3<Real> {
         let mut best_index = 0;
         let mut best_dot = self.vertices[best_index].position.dot(direction);
@@ -182,6 +189,9 @@ fn build_half_edges(
         let face_vertices = [a, b, c];
         let mut face = Face {
             edge: 0,
+            normal: (vertices[c].position - vertices[a].position)
+                .cross(vertices[b].position - vertices[a].position)
+                .normalize(),
             ready: false,
         };
         let face_index = faces.len();
@@ -248,9 +258,26 @@ fn build_half_edges(
             edges[edge_i].next_edge = edge_j;
             edges[edge_j].previous_edge = edge_i;
         }
+
+
     }
 
     (vertices, edges, faces)
+}
+
+impl Discrete<Ray3<Real>> for ConvexPolytope {
+    fn intersects(&self, ray: &Ray3<Real>) -> bool {
+        false // TODO
+    }
+}
+
+/// Compute intersection point of ray and face in barycentric coordinates.
+fn intersect_ray_face(
+    ray: &Ray3<Real>,
+    polytope: &ConvexPolytope,
+    face: &Face,
+) -> (Real, Real, Real) {
+    (0., 0., 0.) // TODO
 }
 
 #[cfg(test)]
@@ -274,6 +301,8 @@ mod tests {
 
         let polytope_with_faces = ConvexPolytope::new_with_faces(vertices.clone(), faces);
         let polytope = ConvexPolytope::new(vertices);
+
+        println!("{:?}", polytope_with_faces);
 
         let transform = BodyPose3::one();
 

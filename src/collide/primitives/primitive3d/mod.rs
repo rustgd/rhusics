@@ -16,7 +16,9 @@
 //! p.get_bound();
 //! ```
 
+pub use self::cuboid::Cuboid;
 pub use self::polytope::ConvexPolytope;
+pub use self::sphere::Sphere;
 
 use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
@@ -26,63 +28,8 @@ use super::Primitive;
 use {Pose, Real};
 
 mod polytope;
-
-/// Sphere primitive
-#[derive(Debug, Clone)]
-pub struct Sphere {
-    /// Radius of the sphere
-    pub radius: Real,
-}
-
-impl Sphere {
-    /// Create a new sphere primitive
-    pub fn new(radius: Real) -> Self {
-        Self { radius }
-    }
-}
-
-/// Cuboid primitive.
-///
-/// Have a cached set of corner points to speed up computation.
-#[derive(Debug, Clone)]
-pub struct Cuboid {
-    /// Dimensions of the box
-    pub dim: Vector3<Real>,
-    half_dim: Vector3<Real>,
-    corners: Vec<Point3<Real>>,
-}
-
-impl Cuboid {
-    /// Create a new rectangle primitive from component dimensions
-    pub fn new(dim_x: Real, dim_y: Real, dim_z: Real) -> Self {
-        Self::new_impl(Vector3::new(dim_x, dim_y, dim_z))
-    }
-
-    /// Create a new rectangle primitive from a vector of component dimensions
-    pub fn new_impl(dim: Vector3<Real>) -> Self {
-        Self {
-            dim,
-            half_dim: dim / 2.,
-            corners: Self::generate_corners(&dim),
-        }
-    }
-
-    fn generate_corners(dimensions: &Vector3<Real>) -> Vec<Point3<Real>> {
-        let two = 2.;
-        vec![
-            Point3::new(dimensions.x, dimensions.y, dimensions.z) / two,
-            Point3::new(-dimensions.x, dimensions.y, dimensions.z) / two,
-            Point3::new(-dimensions.x, -dimensions.y, dimensions.z) / two,
-            Point3::new(dimensions.x, -dimensions.y, dimensions.z) / two,
-            Point3::new(dimensions.x, dimensions.y, -dimensions.z) / two,
-            Point3::new(-dimensions.x, dimensions.y, -dimensions.z) / two,
-            Point3::new(-dimensions.x, -dimensions.y, -dimensions.z) / two,
-            Point3::new(dimensions.x, -dimensions.y, -dimensions.z) / two,
-        ]
-    }
-}
-
-
+mod sphere;
+mod cuboid;
 
 /// Base enum for all 3D primitives
 #[derive(Debug, Clone)]
@@ -123,14 +70,9 @@ impl Primitive for Primitive3 {
 
     fn get_bound(&self) -> Aabb3<Real> {
         match *self {
-            Primitive3::Sphere(ref sphere) => Aabb3::new(
-                Point3::from_value(-sphere.radius),
-                Point3::from_value(sphere.radius),
-            ),
+            Primitive3::Sphere(ref sphere) => sphere.get_bound(),
 
-            Primitive3::Cuboid(ref b) => {
-                Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
-            }
+            Primitive3::Cuboid(ref b) => b.get_bound(),
 
             Primitive3::ConvexPolytope(ref c) => c.get_bound(),
         }
@@ -141,11 +83,9 @@ impl Primitive for Primitive3 {
         T: Pose<Point3<Real>>,
     {
         match *self {
-            Primitive3::Sphere(ref sphere) => {
-                transform.position() + direction.normalize_to(sphere.radius)
-            }
+            Primitive3::Sphere(ref sphere) => sphere.get_far_point(direction, transform),
 
-            Primitive3::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
+            Primitive3::Cuboid(ref b) => b.get_far_point(direction, transform),
 
             Primitive3::ConvexPolytope(ref c) => c.get_far_point(direction, transform),
         }
