@@ -37,7 +37,7 @@ pub enum CollisionStrategy {
 /// - `ID`: The ID type of the body. This is supplied by the user of the library. In the ECS case,
 ///         this will be [`Entity`](https://docs.rs/specs/0.9.5/specs/struct.Entity.html).
 /// - `V`: cgmath vector type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ContactSet<ID, P>
 where
     P: EuclideanSpace,
@@ -72,7 +72,7 @@ where
 /// # Type parameters
 ///
 /// - `P`: cgmath point type
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Contact<P: EuclideanSpace> {
     /// The collision strategy used for this contact.
     pub strategy: CollisionStrategy,

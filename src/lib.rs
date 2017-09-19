@@ -82,6 +82,7 @@ extern crate cgmath;
 extern crate collision;
 extern crate specs;
 extern crate rand;
+extern crate shrev;
 
 #[cfg(test)]
 #[macro_use]

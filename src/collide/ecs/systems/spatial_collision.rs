@@ -3,6 +3,7 @@ use std::fmt::Debug;
 use collision::dbvt::{DynamicBoundingVolumeTree, DiscreteVisitor};
 use collision::prelude::*;
 use specs::{System, ReadStorage, Entity, FetchMut, Component, Entities, Join};
+use shrev::EventHandler;
 
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
@@ -100,11 +101,14 @@ where
     type SystemData = (Entities<'a>,
      ReadStorage<'a, T>,
      ReadStorage<'a, CollisionShape<P, T>>,
-     FetchMut<'a, Contacts<P::Point>>,
+    Option<FetchMut<'a, Contacts<P::Point>>>,
+    Option<FetchMut<'a, EventHandler>>,
      FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
-    fn run(&mut self, (entities, poses, shapes, mut contacts, mut tree): Self::SystemData) {
-        contacts.clear();
+    fn run(&mut self, (entities, poses, shapes, mut contacts, mut event_handler, mut tree): Self::SystemData) {
+        if let Some(ref mut c) = contacts {
+            c.clear();
+        }
 
         let potentials = if let Some(ref mut broad) = self.broad {
             // Overridden broad phase, use that
@@ -150,7 +154,16 @@ where
                         right_shape,
                         right_pose,
                     )) {
-                        Some(contact_set) => contacts.push(contact_set),
+                        Some(contact_set) => {
+                            if let Some(ref mut events) = event_handler {
+                                match events.write_single(contact_set) {
+                                    Err(err) => println!("Error in event write: {:?}", err),
+                                    _ => (),
+                                };
+                            } else if let Some(ref mut c) = contacts {
+                                c.push(contact_set);
+                            }
+                        },
                         None => (),
                     };
                 }
@@ -160,10 +173,18 @@ where
                 // intersections
                 // right now, we only report the collision, no normal/depth calculation
                 for (left_entity, right_entity) in potentials {
-                    contacts.push(ContactSet::new_single(
+                    let contact_set = ContactSet::new_single(
                         CollisionStrategy::CollisionOnly,
                         (left_entity, right_entity),
-                    ));
+                    );
+                    if let Some(ref mut events) = event_handler {
+                        match events.write_single(contact_set) {
+                            Err(err) => println!("Error in event write: {:?}", err),
+                            _ => (),
+                        };
+                    } else if let Some(ref mut c) = contacts {
+                        c.push(contact_set);
+                    }
                 }
             }
         }

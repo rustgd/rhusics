@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
 use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
+use shrev::EventHandler;
 
 use Pose;
 use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
@@ -77,10 +78,13 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
     type SystemData = (Entities<'a>,
                        ReadStorage<'a, T>,
                        WriteStorage<'a, CollisionShape<P, T>>,
-                       FetchMut<'a, Contacts<P::Point>>);
+                       Option<FetchMut<'a, Contacts<P::Point>>>,
+                       Option<FetchMut<'a, EventHandler>>,);
 
-    fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
-        contacts.clear();
+    fn run(&mut self, (entities, poses, mut shapes, mut contacts, mut event_handler): Self::SystemData) {
+        if let Some(ref mut c) = contacts {
+            c.clear();
+        }
 
         if let Some(ref mut broad) = self.broad {
 
@@ -103,7 +107,16 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
                             right_shape,
                             right_pose,
                         )) {
-                            Some(contact_set) => contacts.push(contact_set),
+                            Some(contact_set) => {
+                                if let Some(ref mut events) = event_handler {
+                                    match events.write_single(contact_set) {
+                                        Err(err) => println!("Error in event write: {:?}", err),
+                                        _ => (),
+                                    };
+                                } else if let Some(ref mut c) = contacts {
+                                    c.push(contact_set);
+                                }
+                            },
                             None => (),
                         };
                     }
@@ -113,10 +126,18 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
 // intersections
 // right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
-                        contacts.push(ContactSet::new_single(
+                        let contact_set = ContactSet::new_single(
                             CollisionStrategy::CollisionOnly,
                             (left_entity, right_entity),
-                        ));
+                        );
+                        if let Some(ref mut events) = event_handler {
+                            match events.write_single(contact_set) {
+                                Err(err) => println!("Error in event write: {:?}", err),
+                                _ => (),
+                            };
+                        } else if let Some(ref mut c) = contacts {
+                            c.push(contact_set);
+                        }
                     }
                 }
             }
