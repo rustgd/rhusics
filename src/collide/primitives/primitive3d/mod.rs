@@ -18,7 +18,7 @@
 
 pub use self::polytope::ConvexPolytope;
 
-use cgmath::{Vector3, Point3};
+use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
 use collision::Aabb3;
 
@@ -123,12 +123,10 @@ impl Primitive for Primitive3 {
 
     fn get_bound(&self) -> Aabb3<Real> {
         match *self {
-            Primitive3::Sphere(ref sphere) => {
-                Aabb3::new(
-                    Point3::from_value(-sphere.radius),
-                    Point3::from_value(sphere.radius),
-                )
-            }
+            Primitive3::Sphere(ref sphere) => Aabb3::new(
+                Point3::from_value(-sphere.radius),
+                Point3::from_value(sphere.radius),
+            ),
 
             Primitive3::Cuboid(ref b) => {
                 Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
@@ -150,7 +148,6 @@ impl Primitive for Primitive3 {
             Primitive3::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
 
             Primitive3::ConvexPolytope(ref c) => c.get_far_point(direction, transform),
-
         }
     }
 }
@@ -159,7 +156,7 @@ impl Primitive for Primitive3 {
 mod tests {
     use std;
 
-    use cgmath::{Point3, Vector3, Rotation3, Rad, Quaternion};
+    use cgmath::{Point3, Quaternion, Rad, Rotation3, Vector3};
 
     use super::*;
     use BodyPose;

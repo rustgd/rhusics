@@ -22,9 +22,9 @@ where
 
         for left_index in 0..(shapes.len() - 1) {
             for right_index in 1..shapes.len() {
-                if shapes[left_index].bound().intersects(
-                    &shapes[right_index].bound(),
-                )
+                if shapes[left_index]
+                    .bound()
+                    .intersects(&shapes[right_index].bound())
                 {
                     pairs.push((
                         shapes[left_index].id().clone(),

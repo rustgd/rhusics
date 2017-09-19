@@ -70,10 +70,9 @@ impl ConvexPolytope {
                 .collect(),
             edges: Vec::default(),
             faces: Vec::default(),
-            bound: vertices.iter().fold(
-                Aabb3::zero(),
-                |bound, p| bound.grow(*p),
-            ),
+            bound: vertices
+                .iter()
+                .fold(Aabb3::zero(), |bound, p| bound.grow(*p)),
         }
     }
 
@@ -82,9 +81,9 @@ impl ConvexPolytope {
         let (vertices, edges, faces) = build_half_edges(&vertices, &faces);
         Self {
             mode: PolytopeMode::HalfEdge,
-            bound: vertices.iter().fold(Aabb3::zero(), |bound, p| {
-                bound.grow(p.position)
-            }),
+            bound: vertices
+                .iter()
+                .fold(Aabb3::zero(), |bound, p| bound.grow(p.position)),
             vertices,
             edges,
             faces,
@@ -117,15 +116,14 @@ impl ConvexPolytope {
         let (p, _) = self.vertices
             .iter()
             .map(|v| (v.position, v.position.dot(direction)))
-            .fold((Point3::from_value(0.), Real::neg_infinity()), |(max_p,
-              max_dot),
-             (v, dot)| {
-                if dot > max_dot {
+            .fold(
+                (Point3::from_value(0.), Real::neg_infinity()),
+                |(max_p, max_dot), (v, dot)| if dot > max_dot {
                     (v.clone(), dot)
                 } else {
                     (max_p, max_dot)
-                }
-            });
+                },
+            );
         p
     }
 
@@ -193,33 +191,32 @@ fn build_half_edges(
             let v0 = face_vertices[i];
             let v1 = face_vertices[j];
 
-            let (edge_v0_v1_index, edge_v1_v0_index) =
-                if let Some(edge) = edge_map.get(&(v0, v1)) {
-                    (edge.clone(), edges[*edge].twin_edge)
-                } else {
-                    let edge_v0_v1_index = edges.len();
-                    let edge_v1_v0_index = edges.len() + 1;
+            let (edge_v0_v1_index, edge_v1_v0_index) = if let Some(edge) = edge_map.get(&(v0, v1)) {
+                (edge.clone(), edges[*edge].twin_edge)
+            } else {
+                let edge_v0_v1_index = edges.len();
+                let edge_v1_v0_index = edges.len() + 1;
 
-                    edges.push(Edge {
-                        target_vertex: v1,
-                        left_face: 0,
-                        next_edge: 0,
-                        previous_edge: 0,
-                        twin_edge: edge_v1_v0_index,
-                        ready: false,
-                    });
+                edges.push(Edge {
+                    target_vertex: v1,
+                    left_face: 0,
+                    next_edge: 0,
+                    previous_edge: 0,
+                    twin_edge: edge_v1_v0_index,
+                    ready: false,
+                });
 
-                    edges.push(Edge {
-                        target_vertex: v0,
-                        left_face: 0,
-                        next_edge: 0,
-                        previous_edge: 0,
-                        twin_edge: edge_v0_v1_index,
-                        ready: false,
-                    });
+                edges.push(Edge {
+                    target_vertex: v0,
+                    left_face: 0,
+                    next_edge: 0,
+                    previous_edge: 0,
+                    twin_edge: edge_v0_v1_index,
+                    ready: false,
+                });
 
-                    (edge_v0_v1_index, edge_v1_v0_index)
-                };
+                (edge_v0_v1_index, edge_v1_v0_index)
+            };
 
             edge_map.insert((v0, v1), edge_v0_v1_index);
             edge_map.insert((v1, v0), edge_v1_v0_index);
@@ -259,7 +256,7 @@ fn build_half_edges(
 #[cfg(test)]
 mod tests {
 
-    use cgmath::{Point3, Vector3, Transform};
+    use cgmath::{Point3, Transform, Vector3};
 
     use super::ConvexPolytope;
     use Real;

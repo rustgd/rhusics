@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use cgmath::{Vector3, Point3};
+use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
 
 use super::SimplexProcessor;
@@ -139,14 +139,13 @@ fn check_side(
         simplex.swap(0, 1);
         *v = abc.neg();
     }
-
 }
 
 #[cfg(test)]
 mod tests {
     use std::ops::Neg;
 
-    use cgmath::{Vector3, Point3};
+    use cgmath::{Point3, Vector3};
 
     use super::*;
     use collide::narrow::gjk::SupportPoint;

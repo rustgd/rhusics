@@ -12,18 +12,11 @@ where
 {
     let direction = transform.inverse_rotation().rotate_vector(*direction);
     let (p, _) = vertices.iter().map(|v| (v, v.dot(direction))).fold(
-        (
-            P::from_value(P::Scalar::zero()),
-            P::Scalar::neg_infinity(),
-        ),
-        |(max_p,
-             max_dot),
-         (v, dot)| {
-            if dot > max_dot {
-                (v.clone(), dot)
-            } else {
-                (max_p, max_dot)
-            }
+        (P::from_value(P::Scalar::zero()), P::Scalar::neg_infinity()),
+        |(max_p, max_dot), (v, dot)| if dot > max_dot {
+            (v.clone(), dot)
+        } else {
+            (max_p, max_dot)
         },
     );
     *transform.position() + transform.rotation().rotate_point(p).to_vec()
@@ -51,7 +44,7 @@ pub(crate) fn triple_product(
 mod tests {
     use std;
 
-    use cgmath::{Vector2, Rotation2, Rad, Point2, Basis2};
+    use cgmath::{Basis2, Point2, Rad, Rotation2, Vector2};
     use collision::Aabb2;
 
     use super::*;

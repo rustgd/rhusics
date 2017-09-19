@@ -16,7 +16,7 @@
 //! p.get_bound();
 //! ```
 
-use cgmath::{Vector2, Point2};
+use cgmath::{Point2, Vector2};
 use cgmath::prelude::*;
 use collision::Aabb2;
 
@@ -129,18 +129,14 @@ impl Primitive for Primitive2 {
 
     fn get_bound(&self) -> Aabb2<Real> {
         match *self {
-            Primitive2::Circle(ref circle) => {
-                Aabb2::new(
-                    Point2::from_value(-circle.radius),
-                    Point2::from_value(circle.radius),
-                )
-            }
-            Primitive2::Rectangle(ref rectangle) => {
-                Aabb2::new(
-                    Point2::from_vec(-rectangle.half_dim),
-                    Point2::from_vec(rectangle.half_dim),
-                )
-            }
+            Primitive2::Circle(ref circle) => Aabb2::new(
+                Point2::from_value(-circle.radius),
+                Point2::from_value(circle.radius),
+            ),
+            Primitive2::Rectangle(ref rectangle) => Aabb2::new(
+                Point2::from_vec(-rectangle.half_dim),
+                Point2::from_vec(rectangle.half_dim),
+            ),
 
             Primitive2::ConvexPolygon(ref polygon) => ::util::get_bound(&polygon.vertices),
         }
@@ -159,13 +155,12 @@ impl Primitive for Primitive2 {
                 ::util::get_max_point(corners, direction, transform)
             }
 
-            Primitive2::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => {
-                if vertices.len() < 10 {
-                    ::util::get_max_point(vertices, direction, transform)
-                } else {
-                    get_max_point(vertices, direction, transform)
-                }
-            }
+            Primitive2::ConvexPolygon(ConvexPolygon { ref vertices, .. }) => if vertices.len() < 10
+            {
+                ::util::get_max_point(vertices, direction, transform)
+            } else {
+                get_max_point(vertices, direction, transform)
+            },
         }
     }
 }
@@ -250,7 +245,7 @@ where
 mod tests {
     use std;
 
-    use cgmath::{Point2, Vector2, Rotation2, Rad, Basis2};
+    use cgmath::{Basis2, Point2, Rad, Rotation2, Vector2};
 
     use super::*;
     use BodyPose;

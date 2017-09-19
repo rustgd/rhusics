@@ -1,6 +1,6 @@
 use std::ops::Neg;
 
-use cgmath::{Vector2, Point2};
+use cgmath::{Point2, Vector2};
 use cgmath::prelude::*;
 
 use super::SimplexProcessor;

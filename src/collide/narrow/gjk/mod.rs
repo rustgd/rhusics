@@ -12,7 +12,7 @@ use self::epa::EPA;
 use self::simplex::SimplexProcessor;
 use super::NarrowPhase;
 use {Pose, Real};
-use collide::{Contact, ContactSet, CollisionShape, CollisionStrategy, CollisionPrimitive,
+use collide::{CollisionPrimitive, CollisionShape, CollisionStrategy, Contact, ContactSet,
               Primitive};
 
 mod simplex;
@@ -85,15 +85,15 @@ where
 }
 
 impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
-    where
-        ID: Debug + Clone,
-        P: Primitive,
-        P::Aabb: Discrete<P::Aabb>,
-        P::Point: Debug,
-        P::Vector: InnerSpace + Neg<Output=P::Vector> + Debug,
-        S: SimplexProcessor<Vector=P::Vector, Point=P::Point> + Debug,
-        T: Pose<P::Point> + Debug,
-        E: EPA<T, Vector=P::Vector, Primitive=P, Point=P::Point> + Debug,
+where
+    ID: Debug + Clone,
+    P: Primitive,
+    P::Aabb: Discrete<P::Aabb>,
+    P::Point: Debug,
+    P::Vector: InnerSpace + Neg<Output = P::Vector> + Debug,
+    S: SimplexProcessor<Vector = P::Vector, Point = P::Point> + Debug,
+    T: Pose<P::Point> + Debug,
+    E: EPA<T, Vector = P::Vector, Primitive = P, Point = P::Point> + Debug,
 {
     fn collide(
         &mut self,
@@ -102,9 +102,9 @@ impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
     ) -> Option<ContactSet<ID, P::Point>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty() ||
             right.primitives.is_empty()
-            {
-                return None;
-            }
+        {
+            return None;
+        }
 
         let mut contacts = Vec::default();
         for left_primitive in &left.primitives {
@@ -121,9 +121,9 @@ impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
                         Some(mut simplex) => {
                             if left.strategy == CollisionStrategy::CollisionOnly ||
                                 right.strategy == CollisionStrategy::CollisionOnly
-                                {
-                                    contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
-                                } else {
+                            {
+                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
+                            } else {
                                 contacts.append(&mut self.epa.process(
                                     &mut simplex,
                                     left_primitive,
@@ -240,10 +240,10 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Vector2, Rotation2, Rad, Point2, Point3, Quaternion, Rotation3};
+    use cgmath::{Point2, Point3, Quaternion, Rad, Rotation2, Rotation3, Vector2};
 
     use super::{gjk, support, RunningAverage};
-    use super::simplex::{SimplexProcessor2, SimplexProcessor, SimplexProcessor3};
+    use super::simplex::{SimplexProcessor, SimplexProcessor2, SimplexProcessor3};
     use Real;
     use collide::narrow::NarrowPhase;
     use collide2d::*;
@@ -394,11 +394,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
+                    transform(0., 5., 0.),
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
+                    transform(0., -5., 0.),
                 ),
             ],
         );
@@ -422,11 +422,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
+                    transform(0., 5., 0.),
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
+                    transform(0., -5., 0.),
                 ),
             ],
         );
@@ -451,11 +451,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
+                    transform(0., 5., 0.),
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
+                    transform(0., -5., 0.),
                 ),
             ],
         );

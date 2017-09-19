@@ -1,17 +1,17 @@
-extern crate rhusics;
 extern crate cgmath;
-extern crate specs;
 extern crate collision;
+extern crate rhusics;
+extern crate specs;
 
-use cgmath::{Transform, Rotation3, Rad, Point3, Quaternion, Vector3};
+use cgmath::{Point3, Quaternion, Rad, Rotation3, Transform, Vector3};
 use collision::Ray3;
 use collision::dbvt::query_ray_closest;
-use specs::{World, RunNow, System, Fetch};
+use specs::{Fetch, RunNow, System, World};
 
 use rhusics::collide::broad::BroadCollisionData;
-use rhusics::collide3d::{CollisionShape3, SpatialSortingSystem3, SpatialCollisionSystem3,
-                         BodyPose3, DynamicBoundingVolumeTree3, GJK3, world_register_with_spatial,
-                         Cuboid, Contacts3, CollisionStrategy};
+use rhusics::collide3d::{world_register_with_spatial, BodyPose3, CollisionShape3,
+                         CollisionStrategy, Contacts3, Cuboid, DynamicBoundingVolumeTree3, GJK3,
+                         SpatialCollisionSystem3, SpatialSortingSystem3};
 
 struct RayCastSystem;
 

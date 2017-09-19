@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
-use specs::{System, ReadStorage, Join, WriteStorage, Entities, Entity, FetchMut, Component};
+use shrev::EventHandler;
+use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use Pose;
-use collide::{CollisionShape, CollisionStrategy, ContactSet, Primitive, ContainerShapeWrapper};
-use collide::broad::{BroadPhase, BroadCollisionData};
+use collide::{CollisionShape, CollisionStrategy, ContactSet, ContainerShapeWrapper, Primitive};
+use collide::broad::{BroadCollisionData, BroadPhase};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -58,32 +59,30 @@ where
 }
 
 impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
-    where
-        P: Primitive + Send + Sync + 'static,
-        P::Aabb: Clone
-        + Debug
-        + Send
-        + Sync
-        + 'static,
-        P::Point: Debug + Send + Sync + 'static,
-        P::Vector: Debug + Send + Sync + 'static,
-        T: Component
-        + Pose<P::Point>
-        + Send
-        + Sync
-        + Clone
-        + 'static,
+where
+    P: Primitive + Send + Sync + 'static,
+    P::Aabb: Clone + Debug + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    P::Vector: Debug + Send + Sync + 'static,
+    T: Component + Pose<P::Point> + Send + Sync + Clone + 'static,
 {
-    type SystemData = (Entities<'a>,
-                       ReadStorage<'a, T>,
-                       WriteStorage<'a, CollisionShape<P, T>>,
-                       FetchMut<'a, Contacts<P::Point>>);
+    type SystemData = (
+        Entities<'a>,
+        ReadStorage<'a, T>,
+        WriteStorage<'a, CollisionShape<P, T>>,
+        Option<FetchMut<'a, Contacts<P::Point>>>,
+        Option<FetchMut<'a, EventHandler>>,
+    );
 
-    fn run(&mut self, (entities, poses, mut shapes, mut contacts): Self::SystemData) {
-        contacts.clear();
+    fn run(
+        &mut self,
+        (entities, poses, mut shapes, mut contacts, mut event_handler): Self::SystemData,
+    ) {
+        if let Some(ref mut c) = contacts {
+            c.clear();
+        }
 
         if let Some(ref mut broad) = self.broad {
-
             let mut info: Vec<ContainerShapeWrapper<Entity, P>> = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose);
@@ -92,31 +91,43 @@ impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<E
             let potentials = broad.compute(&mut info);
 
             match self.narrow {
-                Some(ref mut narrow) => {
-                    for (left_entity, right_entity) in potentials {
-                        let left_shape = shapes.get(left_entity).unwrap();
-                        let right_shape = shapes.get(right_entity).unwrap();
-                        let left_pose = poses.get(left_entity).unwrap();
-                        let right_pose = poses.get(right_entity).unwrap();
-                        match narrow.collide((left_entity, left_shape, left_pose), (
-                            right_entity,
-                            right_shape,
-                            right_pose,
-                        )) {
-                            Some(contact_set) => contacts.push(contact_set),
-                            None => (),
-                        };
-                    }
-                }
+                Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
+                    let left_shape = shapes.get(left_entity).unwrap();
+                    let right_shape = shapes.get(right_entity).unwrap();
+                    let left_pose = poses.get(left_entity).unwrap();
+                    let right_pose = poses.get(right_entity).unwrap();
+                    match narrow.collide(
+                        (left_entity, left_shape, left_pose),
+                        (right_entity, right_shape, right_pose),
+                    ) {
+                        Some(contact_set) => if let Some(ref mut events) = event_handler {
+                            match events.write_single(contact_set) {
+                                Err(err) => println!("Error in event write: {:?}", err),
+                                _ => (),
+                            };
+                        } else if let Some(ref mut c) = contacts {
+                            c.push(contact_set);
+                        },
+                        None => (),
+                    };
+                },
                 None => {
-// if we only have a broad phase, we generate contacts for aabb
-// intersections
-// right now, we only report the collision, no normal/depth calculation
+                    // if we only have a broad phase, we generate contacts for aabb
+                    // intersections
+                    // right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
-                        contacts.push(ContactSet::new_single(
+                        let contact_set = ContactSet::new_single(
                             CollisionStrategy::CollisionOnly,
                             (left_entity, right_entity),
-                        ));
+                        );
+                        if let Some(ref mut events) = event_handler {
+                            match events.write_single(contact_set) {
+                                Err(err) => println!("Error in event write: {:?}", err),
+                                _ => (),
+                            };
+                        } else if let Some(ref mut c) = contacts {
+                            c.push(contact_set);
+                        }
                     }
                 }
             }

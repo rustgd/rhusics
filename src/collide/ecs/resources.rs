@@ -1,8 +1,8 @@
 use std::fmt::Debug;
-use std::ops::{DerefMut, Deref};
+use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
-use specs::{Component, VecStorage, Entity};
+use specs::{Component, Entity, VecStorage};
 
 use collide::{CollisionShape, ContactSet, Primitive};
 
@@ -37,7 +37,9 @@ where
     P::Diff: Debug,
 {
     fn default() -> Self {
-        Self { contacts: Vec::default() }
+        Self {
+            contacts: Vec::default(),
+        }
     }
 }
 

@@ -5,15 +5,15 @@ pub use collide::primitives::primitive3d::*;
 
 use std::fmt::Debug;
 
-use cgmath::{Quaternion, Point3};
+use cgmath::{Point3, Quaternion};
 use collision::dbvt::DynamicBoundingVolumeTree;
-use specs::{World, Component, Entity};
+use specs::{Component, Entity, World};
 
-use {BodyPose, Real, Pose};
+use {BodyPose, Pose, Real};
 use collide::*;
 use collide::broad::{BruteForce, SweepAndPrune, Variance3};
-use collide::ecs::{Contacts, BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
-use collide::narrow::{GJK, EPA3, SimplexProcessor3};
+use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
+use collide::narrow::{EPA3, SimplexProcessor3, GJK};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
@@ -56,11 +56,7 @@ pub type SpatialSortingSystem3<T> = SpatialSortingSystem<Primitive3, T>;
 pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
     Primitive3,
     T,
-    (usize,
-     ContainerShapeWrapper<
-        Entity,
-        Primitive3,
-    >),
+    (usize, ContainerShapeWrapper<Entity, Primitive3>),
 >;
 
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -68,10 +64,7 @@ pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;
 
 /// Dynamic bounding volume tree for 3D
 pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<
-        Entity,
-        Primitive3,
-    >,
+    ContainerShapeWrapper<Entity, Primitive3>,
 >;
 
 /// Utility method for registering 3D components and resources with

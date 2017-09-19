@@ -1,9 +1,9 @@
-use cgmath::{Vector2, Point2};
+use cgmath::{Point2, Vector2};
 use cgmath::num_traits::Float;
 
 use super::*;
 use {Pose, Real};
-use collide::{CollisionPrimitive, Contact, CollisionStrategy};
+use collide::{CollisionPrimitive, CollisionStrategy, Contact};
 use collide::narrow::gjk::support;
 use collide::primitives::primitive2d::Primitive2;
 
@@ -43,7 +43,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e)
+                        point(&simplex, &e),
                     ),
                 ];
             } else {
@@ -56,7 +56,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e)
+                        point(&simplex, &e),
                     ),
                 ];
             }
@@ -129,7 +129,7 @@ fn closest_edge(simplex: &Vec<SupportPoint<Point2<Real>>>) -> Option<Edge> {
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Point2, Vector2, Rotation2, Rad};
+    use cgmath::{Point2, Rad, Rotation2, Vector2};
 
     use super::*;
     use collide::narrow::gjk::SupportPoint;
@@ -175,7 +175,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }
@@ -193,7 +193,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }
@@ -211,7 +211,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }

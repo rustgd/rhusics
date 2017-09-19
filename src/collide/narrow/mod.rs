@@ -2,11 +2,11 @@
 //!
 //! Currently only supports GJK/EPA.
 
-pub use self::gjk::{GJK, EPA2, EPA3, SimplexProcessor2, SimplexProcessor3};
+pub use self::gjk::{EPA2, EPA3, SimplexProcessor2, SimplexProcessor3, GJK};
 
 use std::fmt::Debug;
 
-use collide::{ContactSet, CollisionShape, Primitive};
+use collide::{CollisionShape, ContactSet, Primitive};
 
 mod gjk;
 
