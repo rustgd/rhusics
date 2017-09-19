@@ -258,8 +258,6 @@ fn build_half_edges(
             edges[edge_i].next_edge = edge_j;
             edges[edge_j].previous_edge = edge_i;
         }
-
-
     }
 
     (vertices, edges, faces)

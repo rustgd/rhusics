@@ -1,6 +1,6 @@
 use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
-use collision::{Ray3, Aabb3};
+use collision::{Aabb3, Ray3};
 use collision::prelude::*;
 
 use {Pose, Real};
