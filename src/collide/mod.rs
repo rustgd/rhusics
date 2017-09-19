@@ -372,10 +372,10 @@ where
 
 // Used for data coming out of the collision-rs DBVT.
 impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
-    where
-        P: Primitive,
-        P::Aabb: Debug,
-        P::Vector: VectorSpace + Debug,
+where
+    P: Primitive,
+    P::Aabb: Debug,
+    P::Vector: VectorSpace + Debug,
 {
     type Id = ID;
     type Bound = P::Aabb;
@@ -393,10 +393,8 @@ fn get_bound<P, T>(primitives: &Vec<CollisionPrimitive<P, T>>) -> P::Aabb
 where
     P: Primitive,
 {
-    primitives.iter().map(|p| &p.base_bound).fold(
-        P::Aabb::zero(),
-        |bound, b| {
-            bound.union(b)
-        },
-    )
+    primitives
+        .iter()
+        .map(|p| &p.base_bound)
+        .fold(P::Aabb::zero(), |bound, b| bound.union(b))
 }

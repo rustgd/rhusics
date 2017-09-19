@@ -50,7 +50,7 @@ impl<D, V> BroadPhase<D> for SweepAndPrune<V>
 where
     D: BroadCollisionData,
     D::Id: Clone + Debug,
-    D::Bound: Aabb<Scalar =Real> + Discrete<D::Bound> + Debug,
+    D::Bound: Aabb<Scalar = Real> + Discrete<D::Bound> + Debug,
     <D::Bound as Aabb>::Point: EuclideanSpace,
     <D::Bound as Aabb>::Diff: VectorSpace + ElementWise,
     V: Variance<Point = <D::Bound as Aabb>::Point> + Debug,
@@ -61,30 +61,28 @@ where
             return pairs;
         }
 
-        shapes.sort_by(|a, b| if a.bound().min()[self.sweep_axis] !=
-            b.bound().min()[self.sweep_axis]
-        {
-            a.bound().min()[self.sweep_axis]
-                .partial_cmp(&b.bound().min()[self.sweep_axis])
-                .unwrap_or(Ordering::Equal)
-        } else {
-            a.bound().max()[self.sweep_axis]
-                .partial_cmp(&b.bound().max()[self.sweep_axis])
-                .unwrap_or(Ordering::Equal)
+        shapes.sort_by(|a, b| {
+            if a.bound().min()[self.sweep_axis] != b.bound().min()[self.sweep_axis] {
+                a.bound().min()[self.sweep_axis]
+                    .partial_cmp(&b.bound().min()[self.sweep_axis])
+                    .unwrap_or(Ordering::Equal)
+            } else {
+                a.bound().max()[self.sweep_axis]
+                    .partial_cmp(&b.bound().max()[self.sweep_axis])
+                    .unwrap_or(Ordering::Equal)
+            }
         });
 
         self.variance.clear();
-        self.variance.add_to_sum(
-            &shapes[0].bound().min(),
-            &shapes[0].bound().max(),
-        );
+        self.variance
+            .add_to_sum(&shapes[0].bound().min(), &shapes[0].bound().max());
 
         let mut active = vec![0];
         for index in 1..shapes.len() {
             let mut i = 0;
-// for all currently active bounds, go through and remove any that are to the left of
-// the current bound, any others are potential hits, do a real bound intersection test
-// for those, and add to pairs if the bounds intersect.
+            // for all currently active bounds, go through and remove any that are to the left of
+            // the current bound, any others are potential hits, do a real bound intersection test
+            // for those, and add to pairs if the bounds intersect.
             while i < active.len() {
                 if shapes[active[i]].bound().max()[self.sweep_axis] <
                     shapes[index].bound().min()[self.sweep_axis]
@@ -98,17 +96,15 @@ where
                 }
             }
 
-// current bound should be active for the next iteration
+            // current bound should be active for the next iteration
             active.push(index);
 
-// update variance
-            self.variance.add_to_sum(
-                &shapes[index].bound().min(),
-                &shapes[index].bound().max(),
-            );
+            // update variance
+            self.variance
+                .add_to_sum(&shapes[index].bound().min(), &shapes[index].bound().max());
         }
 
-// compute sweep axis for the next iteration
+        // compute sweep axis for the next iteration
         let (axis, _) = self.variance.compute_axis(shapes.len() as Real);
         self.sweep_axis = axis;
 
@@ -117,7 +113,7 @@ where
 }
 
 mod variance {
-    use cgmath::{Vector2, Point2, Point3, Vector3};
+    use cgmath::{Point2, Point3, Vector2, Vector3};
     use cgmath::prelude::*;
 
     use Real;

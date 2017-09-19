@@ -1,19 +1,19 @@
 #![feature(test)]
 
-extern crate test;
-extern crate rhusics;
-extern crate rand;
-extern crate genmesh;
 extern crate cgmath;
+extern crate genmesh;
+extern crate rand;
+extern crate rhusics;
+extern crate test;
 
 use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
+use genmesh::Triangulate;
+use genmesh::generators::{IndexedPolygon, SharedVertex, SphereUV};
+use rand::Rng;
 use rhusics::collide::primitives::primitive3d::ConvexPolytope;
 use rhusics::collide3d::BodyPose3;
-use genmesh::Triangulate;
-use genmesh::generators::{SphereUV, SharedVertex, IndexedPolygon};
-use rand::Rng;
-use test::{Bencher, black_box};
+use test::{black_box, Bencher};
 
 #[bench]
 fn test_polytope_10(bench: &mut Bencher) {
@@ -80,9 +80,13 @@ fn test_polytope(bench: &mut Bencher, n: usize, with_faces: bool) {
 fn dirs(n: usize) -> Vec<Vector3<f32>> {
     let mut rng = rand::thread_rng();
     (0..n)
-        .map(|_| Vector3::new(rng.gen_range(-1., 1.),
-                              rng.gen_range(-1., 1.),
-                              rng.gen_range(-1., 1.)))
+        .map(|_| {
+            Vector3::new(
+                rng.gen_range(-1., 1.),
+                rng.gen_range(-1., 1.),
+                rng.gen_range(-1., 1.),
+            )
+        })
         .collect::<Vec<_>>()
 }
 

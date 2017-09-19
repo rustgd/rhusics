@@ -75,14 +75,14 @@
 //! }
 //! ```
 
-#![deny(missing_docs, missing_debug_implementations, trivial_casts,
-unsafe_code, unstable_features, unused_import_braces, unused_qualifications)]
+#![deny(missing_docs, missing_debug_implementations, trivial_casts, unsafe_code, unstable_features,
+       unused_import_braces, unused_qualifications)]
 
 extern crate cgmath;
 extern crate collision;
-extern crate specs;
 extern crate rand;
 extern crate shrev;
+extern crate specs;
 
 #[cfg(test)]
 #[macro_use]
@@ -206,8 +206,7 @@ where
 
     fn inverse_transform(&self) -> Option<Self> {
         Some(Self::new(
-            self.rotation.rotate_point(self.position) *
-                -P::Scalar::one(),
+            self.rotation.rotate_point(self.position) * -P::Scalar::one(),
             self.inverse_rotation,
         ))
     }

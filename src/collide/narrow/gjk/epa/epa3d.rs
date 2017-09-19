@@ -1,8 +1,8 @@
-use cgmath::{Vector3, Point3};
+use cgmath::{Point3, Vector3};
 
 use super::*;
 use {Pose, Real};
-use collide::{CollisionPrimitive, Contact, CollisionStrategy};
+use collide::{CollisionPrimitive, CollisionStrategy, Contact};
 use collide::narrow::gjk::{support, SupportPoint};
 use collide::primitives::primitive3d::Primitive3;
 
@@ -58,7 +58,7 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
             CollisionStrategy::FullResolution,
             face.normal.clone(), // negate ?
             face.distance,
-            point(polytope, face)
+            point(polytope, face),
         ),
     ]
 }
@@ -128,13 +128,9 @@ impl<'a> Polytope<'a> {
         let mut edges = Vec::default();
         let mut i = 0;
         while i < self.faces.len() {
-            let dot = self.faces[i].normal.dot(
-                sup.v -
-                    self.vertices[self.faces[i]
-                                      .vertices
-                                      [0]]
-                        .v,
-            );
+            let dot = self.faces[i]
+                .normal
+                .dot(sup.v - self.vertices[self.faces[i].vertices[0]].v);
             if dot > 0. {
                 let face = self.faces.swap_remove(i);
                 remove_or_add_edge(&mut edges, (face.vertices[0], face.vertices[1]));
@@ -199,7 +195,7 @@ fn remove_or_add_edge(edges: &mut Vec<(usize, usize)>, edge: (usize, usize)) {
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Vector3, Quaternion, Rad};
+    use cgmath::{Quaternion, Rad, Vector3};
 
     use super::*;
     use Real;
