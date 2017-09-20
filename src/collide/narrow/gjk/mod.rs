@@ -394,11 +394,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );
@@ -422,11 +422,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );
@@ -451,11 +451,11 @@ mod tests {
             vec![
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
                 CollisionPrimitive2::new_impl(
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );

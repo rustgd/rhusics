@@ -38,16 +38,26 @@ impl<P, T> SpatialSortingSystem<P, T> {
 impl<'a, P, T> System<'a> for SpatialSortingSystem<P, T>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone + Debug + Send + Sync + 'static + Contains<P::Aabb> + SurfaceArea<Scalar = Real>,
+    P::Aabb: Clone
+        + Debug
+        + Send
+        + Sync
+        + 'static
+        + Contains<P::Aabb>
+        + SurfaceArea<Scalar = Real>,
     P::Vector: Debug + Send + Sync + 'static,
-    T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
+    T: Component
+        + Clone
+        + Debug
+        + Pose<P::Point>
+        + Send
+        + Sync
+        + 'static,
 {
-    type SystemData = (
-        Entities<'a>,
-        ReadStorage<'a, T>,
-        WriteStorage<'a, CollisionShape<P, T>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>,
-    );
+    type SystemData = (Entities<'a>,
+     ReadStorage<'a, T>,
+     WriteStorage<'a, CollisionShape<P, T>>,
+     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
@@ -66,12 +76,14 @@ where
             };
             match node_index {
                 // entity exists in tree, possibly update it with new values
-                Some(node_index) => if pose.dirty() {
-                    tree.update_node(
-                        node_index,
-                        ContainerShapeWrapper::new(entity, shape.bound()),
-                    );
-                },
+                Some(node_index) => {
+                    if pose.dirty() {
+                        tree.update_node(
+                            node_index,
+                            ContainerShapeWrapper::new(entity, shape.bound()),
+                        );
+                    }
+                }
 
                 // entity does not exist in tree, add it to the tree and entities map
                 None => {

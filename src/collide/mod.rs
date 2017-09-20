@@ -285,7 +285,7 @@ where
     /// - `transform`: Current model-to-world transform of the shape.
     pub fn update(&mut self, transform: &T) {
         self.transformed_bound = self.base_bound.transform(transform);
-        for mut primitive in &mut self.primitives {
+        for primitive in &mut self.primitives {
             primitive.update(transform)
         }
     }
@@ -393,8 +393,10 @@ fn get_bound<P, T>(primitives: &Vec<CollisionPrimitive<P, T>>) -> P::Aabb
 where
     P: Primitive,
 {
-    primitives
-        .iter()
-        .map(|p| &p.base_bound)
-        .fold(P::Aabb::zero(), |bound, b| bound.union(b))
+    primitives.iter().map(|p| &p.base_bound).fold(
+        P::Aabb::zero(),
+        |bound, b| {
+            bound.union(b)
+        },
+    )
 }

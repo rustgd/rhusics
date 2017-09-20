@@ -43,7 +43,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e),
+                        point(&simplex, &e)
                     ),
                 ];
             } else {
@@ -56,7 +56,7 @@ where
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e),
+                        point(&simplex, &e)
                     ),
                 ];
             }
@@ -175,7 +175,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform
+                &right_transform,
             ).is_empty()
         );
     }
@@ -193,7 +193,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform
+                &right_transform,
             ).is_empty()
         );
     }
@@ -211,7 +211,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform
+                &right_transform,
             ).is_empty()
         );
     }

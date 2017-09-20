@@ -13,6 +13,55 @@ use {Pose, Real};
 pub mod primitive2d;
 pub mod primitive3d;
 
+/// Primitive with bounding box
+pub trait HasAABB {
+    /// Bounding box type
+    type Aabb: Aabb;
+
+    /// Get the bounding box
+    fn get_bound(&self) -> Self::Aabb;
+}
+
+/// Minkowski support function for primitive
+pub trait SupportFunction {
+    /// Point type
+    type Point: EuclideanSpace<Scalar = Real>;
+
+    /// Get the support point on the primitive, in a given direction with a given transform
+    fn support_point<T>(
+        &self,
+        direction: &<Self::Point as EuclideanSpace>::Diff,
+        transform: &T,
+    ) -> Self::Point
+    where
+        T: Pose<Self::Point>;
+}
+
+/// Discrete intersection test on transformed primitive
+pub trait DiscreteTransformed<RHS = Self> {
+    /// Point type for transformation of self
+    type Point: EuclideanSpace;
+
+    /// Intersection test for transformed self
+    fn intersects_transformed<T>(&self, _: &RHS, _: &T) -> bool
+    where
+        T: Transform<Self::Point>;
+}
+
+/// Continuous intersection test on transformed primitive
+pub trait ContinuousTransformed<RHS = Self> {
+    /// Point type for transformation of self
+    type Point: EuclideanSpace;
+
+    /// Result of intersection test
+    type Result: EuclideanSpace;
+
+    /// Intersection test for transformed self
+    fn intersection_transformed<T>(&self, _: &RHS, _: &T) -> Option<Self::Result>
+    where
+        T: Transform<Self::Point>;
+}
+
 /// Trait detailing a collision primitive. These are the building blocks for all collision shapes.
 ///
 /// See [primitive2d](primitive2d/index.html) and [primitive3d](primitive3d/index.html)

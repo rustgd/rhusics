@@ -112,9 +112,9 @@ where
                     };
                 },
                 None => {
-                    // if we only have a broad phase, we generate contacts for aabb
-                    // intersections
-                    // right now, we only report the collision, no normal/depth calculation
+// if we only have a broad phase, we generate contacts for aabb
+// intersections
+// right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
                         let contact_set = ContactSet::new_single(
                             CollisionStrategy::CollisionOnly,

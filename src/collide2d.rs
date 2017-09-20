@@ -56,7 +56,11 @@ pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2, T>;
 pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
     Primitive2,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive2>),
+    (usize,
+     ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+    >),
 >;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -65,7 +69,10 @@ pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 /// Dynamic bounding volume tree for 2D
 
 pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive2>,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+    >,
 >;
 
 /// Utility method for registering 2D components and resources with

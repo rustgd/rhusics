@@ -4,6 +4,7 @@ use collision::{Aabb3, Ray3};
 use collision::prelude::*;
 
 use {Pose, Real};
+use collide::primitives::{HasAABB, SupportFunction, ContinuousTransformed, DiscreteTransformed};
 
 /// Sphere primitive
 #[derive(Debug, Clone)]
@@ -17,19 +18,12 @@ impl Sphere {
     pub fn new(radius: Real) -> Self {
         Self { radius }
     }
+}
 
-    #[inline]
-    /// Get AABB of sphere
-    pub fn get_bound(&self) -> Aabb3<Real> {
-        Aabb3::new(
-            Point3::from_value(-self.radius),
-            Point3::from_value(self.radius),
-        )
-    }
+impl SupportFunction for Sphere {
+    type Point = Point3<Real>;
 
-    #[inline]
-    /// Support function
-    pub fn get_far_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
+    fn support_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
     where
         T: Pose<Point3<Real>>,
     {
@@ -37,28 +31,153 @@ impl Sphere {
     }
 }
 
-impl<T> Discrete<(Ray3<Real>, T)> for Sphere
-where
-    T: Pose<Point3<Real>>,
-{
-    fn intersects(&self, &(ref ray, ref transform): &(Ray3<Real>, T)) -> bool {
-        ::collision::Sphere {
-            center: *transform.position(),
-            radius: self.radius,
-        }.intersects(ray)
+impl HasAABB for Sphere {
+    type Aabb = Aabb3<Real>;
+
+    fn get_bound(&self) -> Aabb3<Real> {
+        Aabb3::new(
+            Point3::from_value(-self.radius),
+            Point3::from_value(self.radius),
+        )
     }
 }
 
-impl<T> Continuous<(Ray3<Real>, T)> for Sphere
-where
-    T: Pose<Point3<Real>>,
-{
+impl DiscreteTransformed<Ray3<Real>> for Sphere {
+    type Point = Point3<Real>;
+
+    fn intersects_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> bool
+    where
+        T: Transform<Point3<Real>>,
+    {
+        self.intersects(&(*ray, transform.transform_point(Point3::from_value(0.))))
+    }
+}
+
+impl Discrete<(Ray3<Real>, Point3<Real>)> for Sphere {
+    fn intersects(&self, &(ref r, ref center): &(Ray3<Real>, Point3<Real>)) -> bool {
+        let s = self;
+        let l = center - r.origin;
+        let tca = l.dot(r.direction);
+        if tca < 0. {
+            return false;
+        }
+        let d2 = l.dot(l) - tca * tca;
+        if d2 > s.radius * s.radius {
+            return false;
+        }
+        return true;
+    }
+}
+
+impl ContinuousTransformed<Ray3<Real>> for Sphere {
+    type Result = Point3<Real>;
+    type Point = Point3<Real>;
+
+    fn intersection_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> Option<Point3<Real>>
+    where
+        T: Transform<Point3<Real>>,
+    {
+        self.intersection(&(*ray, transform.transform_point(Point3::from_value(0.))))
+    }
+}
+
+impl Continuous<(Ray3<Real>, Point3<Real>)> for Sphere {
     type Result = Point3<Real>;
 
-    fn intersection(&self, &(ref ray, ref transform): &(Ray3<Real>, T)) -> Option<Point3<Real>> {
-        ::collision::Sphere {
-            center: *transform.position(),
-            radius: self.radius,
-        }.intersection(ray)
+    fn intersection(
+        &self,
+        &(ref r, ref center): &(Ray3<Real>, Point3<Real>),
+    ) -> Option<Point3<Real>> {
+        let s = self;
+
+        let l = center - r.origin;
+        let tca = l.dot(r.direction);
+        if tca < 0. {
+            return None;
+        }
+        let d2 = l.dot(l) - tca * tca;
+        if d2 > s.radius * s.radius {
+            return None;
+        }
+        let thc = (s.radius * s.radius - d2).sqrt();
+        Some(r.origin + r.direction * (tca - thc))
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+    use std;
+
+    use cgmath::{Point3, Quaternion, Rad, Rotation3, Vector3};
+
+    use super::*;
+    use super::super::*;
+    use BodyPose;
+
+    // sphere
+    #[test]
+    fn test_sphere_far_1() {
+        test_sphere(1., 0., 0., 10., 0., 0., 0.);
+    }
+
+    #[test]
+    fn test_sphere_far_2() {
+        test_sphere(
+            1.,
+            1.,
+            1.,
+            5.773502691896258,
+            5.773502691896258,
+            5.773502691896258,
+            0.,
+        );
+    }
+
+    #[test]
+    fn test_sphere_far_3() {
+        test_sphere(1., 0., 0., 10., 0., 0., -std::f64::consts::PI as Real / 4.);
+    }
+
+    #[test]
+    fn test_sphere_far_4() {
+        let sphere: Primitive3 = Sphere::new(10.).into();
+        let direction = Vector3::new(1., 0., 0.);
+        let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
+            BodyPose::new(Point3::new(0., 10., 0.), Quaternion::from_angle_z(Rad(0.)));
+        let point = sphere.get_far_point(&direction, &transform);
+        assert_eq!(Point3::new(10., 10., 0.), point);
+    }
+
+    #[test]
+    fn test_sphere_bound() {
+        let sphere: Primitive3 = Sphere::new(10.).into();
+        assert_eq!(bound(-10., -10., -10., 10., 10., 10.), sphere.get_bound())
+    }
+
+    fn test_sphere(dx: Real, dy: Real, dz: Real, px: Real, py: Real, pz: Real, rot: Real) {
+        let sphere: Primitive3 = Sphere::new(10.).into();
+        let direction = Vector3::new(dx, dy, dz);
+        let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
+            BodyPose::new(Point3::new(0., 0., 0.), Quaternion::from_angle_z(Rad(rot)));
+        let point = sphere.get_far_point(&direction, &transform);
+        assert_approx_eq!(px, point.x);
+        assert_approx_eq!(py, point.y);
+        assert_approx_eq!(pz, point.z);
+    }
+
+    // util
+    fn bound(
+        min_x: Real,
+        min_y: Real,
+        min_z: Real,
+        max_x: Real,
+        max_y: Real,
+        max_z: Real,
+    ) -> Aabb3<Real> {
+        Aabb3::new(
+            Point3::new(min_x, min_y, min_z),
+            Point3::new(max_x, max_y, max_z),
+        )
     }
 }

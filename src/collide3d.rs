@@ -56,7 +56,11 @@ pub type SpatialSortingSystem3<T> = SpatialSortingSystem<Primitive3, T>;
 pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
     Primitive3,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive3>),
+    (usize,
+     ContainerShapeWrapper<
+        Entity,
+        Primitive3,
+    >),
 >;
 
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -64,7 +68,10 @@ pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;
 
 /// Dynamic bounding volume tree for 3D
 pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive3>,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive3,
+    >,
 >;
 
 /// Utility method for registering 3D components and resources with

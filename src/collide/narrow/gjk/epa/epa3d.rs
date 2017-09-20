@@ -58,7 +58,7 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
             CollisionStrategy::FullResolution,
             face.normal.clone(), // negate ?
             face.distance,
-            point(polytope, face),
+            point(polytope, face)
         ),
     ]
 }
@@ -128,9 +128,13 @@ impl<'a> Polytope<'a> {
         let mut edges = Vec::default();
         let mut i = 0;
         while i < self.faces.len() {
-            let dot = self.faces[i]
-                .normal
-                .dot(sup.v - self.vertices[self.faces[i].vertices[0]].v);
+            let dot = self.faces[i].normal.dot(
+                sup.v -
+                    self.vertices[self.faces[i]
+                                      .vertices
+                                      [0]]
+                        .v,
+            );
             if dot > 0. {
                 let face = self.faces.swap_remove(i);
                 remove_or_add_edge(&mut edges, (face.vertices[0], face.vertices[1]));

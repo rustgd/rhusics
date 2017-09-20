@@ -4,6 +4,7 @@ use collision::{Aabb3, Ray3};
 use collision::prelude::*;
 
 use {Pose, Real};
+use collide::primitives::{HasAABB, SupportFunction, ContinuousTransformed, DiscreteTransformed};
 
 /// Cuboid primitive.
 ///
@@ -31,24 +32,6 @@ impl Cuboid {
         }
     }
 
-    /// Get aabb for the cuboid
-    #[inline]
-    pub fn get_bound(&self) -> Aabb3<Real> {
-        Aabb3::new(
-            Point3::from_vec(-self.half_dim),
-            Point3::from_vec(self.half_dim),
-        )
-    }
-
-    /// Support function
-    #[inline]
-    pub fn get_far_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
-    where
-        T: Pose<Point3<Real>>,
-    {
-        ::util::get_max_point(&self.corners, direction, transform)
-    }
-
     fn generate_corners(dimensions: &Vector3<Real>) -> Vec<Point3<Real>> {
         let two = 2.;
         vec![
@@ -64,32 +47,144 @@ impl Cuboid {
     }
 }
 
-impl<T> Discrete<(Ray3<Real>, T)> for Cuboid
-where
-    T: Pose<Point3<Real>>,
-{
-    fn intersects(&self, &(ref ray, ref transform): &(Ray3<Real>, T)) -> bool {
-        let inverse_transform = transform.inverse_transform().unwrap();
-        let n_ray = Ray3::new(
-            inverse_transform.transform_point(ray.origin),
-            inverse_transform.transform_vector(ray.direction),
-        );
-        self.get_bound().intersects(&n_ray)
+impl SupportFunction for Cuboid {
+    type Point = Point3<Real>;
+
+    fn support_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
+    where
+        T: Pose<Point3<Real>>,
+    {
+        ::util::get_max_point(&self.corners, direction, transform)
     }
 }
 
-impl<T> Continuous<(Ray3<Real>, T)> for Cuboid
-where
-    T: Pose<Point3<Real>>,
-{
+impl HasAABB for Cuboid {
+    type Aabb = Aabb3<Real>;
+
+    fn get_bound(&self) -> Aabb3<Real> {
+        Aabb3::new(
+            Point3::from_vec(-self.half_dim),
+            Point3::from_vec(self.half_dim),
+        )
+    }
+}
+
+impl DiscreteTransformed<Ray3<Real>> for Cuboid {
+    type Point = Point3<Real>;
+
+    fn intersects_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> bool
+    where
+        T: Transform<Point3<Real>>,
+    {
+        self.intersects(&(*ray, transform.transform_point(Point3::from_value(0.))))
+    }
+}
+
+impl Discrete<(Ray3<Real>, Point3<Real>)> for Cuboid {
+    fn intersects(&self, &(ref ray, ref center): &(Ray3<Real>, Point3<Real>)) -> bool {
+        let min = center - Point3::from_vec(self.half_dim);
+        let max = center + self.half_dim;
+
+        let inv_dir = Vector3::from_value(1.).div_element_wise(ray.direction);
+
+        let mut t1 = (min.x - ray.origin.x) * inv_dir.x;
+        let mut t2 = (max.x - ray.origin.x) * inv_dir.x;
+
+        let mut tmin = t1.min(t2);
+        let mut tmax = t1.max(t2);
+
+        for i in 1..3 {
+            t1 = (min[i] - ray.origin[i]) * inv_dir[i];
+            t2 = (max[i] - ray.origin[i]) * inv_dir[i];
+
+            tmin = tmin.max(t1.min(t2));
+            tmax = tmax.min(t1.max(t2));
+        }
+
+        tmax >= tmin && (tmin >= 0. || tmax >= 0.)
+    }
+}
+
+impl ContinuousTransformed<Ray3<Real>> for Cuboid {
+    type Point = Point3<Real>;
     type Result = Point3<Real>;
 
-    fn intersection(&self, &(ref ray, ref transform): &(Ray3<Real>, T)) -> Option<Point3<Real>> {
-        let inverse_transform = transform.inverse_transform().unwrap();
-        let n_ray = Ray3::new(
-            inverse_transform.transform_point(ray.origin),
-            inverse_transform.transform_vector(ray.direction),
-        );
-        self.get_bound().intersection(&n_ray)
+    fn intersection_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> Option<Point3<Real>>
+    where
+        T: Transform<Point3<Real>>,
+    {
+        self.intersection(&(*ray, transform.transform_point(Point3::from_value(0.))))
+    }
+}
+
+impl Continuous<(Ray3<Real>, Point3<Real>)> for Cuboid {
+    type Result = Point3<Real>;
+
+    fn intersection(
+        &self,
+        &(ref ray, ref center): &(Ray3<Real>, Point3<Real>),
+    ) -> Option<Point3<Real>> {
+        let min = center - Point3::from_vec(self.half_dim);
+        let max = center + self.half_dim;
+
+        let inv_dir = Vector3::from_value(1.).div_element_wise(ray.direction);
+
+        let mut t1 = (min.x - ray.origin.x) * inv_dir.x;
+        let mut t2 = (max.x - ray.origin.x) * inv_dir.x;
+
+        let mut tmin = t1.min(t2);
+        let mut tmax = t1.max(t2);
+
+        for i in 1..3 {
+            t1 = (min[i] - ray.origin[i]) * inv_dir[i];
+            t2 = (max[i] - ray.origin[i]) * inv_dir[i];
+
+            tmin = tmin.max(t1.min(t2));
+            tmax = tmax.min(t1.max(t2));
+        }
+
+        if (tmin < 0. && tmax < 0.) || tmax < tmin {
+            None
+        } else {
+            let t = if tmin >= 0. { tmin } else { tmax };
+            Some(ray.origin + ray.direction * t)
+        }
+    }
+}
+
+
+#[cfg(test)]
+mod tests {
+
+    use cgmath::Point3;
+
+    use super::*;
+    use super::super::*;
+
+    // box
+    // not testing far point as ::util::get_max_point is rigorously tested
+    #[test]
+    fn test_rectangle_bound() {
+        let r: Primitive3 = Cuboid::new(10., 10., 10.).into();
+        assert_eq!(bound(-5., -5., -5., 5., 5., 5.), r.get_bound())
+    }
+
+    // convex polyhedron
+    // not testing bound as ::util::get_bound is fairly well tested
+    // not testing far point as ::util::get_max_point is rigorously tested
+
+    // util
+    fn bound(
+        min_x: Real,
+        min_y: Real,
+        min_z: Real,
+        max_x: Real,
+        max_y: Real,
+        max_z: Real,
+    ) -> Aabb3<Real> {
+        Aabb3::new(
+            Point3::new(min_x, min_y, min_z),
+            Point3::new(max_x, max_y, max_z),
+        )
     }
 }
