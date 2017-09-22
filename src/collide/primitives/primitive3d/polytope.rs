@@ -594,7 +594,10 @@ mod tests {
         let polytope = ConvexPolytope::new_with_faces(vertices.clone(), faces);
         let transform = BodyPose3::one();
         let ray = Ray3::new(Point3::new(0.25, 5., 0.25), Vector3::new(0., -1., 0.));
-        assert_eq!(Some(Point3::new(0.25, 0.5, 0.25)), polytope.intersection_transformed(&ray, &transform));
+        let p = polytope.intersection_transformed(&ray, &transform).unwrap();
+        assert_approx_eq!(0.25, p.x);
+        assert_approx_eq!(0.5, p.y);
+        assert_approx_eq!(0.25, p.z);
         let ray = Ray3::new(Point3::new(0.5, 5., 0.5), Vector3::new(0., 1., 0.));
         assert_eq!(None, polytope.intersection_transformed(&ray, &transform));
         let transform = BodyPose3::new(Point3::new(0., 1., 0.), Quaternion::one());
