@@ -76,14 +76,14 @@ impl DiscreteTransformed<Ray3<Real>> for Cuboid {
     where
         T: Transform<Point3<Real>>,
     {
-        self.intersects(&(*ray, transform.transform_point(Point3::from_value(0.))))
+        self.intersects(&ray.transform(transform.inverse_transform().unwrap()))
     }
 }
 
-impl Discrete<(Ray3<Real>, Point3<Real>)> for Cuboid {
-    fn intersects(&self, &(ref ray, ref center): &(Ray3<Real>, Point3<Real>)) -> bool {
-        let min = center - Point3::from_vec(self.half_dim);
-        let max = center + self.half_dim;
+impl Discrete<Ray3<Real>> for Cuboid {
+    fn intersects(&self, ray: &Ray3<Real>) -> bool {
+        let min = Point3::new(-self.half_dim.x, -self.half_dim.y, -self.half_dim.z);
+        let max = Point3::new(self.half_dim.x, self.half_dim.y, self.half_dim.z);
 
         let inv_dir = Vector3::from_value(1.).div_element_wise(ray.direction);
 
@@ -113,19 +113,17 @@ impl ContinuousTransformed<Ray3<Real>> for Cuboid {
     where
         T: Transform<Point3<Real>>,
     {
-        self.intersection(&(*ray, transform.transform_point(Point3::from_value(0.))))
+        self.intersection(&ray.transform(transform.inverse_transform().unwrap()))
+            .map(|p| transform.transform_point(p))
     }
 }
 
-impl Continuous<(Ray3<Real>, Point3<Real>)> for Cuboid {
+impl Continuous<Ray3<Real>> for Cuboid {
     type Result = Point3<Real>;
 
-    fn intersection(
-        &self,
-        &(ref ray, ref center): &(Ray3<Real>, Point3<Real>),
-    ) -> Option<Point3<Real>> {
-        let min = center - Point3::from_vec(self.half_dim);
-        let max = center + self.half_dim;
+    fn intersection(&self, ray: &Ray3<Real>) -> Option<Point3<Real>> {
+        let min = Point3::new(-self.half_dim.x, -self.half_dim.y, -self.half_dim.z);
+        let max = Point3::new(self.half_dim.x, self.half_dim.y, self.half_dim.z);
 
         let inv_dir = Vector3::from_value(1.).div_element_wise(ray.direction);
 
@@ -156,22 +154,67 @@ impl Continuous<(Ray3<Real>, Point3<Real>)> for Cuboid {
 #[cfg(test)]
 mod tests {
 
-    use cgmath::Point3;
+    use cgmath::{Point3, Vector3, Quaternion, Rad};
+    use collision::Ray3;
 
     use super::*;
-    use super::super::*;
+    use collide3d::BodyPose3;
 
-    // box
-    // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r: Primitive3 = Cuboid::new(10., 10., 10.).into();
+        let r = Cuboid::new(10., 10., 10.);
         assert_eq!(bound(-5., -5., -5., 5., 5., 5.), r.get_bound())
     }
 
-    // convex polyhedron
-    // not testing bound as ::util::get_bound is fairly well tested
-    // not testing far point as ::util::get_max_point is rigorously tested
+    #[test]
+    fn test_ray_discrete() {
+        let cuboid = Cuboid::new(10., 10., 10.);
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert!(cuboid.intersects(&ray));
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(1., 0., 0.));
+        assert!(!cuboid.intersects(&ray));
+    }
+
+    #[test]
+    fn test_ray_discrete_transformed() {
+        let cuboid = Cuboid::new(10., 10., 10.);
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 1., 0.), Quaternion::one());
+        assert!(cuboid.intersects_transformed(&ray, &transform));
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(1., 0., 0.));
+        assert!(!cuboid.intersects_transformed(&ray, &transform));
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 1., 0.), Quaternion::from_angle_z(Rad(0.3)));
+        assert!(cuboid.intersects_transformed(&ray, &transform));
+    }
+
+    #[test]
+    fn test_ray_continuous() {
+        let cuboid = Cuboid::new(10., 10., 10.);
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert_eq!(Some(Point3::new(5., 0., 0.)), cuboid.intersection(&ray));
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(1., 0., 0.));
+        assert_eq!(None, cuboid.intersection(&ray));
+    }
+
+    #[test]
+    fn test_ray_continuous_transformed() {
+        let cuboid = Cuboid::new(10., 10., 10.);
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 1., 0.), Quaternion::one());
+        assert_eq!(
+            Some(Point3::new(5., 0., 0.)),
+            cuboid.intersection_transformed(&ray, &transform)
+        );
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(1., 0., 0.));
+        assert_eq!(None, cuboid.intersection_transformed(&ray, &transform));
+        let ray = Ray3::new(Point3::new(10., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 0., 0.), Quaternion::from_angle_z(Rad(0.3)));
+        let p = cuboid.intersection_transformed(&ray, &transform).unwrap();
+        assert_approx_eq!(5.233758, p.x);
+        assert_approx_eq!(0., p.y);
+        assert_approx_eq!(0., p.z);
+    }
 
     // util
     fn bound(

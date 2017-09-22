@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use cgmath::prelude::*;
 use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree};
 use collision::prelude::*;
 use shrev::EventHandler;
@@ -38,7 +39,7 @@ where
 impl<P, T, D> SpatialCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Vector: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
     P::Aabb: Clone
         + Debug
         + Send
@@ -77,7 +78,8 @@ fn discrete_visitor<P>(
 where
     P: Primitive,
     P::Aabb: Debug + Discrete<P::Aabb>,
-    P::Vector: Debug,
+    P::Point: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     DiscreteVisitor::<P::Aabb, ContainerShapeWrapper<Entity, P>>::new(bound)
 }
@@ -94,7 +96,7 @@ where
         + Discrete<P::Aabb>
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
-    P::Vector: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
 {

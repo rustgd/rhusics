@@ -75,7 +75,7 @@ impl DiscreteTransformed<Ray2<Real>> for Rectangle {
     where
         T: Transform<Point2<Real>>,
     {
-        self.intersects(&(*ray, transform.transform_point(Point2::from_value(0.))))
+        self.intersects(&ray.transform(transform.inverse_transform().unwrap()))
     }
 }
 
@@ -87,14 +87,16 @@ impl ContinuousTransformed<Ray2<Real>> for Rectangle {
     where
         T: Transform<Point2<Real>>,
     {
-        self.intersection(&(*ray, transform.transform_point(Point2::from_value(0.))))
+        self.intersection(&ray.transform(transform.inverse_transform().unwrap()))
+            .map(|p| transform.transform_point(p))
     }
 }
 
-impl Discrete<(Ray2<Real>, Point2<Real>)> for Rectangle {
-    fn intersects(&self, &(ref ray, ref center): &(Ray2<Real>, Point2<Real>)) -> bool {
-        let min = center - Point2::from_vec(self.half_dim);
-        let max = center + self.half_dim;
+impl Discrete<Ray2<Real>> for Rectangle {
+    /// Ray must be in object space of the rectangle
+    fn intersects(&self, ray: &Ray2<Real>) -> bool {
+        let min = Point2::new(-self.half_dim.x, -self.half_dim.y);
+        let max = Point2::new(self.half_dim.x, self.half_dim.y);
 
         let mut tmin = Real::neg_infinity();
         let mut tmax = Real::infinity();
@@ -121,15 +123,13 @@ impl Discrete<(Ray2<Real>, Point2<Real>)> for Rectangle {
     }
 }
 
-impl Continuous<(Ray2<Real>, Point2<Real>)> for Rectangle {
+impl Continuous<Ray2<Real>> for Rectangle {
     type Result = Point2<Real>;
 
-    fn intersection(
-        &self,
-        &(ref ray, ref center): &(Ray2<Real>, Point2<Real>),
-    ) -> Option<Point2<Real>> {
-        let min = center - Point2::from_vec(self.half_dim);
-        let max = center + self.half_dim;
+    /// Ray must be in object space of the rectangle
+    fn intersection(&self, ray: &Ray2<Real>) -> Option<Point2<Real>> {
+        let min = Point2::new(-self.half_dim.x, -self.half_dim.y);
+        let max = Point2::new(self.half_dim.x, self.half_dim.y);
         let mut tmin = Real::neg_infinity();
         let mut tmax = Real::infinity();
 
@@ -162,22 +162,65 @@ impl Continuous<(Ray2<Real>, Point2<Real>)> for Rectangle {
 
 #[cfg(test)]
 mod tests {
-    use cgmath::Point2;
+    use cgmath::{Point2, Vector2, Rad};
 
     use super::*;
-    use super::super::*;
+    use collide2d::BodyPose2;
 
-    // rectangle
-    // not testing far point as ::util::get_max_point is rigorously tested
     #[test]
     fn test_rectangle_bound() {
-        let r: Primitive2 = Rectangle::new(10., 10.).into();
+        let r = Rectangle::new(10., 10.);
         assert_eq!(bound(-5., -5., 5., 5.), r.get_bound())
     }
 
-    // convex polygon
-    // not testing bound as ::util::get_bound is fairly well tested
-    // not testing far point as ::util::get_max_point is rigorously tested
+    #[test]
+    fn test_rectangle_ray_discrete() {
+        let rectangle = Rectangle::new(10., 10.);
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        assert!(rectangle.intersects(&ray));
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(0., 1.));
+        assert!(!rectangle.intersects(&ray));
+    }
+
+    #[test]
+    fn test_rectangle_ray_discrete_transformed() {
+        let rectangle = Rectangle::new(10., 10.);
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        let transform = BodyPose2::one();
+        assert!(rectangle.intersects_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        let transform = BodyPose2::new(Point2::new(0., 20.), Rotation2::from_angle(Rad(0.)));
+        assert!(!rectangle.intersects_transformed(&ray, &transform));
+    }
+
+    #[test]
+    fn test_rectangle_ray_continuous() {
+        let rectangle = Rectangle::new(10., 10.);
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        assert_eq!(Some(Point2::new(5., 0.)), rectangle.intersection(&ray));
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(0., 1.));
+        assert_eq!(None, rectangle.intersection(&ray));
+    }
+
+    #[test]
+    fn test_rectangle_ray_continuous_transformed() {
+        let rectangle = Rectangle::new(10., 10.);
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        let transform = BodyPose2::one();
+        assert_eq!(
+            Some(Point2::new(5., 0.)),
+            rectangle.intersection_transformed(&ray, &transform)
+        );
+        let ray = Ray2::new(Point2::new(20., 0.), Vector2::new(-1., 0.));
+        let transform = BodyPose2::new(Point2::new(0., 20.), Rotation2::from_angle(Rad(0.)));
+        assert_eq!(None, rectangle.intersection_transformed(&ray, &transform));
+        let transform = BodyPose2::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(0.3)));
+        let p = rectangle
+            .intersection_transformed(&ray, &transform)
+            .unwrap();
+        assert_approx_eq!(5.233758, p.x);
+        assert_approx_eq!(0., p.y);
+    }
 
     // util
     fn bound(min_x: Real, min_y: Real, max_x: Real, max_y: Real) -> Aabb2<Real> {

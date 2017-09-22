@@ -11,7 +11,7 @@
 //!
 //! ```
 //! # use rhusics::collide::primitives::primitive2d::*;
-//! use rhusics::collide::Primitive;
+//! use rhusics::collide::primitives::HasAABB;
 //! let p : Primitive2 = Rectangle::new(10., 34.).into();
 //! p.get_bound();
 //! ```
@@ -21,9 +21,10 @@ pub use self::polygon::ConvexPolygon;
 pub use self::rectangle::Rectangle;
 
 use cgmath::{Point2, Vector2};
-use collision::Aabb2;
+use cgmath::prelude::*;
+use collision::{Aabb2, Ray2};
 
-use super::{Primitive, HasAABB, SupportFunction};
+use super::{HasAABB, SupportFunction, DiscreteTransformed, ContinuousTransformed};
 use {Pose, Real};
 
 mod circle;
@@ -61,9 +62,7 @@ impl Into<Primitive2> for ConvexPolygon {
     }
 }
 
-impl Primitive for Primitive2 {
-    type Vector = Vector2<Real>;
-    type Point = Point2<Real>;
+impl HasAABB for Primitive2 {
     type Aabb = Aabb2<Real>;
 
     fn get_bound(&self) -> Aabb2<Real> {
@@ -73,8 +72,12 @@ impl Primitive for Primitive2 {
             Primitive2::ConvexPolygon(ref polygon) => polygon.get_bound(),
         }
     }
+}
 
-    fn get_far_point<T>(&self, direction: &Vector2<Real>, transform: &T) -> Point2<Real>
+impl SupportFunction for Primitive2 {
+    type Point = Point2<Real>;
+
+    fn support_point<T>(&self, direction: &Vector2<Real>, transform: &T) -> Point2<Real>
     where
         T: Pose<Point2<Real>>,
     {
@@ -82,6 +85,45 @@ impl Primitive for Primitive2 {
             Primitive2::Circle(ref circle) => circle.support_point(direction, transform),
             Primitive2::Rectangle(ref rectangle) => rectangle.support_point(direction, transform),
             Primitive2::ConvexPolygon(ref polygon) => polygon.support_point(direction, transform),
+        }
+    }
+}
+
+impl DiscreteTransformed<Ray2<Real>> for Primitive2 {
+    type Point = Point2<Real>;
+
+    fn intersects_transformed<T>(&self, ray: &Ray2<Real>, transform: &T) -> bool
+    where
+        T: Transform<Self::Point>,
+    {
+        match *self {
+            Primitive2::Circle(ref circle) => circle.intersects_transformed(ray, transform),
+            Primitive2::Rectangle(ref rectangle) => {
+                rectangle.intersects_transformed(ray, transform)
+            }
+            Primitive2::ConvexPolygon(ref polygon) => {
+                polygon.intersects_transformed(ray, transform)
+            }
+        }
+    }
+}
+
+impl ContinuousTransformed<Ray2<Real>> for Primitive2 {
+    type Point = Point2<Real>;
+    type Result = Point2<Real>;
+
+    fn intersection_transformed<T>(&self, ray: &Ray2<Real>, transform: &T) -> Option<Point2<Real>>
+    where
+        T: Transform<Point2<Real>>,
+    {
+        match *self {
+            Primitive2::Circle(ref circle) => circle.intersection_transformed(ray, transform),
+            Primitive2::Rectangle(ref rectangle) => {
+                rectangle.intersection_transformed(ray, transform)
+            }
+            Primitive2::ConvexPolygon(ref polygon) => {
+                polygon.intersection_transformed(ray, transform)
+            }
         }
     }
 }

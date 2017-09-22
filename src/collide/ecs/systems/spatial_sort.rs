@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use cgmath::prelude::*;
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::prelude::*;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
@@ -45,7 +46,8 @@ where
         + 'static
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
-    P::Vector: Debug + Send + Sync + 'static,
+    P::Point: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component
         + Clone
         + Debug
@@ -62,12 +64,12 @@ where
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
         for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
-            // update the bound in the shape
+// update the bound in the shape
             if pose.dirty() {
                 shape.update(&pose);
             }
 
-            // entity still exists, remove from deletion list
+// entity still exists, remove from deletion list
             keys.remove(&entity);
 
             let node_index = match self.entities.get(&entity) {
@@ -75,7 +77,7 @@ where
                 None => None,
             };
             match node_index {
-                // entity exists in tree, possibly update it with new values
+// entity exists in tree, possibly update it with new values
                 Some(node_index) => {
                     if pose.dirty() {
                         tree.update_node(
@@ -85,7 +87,7 @@ where
                     }
                 }
 
-                // entity does not exist in tree, add it to the tree and entities map
+// entity does not exist in tree, add it to the tree and entities map
                 None => {
                     let node_index = tree.insert(ContainerShapeWrapper::new(entity, shape.bound()));
                     self.entities.insert(entity, node_index);
@@ -93,7 +95,7 @@ where
             }
         }
 
-        // remove entities that are missing from the tree
+// remove entities that are missing from the tree
         for entity in keys {
             let node_index = match self.entities.get(&entity) {
                 Some(node_index) => Some(node_index.clone()),
@@ -108,10 +110,10 @@ where
             }
         }
 
-        // process possibly updated values
+// process possibly updated values
         tree.update();
 
-        // do refitting
+// do refitting
         tree.do_refit();
     }
 }

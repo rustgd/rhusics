@@ -112,9 +112,10 @@ mod tests {
     use std;
 
     use cgmath::{Basis2, Point2, Rad, Rotation2, Vector2};
+    use collision::Ray2;
+    use collision::prelude::*;
 
     use super::*;
-    use super::super::*;
     use BodyPose;
 
     // circle
@@ -135,26 +136,74 @@ mod tests {
 
     #[test]
     fn test_circle_far_4() {
-        let circle: Primitive2 = Circle::new(10.).into();
+        let circle = Circle::new(10.);
         let direction = Vector2::new(1., 0.);
         let transform: BodyPose<Point2<Real>, Basis2<Real>> =
             BodyPose::new(Point2::new(0., 10.), Rotation2::from_angle(Rad(0.)));
-        let point = circle.get_far_point(&direction, &transform);
+        let point = circle.support_point(&direction, &transform);
         assert_eq!(Point2::new(10., 10.), point);
     }
 
     #[test]
     fn test_circle_bound() {
-        let circle: Primitive2 = Circle::new(10.).into();
+        let circle = Circle::new(10.);
         assert_eq!(bound(-10., -10., 10., 10.), circle.get_bound())
     }
 
+    #[test]
+    fn test_circle_ray_discrete() {
+        let circle = Circle::new(10.);
+        let ray = Ray2::new(Point2::new(25., 0.), Vector2::new(-1., 0.));
+        let center = Point2::new(0., 0.);
+        assert!(circle.intersects(&(ray, center)));
+        let center = Point2::new(0., 11.);
+        assert!(!circle.intersects(&(ray, center)));
+    }
+
+    #[test]
+    fn test_circle_ray_discrete_transformed() {
+        let circle = Circle::new(10.);
+        let ray = Ray2::new(Point2::new(25., 0.), Vector2::new(-1., 0.));
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> = BodyPose::one();
+        assert!(circle.intersects_transformed(&ray, &transform));
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> =
+            BodyPose::new(Point2::new(0., 11.), Rotation2::from_angle(Rad(0.)));
+        assert!(!circle.intersects_transformed(&ray, &transform));
+    }
+
+    #[test]
+    fn test_circle_ray_continuous() {
+        let circle = Circle::new(10.);
+        let ray = Ray2::new(Point2::new(25., 0.), Vector2::new(-1., 0.));
+        let center = Point2::new(0., 0.);
+        assert_eq!(
+            Some(Point2::new(10., 0.)),
+            circle.intersection(&(ray, center))
+        );
+        let center = Point2::new(0., 11.);
+        assert_eq!(None, circle.intersection(&(ray, center)));
+    }
+
+    #[test]
+    fn test_circle_ray_continuous_transformed() {
+        let circle = Circle::new(10.);
+        let ray = Ray2::new(Point2::new(25., 0.), Vector2::new(-1., 0.));
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> = BodyPose::one();
+        assert_eq!(
+            Some(Point2::new(10., 0.)),
+            circle.intersection_transformed(&ray, &transform)
+        );
+        let transform: BodyPose<Point2<Real>, Basis2<Real>> =
+            BodyPose::new(Point2::new(0., 11.), Rotation2::from_angle(Rad(0.)));
+        assert_eq!(None, circle.intersection_transformed(&ray, &transform));
+    }
+
     fn test_circle(dx: Real, dy: Real, px: Real, py: Real, rot: Real) {
-        let circle: Primitive2 = Circle::new(10.).into();
+        let circle = Circle::new(10.);
         let direction = Vector2::new(dx, dy);
         let transform: BodyPose<Point2<Real>, Basis2<Real>> =
             BodyPose::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(rot)));
-        let point = circle.get_far_point(&direction, &transform);
+        let point = circle.support_point(&direction, &transform);
         assert_approx_eq!(px, point.x);
         assert_approx_eq!(py, point.y);
     }

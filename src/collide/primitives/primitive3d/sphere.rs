@@ -112,18 +112,18 @@ mod tests {
     use cgmath::{Point3, Quaternion, Rad, Rotation3, Vector3};
 
     use super::*;
-    use super::super::*;
     use BodyPose;
+    use collide3d::BodyPose3;
 
     // sphere
     #[test]
-    fn test_sphere_far_1() {
-        test_sphere(1., 0., 0., 10., 0., 0., 0.);
+    fn test_sphere_support_1() {
+        test_sphere_support(1., 0., 0., 10., 0., 0., 0.);
     }
 
     #[test]
-    fn test_sphere_far_2() {
-        test_sphere(
+    fn test_sphere_support_2() {
+        test_sphere_support(
             1.,
             1.,
             1.,
@@ -135,32 +135,90 @@ mod tests {
     }
 
     #[test]
-    fn test_sphere_far_3() {
-        test_sphere(1., 0., 0., 10., 0., 0., -std::f64::consts::PI as Real / 4.);
+    fn test_sphere_support_3() {
+        test_sphere_support(1., 0., 0., 10., 0., 0., -std::f64::consts::PI as Real / 4.);
     }
 
     #[test]
-    fn test_sphere_far_4() {
-        let sphere: Primitive3 = Sphere::new(10.).into();
+    fn test_sphere_support_4() {
+        let sphere = Sphere::new(10.);
         let direction = Vector3::new(1., 0., 0.);
         let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
             BodyPose::new(Point3::new(0., 10., 0.), Quaternion::from_angle_z(Rad(0.)));
-        let point = sphere.get_far_point(&direction, &transform);
+        let point = sphere.support_point(&direction, &transform);
         assert_eq!(Point3::new(10., 10., 0.), point);
     }
 
     #[test]
     fn test_sphere_bound() {
-        let sphere: Primitive3 = Sphere::new(10.).into();
+        let sphere = Sphere::new(10.);
         assert_eq!(bound(-10., -10., -10., 10., 10., 10.), sphere.get_bound())
     }
 
-    fn test_sphere(dx: Real, dy: Real, dz: Real, px: Real, py: Real, pz: Real, rot: Real) {
-        let sphere: Primitive3 = Sphere::new(10.).into();
+    #[test]
+    fn test_ray_discrete() {
+        let sphere = Sphere::new(10.);
+        let center = Point3::from_value(0.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert!(sphere.intersects(&(ray, center)));
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(1., 0., 0.));
+        assert!(!sphere.intersects(&(ray, center)));
+        let center = Point3::new(0., 15., 0.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert!(!sphere.intersects(&(ray, center)));
+    }
+
+    #[test]
+    fn test_ray_discrete_transformed() {
+        let sphere = Sphere::new(10.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 0., 0.), Quaternion::one());
+        assert!(sphere.intersects_transformed(&ray, &transform));
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(1., 0., 0.));
+        assert!(!sphere.intersects_transformed(&ray, &transform));
+        let transform = BodyPose3::new(Point3::new(0., 15., 0.), Quaternion::one());
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert!(!sphere.intersects_transformed(&ray, &transform));
+    }
+
+    #[test]
+    fn test_ray_continuous() {
+        let sphere = Sphere::new(10.);
+        let center = Point3::from_value(0.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert_eq!(
+            Some(Point3::new(10., 0., 0.)),
+            sphere.intersection(&(ray, center))
+        );
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(1., 0., 0.));
+        assert_eq!(None, sphere.intersection(&(ray, center)));
+        let center = Point3::new(0., 15., 0.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert_eq!(None, sphere.intersection(&(ray, center)));
+    }
+
+    #[test]
+    fn test_ray_continuous_transformed() {
+        let sphere = Sphere::new(10.);
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        let transform = BodyPose3::new(Point3::new(0., 0., 0.), Quaternion::one());
+        assert_eq!(
+            Some(Point3::new(10., 0., 0.)),
+            sphere.intersection_transformed(&ray, &transform)
+        );
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(1., 0., 0.));
+        assert_eq!(None, sphere.intersection_transformed(&ray, &transform));
+        let transform = BodyPose3::new(Point3::new(0., 15., 0.), Quaternion::one());
+        let ray = Ray3::new(Point3::new(20., 0., 0.), Vector3::new(-1., 0., 0.));
+        assert_eq!(None, sphere.intersection_transformed(&ray, &transform));
+    }
+
+    fn test_sphere_support(dx: Real, dy: Real, dz: Real, px: Real, py: Real, pz: Real, rot: Real) {
+        let sphere = Sphere::new(10.);
         let direction = Vector3::new(dx, dy, dz);
         let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
             BodyPose::new(Point3::new(0., 0., 0.), Quaternion::from_angle_z(Rad(rot)));
-        let point = sphere.get_far_point(&direction, &transform);
+        let point = sphere.support_point(&direction, &transform);
         assert_approx_eq!(px, point.x);
         assert_approx_eq!(py, point.y);
         assert_approx_eq!(pz, point.z);

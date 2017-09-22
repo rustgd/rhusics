@@ -35,7 +35,7 @@ impl SupportFunction for ConvexPolygon {
         if self.vertices.len() < 10 {
             ::util::get_max_point(&self.vertices, direction, transform)
         } else {
-            get_max_point(&self.vertices, direction, transform)
+            support_point(&self.vertices, direction, transform)
         }
     }
 }
@@ -128,7 +128,7 @@ impl Continuous<Ray2<Real>> for ConvexPolygon {
     }
 }
 
-fn get_max_point<P, T>(vertices: &Vec<P>, direction: &P::Diff, transform: &T) -> P
+fn support_point<P, T>(vertices: &Vec<P>, direction: &P::Diff, transform: &T) -> P
 where
     P: EuclideanSpace<Scalar = Real>,
     T: Pose<P>,
@@ -206,13 +206,15 @@ where
 
 #[cfg(test)]
 mod tests {
-    use cgmath::{Point2, Vector2};
+    use cgmath::{Point2, Vector2, Basis2, Rad};
+    use collision::{Aabb2, Ray2};
+    use collision::prelude::*;
 
     use super::*;
     use collide2d::BodyPose2;
 
     #[test]
-    fn test_max_point() {
+    fn test_support_point() {
         let vertices = vec![
             Point2::new(5., 5.),
             Point2::new(4., 6.),
@@ -233,16 +235,191 @@ mod tests {
             Point2::new(4., 3.),
         ];
         let transform = BodyPose2::one();
-        let point = get_max_point(&vertices, &Vector2::new(-1., 0.), &transform);
+        let point = support_point(&vertices, &Vector2::new(-1., 0.), &transform);
         assert_eq!(Point2::new(-5., 0.), point);
 
-        let point = get_max_point(&vertices, &Vector2::new(0., -1.), &transform);
+        let point = support_point(&vertices, &Vector2::new(0., -1.), &transform);
         assert_eq!(Point2::new(1., -8.), point);
 
-        let point = get_max_point(&vertices, &Vector2::new(0., 1.), &transform);
+        let point = support_point(&vertices, &Vector2::new(0., 1.), &transform);
         assert_eq!(Point2::new(3., 7.), point);
 
-        let point = get_max_point(&vertices, &Vector2::new(1., 0.), &transform);
+        let point = support_point(&vertices, &Vector2::new(1., 0.), &transform);
         assert_eq!(Point2::new(5., 5.), point);
+    }
+
+    #[test]
+    fn test_bound() {
+        let vertices = vec![
+            Point2::new(5., 5.),
+            Point2::new(4., 6.),
+            Point2::new(3., 7.),
+            Point2::new(2., 6.),
+            Point2::new(1., 6.),
+            Point2::new(0., 5.),
+            Point2::new(-1., 4.),
+            Point2::new(-3., 3.),
+            Point2::new(-6., 1.),
+            Point2::new(-5., 0.),
+            Point2::new(-4., -1.),
+            Point2::new(-2., -3.),
+            Point2::new(0., -7.),
+            Point2::new(1., -8.),
+            Point2::new(2., -5.),
+            Point2::new(3., 0.),
+            Point2::new(4., 3.),
+        ];
+        let polygon = ConvexPolygon::new(vertices);
+        assert_eq!(
+            Aabb2::new(Point2::new(-6., -8.), Point2::new(5., 7.)),
+            polygon.get_bound()
+        );
+    }
+
+    #[test]
+    fn test_ray_discrete() {
+        let vertices = vec![
+            Point2::new(5., 5.),
+            Point2::new(4., 6.),
+            Point2::new(3., 7.),
+            Point2::new(2., 6.),
+            Point2::new(1., 6.),
+            Point2::new(0., 5.),
+            Point2::new(-1., 4.),
+            Point2::new(-3., 3.),
+            Point2::new(-6., 1.),
+            Point2::new(-5., 0.),
+            Point2::new(-4., -1.),
+            Point2::new(-2., -3.),
+            Point2::new(0., -7.),
+            Point2::new(1., -8.),
+            Point2::new(2., -5.),
+            Point2::new(3., 0.),
+            Point2::new(4., 3.),
+        ];
+        let polygon = ConvexPolygon::new(vertices);
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., -1.));
+        assert!(polygon.intersects(&ray));
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., 1.));
+        assert!(!polygon.intersects(&ray));
+        let ray = Ray2::new(Point2::new(0., 7.2), Vector2::new(1., 0.));
+        assert!(!polygon.intersects(&ray));
+        let ray = Ray2::new(Point2::new(0., 6.8), Vector2::new(1., 0.));
+        assert!(polygon.intersects(&ray));
+    }
+
+    #[test]
+    fn test_ray_discrete_transformed() {
+        let vertices = vec![
+            Point2::new(5., 5.),
+            Point2::new(4., 6.),
+            Point2::new(3., 7.),
+            Point2::new(2., 6.),
+            Point2::new(1., 6.),
+            Point2::new(0., 5.),
+            Point2::new(-1., 4.),
+            Point2::new(-3., 3.),
+            Point2::new(-6., 1.),
+            Point2::new(-5., 0.),
+            Point2::new(-4., -1.),
+            Point2::new(-2., -3.),
+            Point2::new(0., -7.),
+            Point2::new(1., -8.),
+            Point2::new(2., -5.),
+            Point2::new(3., 0.),
+            Point2::new(4., 3.),
+        ];
+        let polygon = ConvexPolygon::new(vertices);
+        let transform = BodyPose2::one();
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., -1.));
+        assert!(polygon.intersects_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., 1.));
+        assert!(!polygon.intersects_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(0., 7.2), Vector2::new(1., 0.));
+        assert!(!polygon.intersects_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(0., 6.8), Vector2::new(1., 0.));
+        assert!(polygon.intersects_transformed(&ray, &transform));
+        let transform = BodyPose2::new(Point2::new(0., -2.), Basis2::one());
+        assert!(!polygon.intersects_transformed(&ray, &transform));
+        let transform = BodyPose2::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(0.3)));
+        assert!(polygon.intersects_transformed(&ray, &transform));
+    }
+
+    #[test]
+    fn test_ray_continuous() {
+        let vertices = vec![
+            Point2::new(5., 5.),
+            Point2::new(4., 6.),
+            Point2::new(3., 7.),
+            Point2::new(2., 6.),
+            Point2::new(1., 6.),
+            Point2::new(0., 5.),
+            Point2::new(-1., 4.),
+            Point2::new(-3., 3.),
+            Point2::new(-6., 1.),
+            Point2::new(-5., 0.),
+            Point2::new(-4., -1.),
+            Point2::new(-2., -3.),
+            Point2::new(0., -7.),
+            Point2::new(1., -8.),
+            Point2::new(2., -5.),
+            Point2::new(3., 0.),
+            Point2::new(4., 3.),
+        ];
+        let polygon = ConvexPolygon::new(vertices);
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., -1.));
+        assert_eq!(Some(Point2::new(0., 5.)), polygon.intersection(&ray));
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., 1.));
+        assert_eq!(None, polygon.intersection(&ray));
+        let ray = Ray2::new(Point2::new(0., 7.2), Vector2::new(1., 0.));
+        assert_eq!(None, polygon.intersection(&ray));
+        let ray = Ray2::new(Point2::new(0., 6.8), Vector2::new(1., 0.));
+        let p = polygon.intersection(&ray).unwrap();
+        assert_approx_eq!(2.8, p.x);
+        assert_approx_eq!(6.8, p.y);
+    }
+
+    #[test]
+    fn test_ray_continuous_transformed() {
+        let vertices = vec![
+            Point2::new(5., 5.),
+            Point2::new(4., 6.),
+            Point2::new(3., 7.),
+            Point2::new(2., 6.),
+            Point2::new(1., 6.),
+            Point2::new(0., 5.),
+            Point2::new(-1., 4.),
+            Point2::new(-3., 3.),
+            Point2::new(-6., 1.),
+            Point2::new(-5., 0.),
+            Point2::new(-4., -1.),
+            Point2::new(-2., -3.),
+            Point2::new(0., -7.),
+            Point2::new(1., -8.),
+            Point2::new(2., -5.),
+            Point2::new(3., 0.),
+            Point2::new(4., 3.),
+        ];
+        let transform = BodyPose2::one();
+        let polygon = ConvexPolygon::new(vertices);
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., -1.));
+        assert_eq!(
+            Some(Point2::new(0., 5.)),
+            polygon.intersection_transformed(&ray, &transform)
+        );
+        let ray = Ray2::new(Point2::new(0., 10.), Vector2::new(0., 1.));
+        assert_eq!(None, polygon.intersection_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(0., 7.2), Vector2::new(1., 0.));
+        assert_eq!(None, polygon.intersection_transformed(&ray, &transform));
+        let ray = Ray2::new(Point2::new(0., 6.8), Vector2::new(1., 0.));
+        let p = polygon.intersection_transformed(&ray, &transform).unwrap();
+        assert_approx_eq!(2.8, p.x);
+        assert_approx_eq!(6.8, p.y);
+        let transform = BodyPose2::new(Point2::new(0., -2.), Basis2::one());
+        assert_eq!(None, polygon.intersection_transformed(&ray, &transform));
+        let transform = BodyPose2::new(Point2::new(0., 0.), Rotation2::from_angle(Rad(0.3)));
+        let p = polygon.intersection_transformed(&ray, &transform).unwrap();
+        assert_approx_eq!(0.389134, p.x);
+        assert_approx_eq!(6.8, p.y);
     }
 }

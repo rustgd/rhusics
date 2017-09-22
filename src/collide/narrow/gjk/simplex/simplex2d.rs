@@ -12,7 +12,6 @@ use collide::narrow::gjk::SupportPoint;
 pub struct SimplexProcessor2;
 
 impl SimplexProcessor for SimplexProcessor2 {
-    type Vector = Vector2<Real>;
     type Point = Point2<Real>;
 
     fn check_origin(

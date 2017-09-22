@@ -103,12 +103,7 @@ where
         normal: P::Diff,
         penetration_depth: P::Scalar,
     ) -> Self {
-        Self::new_with_point(
-            strategy,
-            normal,
-            penetration_depth,
-            P::from_value(P::Scalar::zero()),
-        )
+        Self::new_with_point(strategy, normal, penetration_depth, P::from_value(P::Scalar::zero()))
     }
 
     /// Create a new contact manifold, complete with contact point
@@ -124,79 +119,6 @@ where
             penetration_depth,
             contact_point,
         }
-    }
-}
-
-/// Collision primitive with local to model transform.
-///
-/// Contains cached information about the bounding box of the contained
-/// [`Primitive`](trait.Primitive.html), both the base bounding box in model space coordinates,
-/// and the transformed bounding box in world space coordinates.
-#[derive(Debug, Clone)]
-pub struct CollisionPrimitive<P, T>
-where
-    P: Primitive,
-{
-    local_transform: T,
-    base_bound: P::Aabb,
-    transformed_bound: P::Aabb,
-    primitive: P,
-}
-
-impl<P, T> CollisionPrimitive<P, T>
-where
-    P: Primitive,
-    T: Pose<P::Point>,
-{
-    /// Create a new collision primitive, with an identity local-to-model transform.
-    ///
-    /// # Parameters
-    ///
-    /// - `primitive`: The primitive to use.
-    pub fn new(primitive: P) -> Self {
-        Self::new_impl(primitive, T::one())
-    }
-
-    /// Create a new collision primitive, with a supplied local-to-model transform.
-    ///
-    /// # Parameters:
-    ///
-    /// - `primitive`: The primitive.
-    /// - `local_transform`: The local-to-model transform.
-    pub fn new_impl(primitive: P, local_transform: T) -> Self {
-        let bound = primitive.get_bound().transform(&local_transform);
-        Self {
-            local_transform,
-            base_bound: bound.clone(),
-            transformed_bound: bound,
-            primitive,
-        }
-    }
-
-    /// Update the cached bounding box in world space coordinates, by applying a new transformation
-    /// on the base bounding box in model space coordinates.
-    ///
-    /// # Parameters
-    ///
-    /// - `transform`: Model-to-world transform.
-    pub fn update(&mut self, transform: &T) {
-        self.transformed_bound = self.base_bound.transform(transform)
-    }
-
-    /// Get the furthest point away from the origin on the primitive, in a given search direction.
-    ///
-    /// # Parameters
-    ///
-    /// - `direction`: The search direction.
-    /// - `transform`: Current model-to-world transform for the shape.
-    ///
-    /// # Returns
-    ///
-    /// Returns the furthest point on the primitive in the given search direction, after applying
-    /// the given model-to-world transformation.
-    pub fn get_far_point(&self, direction: &P::Vector, transform: &T) -> P::Point {
-        let t = transform.concat(&self.local_transform);
-        self.primitive.get_far_point(direction, &t)
     }
 }
 
@@ -220,7 +142,7 @@ where
     pub enabled: bool,
     base_bound: P::Aabb,
     transformed_bound: P::Aabb,
-    primitives: Vec<CollisionPrimitive<P, T>>,
+    primitives: Vec<(P, T)>,
     strategy: CollisionStrategy,
 }
 
@@ -240,7 +162,7 @@ where
     /// - `primitives`: List of all primitives that make up this shape.
     pub fn new_complex(
         strategy: CollisionStrategy,
-        primitives: Vec<CollisionPrimitive<P, T>>,
+        primitives: Vec<(P, T)>,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
@@ -260,7 +182,7 @@ where
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
     pub fn new_simple(strategy: CollisionStrategy, primitive: P) -> Self {
-        Self::new_complex(strategy, vec![CollisionPrimitive::new(primitive)])
+        Self::new_complex(strategy, vec![(primitive, T::one())])
     }
 
     /// Convenience function to create a simple collision shape with only a single given primitive,
@@ -274,7 +196,7 @@ where
     pub fn new_simple_offset(strategy: CollisionStrategy, primitive: P, transform: T) -> Self {
         Self::new_complex(
             strategy,
-            vec![CollisionPrimitive::new_impl(primitive, transform)],
+            vec![(primitive, transform)],
         )
     }
 
@@ -285,9 +207,6 @@ where
     /// - `transform`: Current model-to-world transform of the shape.
     pub fn update(&mut self, transform: &T) {
         self.transformed_bound = self.base_bound.transform(transform);
-        for primitive in &mut self.primitives {
-            primitive.update(transform)
-        }
     }
 
     /// Return the current transformed bound for the shape
@@ -302,25 +221,28 @@ where
 pub struct ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
-    P::Aabb: Debug,
-    P::Vector: VectorSpace + Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     /// The id
     pub id: ID,
 
     /// The bounding volume
     pub bound: P::Aabb,
-    fat_factor: P::Vector,
+    fat_factor: <P::Point as EuclideanSpace>::Diff,
 }
 
 impl<ID, P> ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
-    P::Aabb: Debug + Clone,
-    P::Vector: VectorSpace<Scalar = Real> + Debug,
+    P::Aabb: Clone,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     /// Create a new shape
-    pub fn new_impl(id: ID, bound: &P::Aabb, fat_factor: P::Vector) -> Self {
+    pub fn new_impl(
+        id: ID,
+        bound: &P::Aabb,
+        fat_factor: <P::Point as EuclideanSpace>::Diff,
+    ) -> Self {
         Self {
             id,
             bound: bound.clone(),
@@ -330,7 +252,11 @@ where
 
     /// Create a new shape
     pub fn new(id: ID, bound: &P::Aabb) -> Self {
-        Self::new_impl(id, bound, P::Vector::from_value(Real::one()))
+        Self::new_impl(
+            id,
+            bound,
+            <P::Point as EuclideanSpace>::Diff::from_value(Real::one()),
+        )
     }
 }
 
@@ -338,8 +264,9 @@ impl<ID, P> TreeValue for ContainerShapeWrapper<ID, P>
 where
     ID: Clone + Debug,
     P: Primitive,
-    P::Aabb: Aabb + Debug,
-    P::Vector: VectorSpace + Debug,
+    P::Aabb: Aabb,
+    P::Point: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     type Bound = P::Aabb;
 
@@ -355,8 +282,7 @@ where
 impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
-    P::Aabb: Debug,
-    P::Vector: VectorSpace + Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     type Id = ID;
     type Bound = P::Aabb;
@@ -373,9 +299,8 @@ where
 // Used for data coming out of the collision-rs DBVT.
 impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
 where
-    P: Primitive,
-    P::Aabb: Debug,
-    P::Vector: VectorSpace + Debug,
+    P: Primitive + Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     type Id = ID;
     type Bound = P::Aabb;
@@ -389,14 +314,15 @@ where
     }
 }
 
-fn get_bound<P, T>(primitives: &Vec<CollisionPrimitive<P, T>>) -> P::Aabb
+fn get_bound<P, T>(primitives: &Vec<(P, T)>) -> P::Aabb
 where
     P: Primitive,
+    T: Pose<P::Point>,
 {
-    primitives.iter().map(|p| &p.base_bound).fold(
+    primitives.iter().map(|&(ref p, ref t)| p.get_bound().transform(t)).fold(
         P::Aabb::zero(),
         |bound, b| {
-            bound.union(b)
+            bound.union(&b)
         },
     )
 }

@@ -16,18 +16,31 @@ pub mod primitive3d;
 /// Primitive with bounding box
 pub trait HasAABB {
     /// Bounding box type
-    type Aabb: Aabb;
+    type Aabb: Aabb<Scalar = Real> + Clone + Union<Self::Aabb, Output = Self::Aabb> + Debug;
 
-    /// Get the bounding box
+    /// Get the bounding box of the primitive in local space coordinates.
     fn get_bound(&self) -> Self::Aabb;
 }
 
 /// Minkowski support function for primitive
 pub trait SupportFunction {
     /// Point type
-    type Point: EuclideanSpace<Scalar = Real>;
+    type Point: EuclideanSpace<Scalar = Real> + MinMax;
 
-    /// Get the support point on the primitive, in a given direction with a given transform
+    /// Get the support point on the shape in a given direction.
+    ///
+    /// # Parameters
+    ///
+    /// - `direction`: The search direction in world space.
+    /// - `transform`: The current local to world transform for this shape.
+    ///
+    /// # Returns
+    ///
+    /// Returns the point that is furthest away from the origin.
+    ///
+    /// # Type parameters
+    ///
+    /// - `P`: Transform type
     fn support_point<T>(
         &self,
         direction: &<Self::Point as EuclideanSpace>::Diff,
@@ -67,36 +80,14 @@ pub trait ContinuousTransformed<RHS = Self> {
 /// See [primitive2d](primitive2d/index.html) and [primitive3d](primitive3d/index.html)
 /// for more information about supported primitives.
 ///
-pub trait Primitive: Debug + Clone + Send + Sync {
-    /// Vector type used by the primitive
-    type Vector: VectorSpace<Scalar = Real> + ElementWise + Array<Element = Real>;
-
-    /// Point type used by the primitive
-    type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector> + MinMax;
-
-    /// Bounding box type used by the primitive
-    type Aabb: Aabb<Scalar = Real, Diff = Self::Vector, Point = Self::Point>
-        + Clone
-        + Union<Self::Aabb, Output = Self::Aabb>;
-
-    /// Get the furthest point from the origin on the shape in a given direction.
-    ///
-    /// # Parameters
-    ///
-    /// - `direction`: The search direction in world space.
-    /// - `transform`: The current local to world transform for this shape.
-    ///
-    /// # Returns
-    ///
-    /// Returns the point that is furthest away from the origin.
-    ///
-    /// # Type parameters
-    ///
-    /// - `P`: Transform type
-    fn get_far_point<T>(&self, direction: &Self::Vector, transform: &T) -> Self::Point
-    where
-        T: Pose<Self::Point>;
-
-    /// Get the bounding box of the primitive in local space coordinates.
-    fn get_bound(&self) -> Self::Aabb;
+pub trait Primitive
+    : Debug
+    + Clone
+    + HasAABB
+    + SupportFunction<Point = <<Self as HasAABB>::Aabb as Aabb>::Point> {
 }
+
+impl <T> Primitive for T
+where
+    T: Debug + Clone + HasAABB +
+        SupportFunction<Point = <<Self as HasAABB>::Aabb as Aabb>::Point> {}

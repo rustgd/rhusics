@@ -82,10 +82,14 @@ extern crate cgmath;
 extern crate collision;
 extern crate shrev;
 extern crate specs;
+extern crate bit_set;
 
 #[cfg(test)]
 #[macro_use]
 extern crate assert_approx_eq;
+
+#[cfg(test)]
+extern crate genmesh;
 
 pub mod collide;
 pub mod collide2d;

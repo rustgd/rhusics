@@ -1,30 +1,28 @@
 use cgmath::{Point2, Vector2};
 use cgmath::num_traits::Float;
+use cgmath::prelude::*;
 
 use super::*;
 use {Pose, Real};
-use collide::{CollisionPrimitive, CollisionStrategy, Contact};
+use collide::{CollisionStrategy, Contact};
 use collide::narrow::gjk::support;
-use collide::primitives::primitive2d::Primitive2;
+use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
 pub struct EPA2;
 
-impl<T> EPA<T> for EPA2
+impl<P, T> EPA<P, T> for EPA2
 where
+    P: SupportFunction<Point = Point2<Real>>,
     T: Pose<Point2<Real>>,
 {
-    type Vector = Vector2<Real>;
-    type Point = Point2<Real>;
-    type Primitive = Primitive2;
-
     fn process(
         &self,
         simplex: &mut Vec<SupportPoint<Point2<Real>>>,
-        left: &CollisionPrimitive<Primitive2, T>,
+        left: &P,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive2, T>,
+        right: &P,
         right_transform: &T,
     ) -> Vec<Contact<Point2<Real>>> {
         let mut i = 0;
@@ -165,9 +163,9 @@ mod tests {
 
     #[test]
     fn test_epa_0() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         assert!(
             EPA2.process(
@@ -182,9 +180,9 @@ mod tests {
 
     #[test]
     fn test_epa_1() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.)];
         assert!(
@@ -200,9 +198,9 @@ mod tests {
 
     #[test]
     fn test_epa_2() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.), sup(18., -12.)];
         assert!(
@@ -218,9 +216,9 @@ mod tests {
 
     #[test]
     fn test_epa_3() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.), sup(18., -12.), sup(-2., -12.)];
         let contacts = EPA2.process(

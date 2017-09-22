@@ -19,10 +19,6 @@ use collide::narrow::{EPA2, SimplexProcessor2, GJK};
 /// information.
 pub type Contacts2 = Contacts<Point2<Real>>;
 
-/// Collision primitive for 2D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
-/// for more information.
-pub type CollisionPrimitive2<T> = CollisionPrimitive<Primitive2, T>;
-
 /// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
 pub type CollisionShape2<T> = CollisionShape<Primitive2, T>;
@@ -36,7 +32,7 @@ pub type BroadBruteForce2 = BruteForce;
 pub type SweepAndPrune2 = SweepAndPrune<Variance2>;
 
 /// GJK algorithm for 2D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
-pub type GJK2<T> = GJK<Point2<Real>, T, SimplexProcessor2, EPA2>;
+pub type GJK2<T> = GJK<Primitive2, T, SimplexProcessor2, EPA2>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
