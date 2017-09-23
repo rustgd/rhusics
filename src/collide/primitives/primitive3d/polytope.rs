@@ -307,12 +307,13 @@ impl Discrete<Ray3<Real>> for ConvexPolytope {
                     if in_range(u) && in_range(v) && in_range(w) {
                         return true;
                     } else {
-                        face_index = next_face_classify(self, face_index, Some((u, v, w)), &mut checked);
+                        face_index =
+                            next_face_classify(self, face_index, Some((u, v, w)), &mut checked);
                     }
                 }
                 _ => {
                     face_index = next_face_classify(self, face_index, None, &mut checked);
-                },
+                }
             }
         }
         false
@@ -355,11 +356,12 @@ impl Continuous<Ray3<Real>> for ConvexPolytope {
                             (self.vertices[v2].position.to_vec() * w);
                         return Some(p);
                     }
-                    face_index = next_face_classify(self, face_index, Some((u, v, w)), &mut checked);
+                    face_index =
+                        next_face_classify(self, face_index, Some((u, v, w)), &mut checked);
                 }
                 _ => {
                     face_index = next_face_classify(self, face_index, None, &mut checked);
-                },
+                }
             }
 
         }
@@ -373,7 +375,12 @@ fn in_range(v: Real) -> bool {
 }
 
 #[inline]
-fn next_face_classify(polytope: &ConvexPolytope, face_index: usize, bary_coords: Option<(Real, Real, Real)>, checked: &mut BitSet) -> usize {
+fn next_face_classify(
+    polytope: &ConvexPolytope,
+    face_index: usize,
+    bary_coords: Option<(Real, Real, Real)>,
+    checked: &mut BitSet,
+) -> usize {
     if polytope.faces.len() < 10 {
         face_index + 1
     } else {
@@ -400,7 +407,9 @@ fn next_face_classify(polytope: &ConvexPolytope, face_index: usize, bary_coords:
 
                 let edges = if face_edge.target_vertex == target_vertex_index {
                     [face.edge, face_edge.next_edge, face_edge.previous_edge]
-                } else if polytope.edges[face_edge.previous_edge].target_vertex == target_vertex_index {
+                } else if polytope.edges[face_edge.previous_edge].target_vertex ==
+                           target_vertex_index
+                {
                     [face_edge.previous_edge, face.edge, face_edge.next_edge]
                 } else {
                     [face_edge.next_edge, face_edge.previous_edge, face.edge]
@@ -413,11 +422,12 @@ fn next_face_classify(polytope: &ConvexPolytope, face_index: usize, bary_coords:
                     }
                 }
 
-                // TODO: if none of the closest faces are intersecting, and we got here, that means this face is probably the closest to an intersection?
+                // TODO: if none of the closest faces are intersecting, and we got here,
+                // that means this face is probably the closest to an intersection?
 
                 for i in 0..polytope.faces.len() {
                     if !checked.contains(i) {
-                        return i
+                        return i;
                     }
                 }
 

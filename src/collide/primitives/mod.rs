@@ -81,10 +81,8 @@ pub trait ContinuousTransformed<RHS = Self> {
 /// for more information about supported primitives.
 ///
 pub trait Primitive
-    : Debug
-    + Clone
-    + HasAABB
-    + SupportFunction<Point = <<Self as HasAABB>::Aabb as Aabb>::Point> {
+    : Debug + Clone + HasAABB + SupportFunction<Point = <<Self as HasAABB>::Aabb as Aabb>::Point>
+    {
 }
 
 impl <T> Primitive for T

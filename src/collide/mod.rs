@@ -103,7 +103,12 @@ where
         normal: P::Diff,
         penetration_depth: P::Scalar,
     ) -> Self {
-        Self::new_with_point(strategy, normal, penetration_depth, P::from_value(P::Scalar::zero()))
+        Self::new_with_point(
+            strategy,
+            normal,
+            penetration_depth,
+            P::from_value(P::Scalar::zero()),
+        )
     }
 
     /// Create a new contact manifold, complete with contact point
@@ -160,10 +165,7 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitives`: List of all primitives that make up this shape.
-    pub fn new_complex(
-        strategy: CollisionStrategy,
-        primitives: Vec<(P, T)>,
-    ) -> Self {
+    pub fn new_complex(strategy: CollisionStrategy, primitives: Vec<(P, T)>) -> Self {
         let bound = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
@@ -194,10 +196,7 @@ where
     /// - `primitive`: The collision primitive.
     /// - `transform`: Local-to-model transform of the primitive.
     pub fn new_simple_offset(strategy: CollisionStrategy, primitive: P, transform: T) -> Self {
-        Self::new_complex(
-            strategy,
-            vec![(primitive, transform)],
-        )
+        Self::new_complex(strategy, vec![(primitive, transform)])
     }
 
     /// Update the cached transformed bounding box in world space coordinates.
@@ -319,10 +318,8 @@ where
     P: Primitive,
     T: Pose<P::Point>,
 {
-    primitives.iter().map(|&(ref p, ref t)| p.get_bound().transform(t)).fold(
-        P::Aabb::zero(),
-        |bound, b| {
-            bound.union(&b)
-        },
-    )
+    primitives
+        .iter()
+        .map(|&(ref p, ref t)| p.get_bound().transform(t))
+        .fold(P::Aabb::zero(), |bound, b| bound.union(&b))
 }

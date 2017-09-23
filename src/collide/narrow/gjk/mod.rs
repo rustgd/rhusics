@@ -395,14 +395,8 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
-                ),
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
-                ),
+                (Rectangle::new(10., 10.).into(), transform(0., 5., 0.)),
+                (Rectangle::new(10., 10.).into(), transform(0., -5., 0.)),
             ],
         );
         let left_transform = transform(15., 0., 0.);
@@ -423,14 +417,8 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
-                ),
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
-                ),
+                (Rectangle::new(10., 10.).into(), transform(0., 5., 0.)),
+                (Rectangle::new(10., 10.).into(), transform(0., -5., 0.)),
             ],
         );
         let left_transform = transform(15., 0., 0.);
@@ -452,14 +440,8 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.)
-                ),
-                (
-                    Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.)
-                ),
+                (Rectangle::new(10., 10.).into(), transform(0., 5., 0.)),
+                (Rectangle::new(10., 10.).into(), transform(0., -5., 0.)),
             ],
         );
         let left_transform = transform(15., 0., 0.);

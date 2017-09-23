@@ -14,7 +14,7 @@ pub const MAX_ITERATIONS: u32 = 100;
 
 pub trait EPA<P, T>
 where
-    P : SupportFunction,
+    P: SupportFunction,
 {
     fn process(
         &self,
