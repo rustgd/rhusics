@@ -19,10 +19,6 @@ use collide::narrow::{EPA3, SimplexProcessor3, GJK};
 /// information.
 pub type Contacts3 = Contacts<Point3<Real>>;
 
-/// Collision primitive for 3D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
-/// for more information.
-pub type CollisionPrimitive3<T> = CollisionPrimitive<Primitive3, T>;
-
 /// Collision shape for 3D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
 pub type CollisionShape3<T> = CollisionShape<Primitive3, T>;
@@ -36,7 +32,7 @@ pub type BroadBruteForce3 = BruteForce;
 pub type SweepAndPrune3 = SweepAndPrune<Variance3>;
 
 /// GJK algorithm for 3D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
-pub type GJK3<T> = GJK<Point3<Real>, T, SimplexProcessor3, EPA3>;
+pub type GJK3<T> = GJK<Primitive3, T, SimplexProcessor3, EPA3>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
@@ -56,7 +52,11 @@ pub type SpatialSortingSystem3<T> = SpatialSortingSystem<Primitive3, T>;
 pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
     Primitive3,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive3>),
+    (usize,
+     ContainerShapeWrapper<
+        Entity,
+        Primitive3,
+    >),
 >;
 
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -64,7 +64,10 @@ pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;
 
 /// Dynamic bounding volume tree for 3D
 pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive3>,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive3,
+    >,
 >;
 
 /// Utility method for registering 3D components and resources with

@@ -10,13 +10,12 @@ use super::SupportPoint;
 use Real;
 
 pub trait SimplexProcessor {
-    type Vector: VectorSpace<Scalar = Real>;
-    type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector>;
+    type Point: EuclideanSpace<Scalar = Real>;
 
     fn check_origin(
         &self,
         simplex: &mut Vec<SupportPoint<Self::Point>>,
-        d: &mut Self::Vector,
+        d: &mut <Self::Point as EuclideanSpace>::Diff,
     ) -> bool;
     fn new() -> Self;
 }

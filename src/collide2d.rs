@@ -19,10 +19,6 @@ use collide::narrow::{EPA2, SimplexProcessor2, GJK};
 /// information.
 pub type Contacts2 = Contacts<Point2<Real>>;
 
-/// Collision primitive for 2D, see [CollisionPrimitive](../collide/struct.CollisionPrimitive.html)
-/// for more information.
-pub type CollisionPrimitive2<T> = CollisionPrimitive<Primitive2, T>;
-
 /// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
 pub type CollisionShape2<T> = CollisionShape<Primitive2, T>;
@@ -36,7 +32,7 @@ pub type BroadBruteForce2 = BruteForce;
 pub type SweepAndPrune2 = SweepAndPrune<Variance2>;
 
 /// GJK algorithm for 2D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
-pub type GJK2<T> = GJK<Point2<Real>, T, SimplexProcessor2, EPA2>;
+pub type GJK2<T> = GJK<Primitive2, T, SimplexProcessor2, EPA2>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
@@ -56,7 +52,11 @@ pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2, T>;
 pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
     Primitive2,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive2>),
+    (usize,
+     ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+    >),
 >;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -65,7 +65,10 @@ pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 /// Dynamic bounding volume tree for 2D
 
 pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive2>,
+    ContainerShapeWrapper<
+        Entity,
+        Primitive2,
+    >,
 >;
 
 /// Utility method for registering 2D components and resources with

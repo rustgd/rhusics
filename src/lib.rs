@@ -80,13 +80,16 @@
 
 extern crate cgmath;
 extern crate collision;
-extern crate rand;
 extern crate shrev;
 extern crate specs;
+extern crate bit_set;
 
 #[cfg(test)]
 #[macro_use]
 extern crate assert_approx_eq;
+
+#[cfg(test)]
+extern crate genmesh;
 
 pub mod collide;
 pub mod collide2d;
@@ -206,7 +209,8 @@ where
 
     fn inverse_transform(&self) -> Option<Self> {
         Some(Self::new(
-            self.rotation.rotate_point(self.position) * -P::Scalar::one(),
+            self.rotation.rotate_point(self.position) *
+                -P::Scalar::one(),
             self.inverse_rotation,
         ))
     }

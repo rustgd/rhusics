@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use cgmath::prelude::*;
 use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree};
 use collision::prelude::*;
 use shrev::EventHandler;
@@ -38,7 +39,7 @@ where
 impl<P, T, D> SpatialCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Vector: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
     P::Aabb: Clone
         + Debug
         + Send
@@ -77,7 +78,8 @@ fn discrete_visitor<P>(
 where
     P: Primitive,
     P::Aabb: Debug + Discrete<P::Aabb>,
-    P::Vector: Debug,
+    P::Point: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     DiscreteVisitor::<P::Aabb, ContainerShapeWrapper<Entity, P>>::new(bound)
 }
@@ -94,18 +96,16 @@ where
         + Discrete<P::Aabb>
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
-    P::Vector: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
 {
-    type SystemData = (
-        Entities<'a>,
-        ReadStorage<'a, T>,
-        ReadStorage<'a, CollisionShape<P, T>>,
-        Option<FetchMut<'a, Contacts<P::Point>>>,
-        Option<FetchMut<'a, EventHandler>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>,
-    );
+    type SystemData = (Entities<'a>,
+     ReadStorage<'a, T>,
+     ReadStorage<'a, CollisionShape<P, T>>,
+     Option<FetchMut<'a, Contacts<P::Point>>>,
+     Option<FetchMut<'a, EventHandler>>,
+     FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>);
 
     fn run(
         &mut self,
@@ -148,26 +148,31 @@ where
         };
 
         match self.narrow {
-            Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
-                let left_shape = shapes.get(left_entity).unwrap();
-                let right_shape = shapes.get(right_entity).unwrap();
-                let left_pose = poses.get(left_entity).unwrap();
-                let right_pose = poses.get(right_entity).unwrap();
-                match narrow.collide(
-                    (left_entity, left_shape, left_pose),
-                    (right_entity, right_shape, right_pose),
-                ) {
-                    Some(contact_set) => if let Some(ref mut events) = event_handler {
-                        match events.write_single(contact_set) {
-                            Err(err) => println!("Error in event write: {:?}", err),
-                            _ => (),
-                        };
-                    } else if let Some(ref mut c) = contacts {
-                        c.push(contact_set);
-                    },
-                    None => (),
-                };
-            },
+            Some(ref mut narrow) => {
+                for (left_entity, right_entity) in potentials {
+                    let left_shape = shapes.get(left_entity).unwrap();
+                    let right_shape = shapes.get(right_entity).unwrap();
+                    let left_pose = poses.get(left_entity).unwrap();
+                    let right_pose = poses.get(right_entity).unwrap();
+                    match narrow.collide((left_entity, left_shape, left_pose), (
+                        right_entity,
+                        right_shape,
+                        right_pose,
+                    )) {
+                        Some(contact_set) => {
+                            if let Some(ref mut events) = event_handler {
+                                match events.write_single(contact_set) {
+                                    Err(err) => println!("Error in event write: {:?}", err),
+                                    _ => (),
+                                };
+                            } else if let Some(ref mut c) = contacts {
+                                c.push(contact_set);
+                            }
+                        }
+                        None => (),
+                    };
+                }
+            }
             None => {
                 // if we only have a broad phase, we generate contacts for aabb
                 // intersections

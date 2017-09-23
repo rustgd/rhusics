@@ -1,29 +1,27 @@
 use cgmath::{Point3, Vector3};
+use cgmath::prelude::*;
 
 use super::*;
 use {Pose, Real};
-use collide::{CollisionPrimitive, CollisionStrategy, Contact};
+use collide::{CollisionStrategy, Contact};
 use collide::narrow::gjk::{support, SupportPoint};
-use collide::primitives::primitive3d::Primitive3;
+use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
 pub struct EPA3;
 
-impl<T> EPA<T> for EPA3
+impl<P, T> EPA<P, T> for EPA3
 where
+    P: SupportFunction<Point = Point3<Real>>,
     T: Pose<Point3<Real>>,
 {
-    type Vector = Vector3<Real>;
-    type Point = Point3<Real>;
-    type Primitive = Primitive3;
-
     fn process(
         &self,
         mut simplex: &mut Vec<SupportPoint<Point3<Real>>>,
-        left: &CollisionPrimitive<Primitive3, T>,
+        left: &P,
         left_transform: &T,
-        right: &CollisionPrimitive<Primitive3, T>,
+        right: &P,
         right_transform: &T,
     ) -> Vec<Contact<Point3<Real>>> {
         if simplex.len() < 4 {
@@ -58,35 +56,13 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
             CollisionStrategy::FullResolution,
             face.normal.clone(), // negate ?
             face.distance,
-            point(polytope, face),
+            point(polytope, face)
         ),
     ]
 }
 
-fn barycentric(
-    p: Vector3<Real>,
-    a: Vector3<Real>,
-    b: Vector3<Real>,
-    c: Vector3<Real>,
-) -> (Real, Real, Real) {
-    let v0 = b - a;
-    let v1 = c - a;
-    let v2 = p - a;
-    let d00 = v0.dot(v0);
-    let d01 = v0.dot(v1);
-    let d11 = v1.dot(v1);
-    let d20 = v2.dot(v0);
-    let d21 = v2.dot(v1);
-    let inv_denom = 1. / (d00 * d11 - d01 * d01);
-
-    let v = (d11 * d20 - d01 * d21) * inv_denom;
-    let w = (d00 * d21 - d01 * d20) * inv_denom;
-    let u = 1. - v - w;
-    (u, v, w)
-}
-
 fn point(polytope: &Polytope, face: &Face) -> Point3<Real> {
-    let (u, v, w) = barycentric(
+    let (u, v, w) = ::util::barycentric_vector(
         face.normal * face.distance,
         polytope.vertices[face.vertices[0]].v,
         polytope.vertices[face.vertices[1]].v,
@@ -128,9 +104,13 @@ impl<'a> Polytope<'a> {
         let mut edges = Vec::default();
         let mut i = 0;
         while i < self.faces.len() {
-            let dot = self.faces[i]
-                .normal
-                .dot(sup.v - self.vertices[self.faces[i].vertices[0]].v);
+            let dot = self.faces[i].normal.dot(
+                sup.v -
+                    self.vertices[self.faces[i]
+                                      .vertices
+                                      [0]]
+                        .v,
+            );
             if dot > 0. {
                 let face = self.faces.swap_remove(i);
                 remove_or_add_edge(&mut edges, (face.vertices[0], face.vertices[1]));
@@ -283,9 +263,9 @@ mod tests {
 
     #[test]
     fn test_epa_3d() {
-        let left = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
+        let left = Cuboid::new(10., 10., 10.);
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
+        let right = Cuboid::new(10., 10., 10.);
         let right_transform = transform_3d(7., 2., 0., 0.);
         let mut simplex = vec![
             sup(18., -12., 0.),

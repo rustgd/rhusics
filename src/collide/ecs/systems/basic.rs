@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 
+use cgmath::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
@@ -33,7 +34,7 @@ impl<P, T, D> BasicCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone + Debug + Send + Sync + 'static,
-    P::Vector: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
     T: Pose<P::Point> + Component,
     D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
 {
@@ -63,7 +64,7 @@ where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone + Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
-    P::Vector: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Pose<P::Point> + Send + Sync + Clone + 'static,
 {
     type SystemData = (
@@ -112,9 +113,9 @@ where
                     };
                 },
                 None => {
-                    // if we only have a broad phase, we generate contacts for aabb
-                    // intersections
-                    // right now, we only report the collision, no normal/depth calculation
+// if we only have a broad phase, we generate contacts for aabb
+// intersections
+// right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
                         let contact_set = ContactSet::new_single(
                             CollisionStrategy::CollisionOnly,

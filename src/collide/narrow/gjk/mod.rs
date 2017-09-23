@@ -12,8 +12,8 @@ use self::epa::EPA;
 use self::simplex::SimplexProcessor;
 use super::NarrowPhase;
 use {Pose, Real};
-use collide::{CollisionPrimitive, CollisionShape, CollisionStrategy, Contact, ContactSet,
-              Primitive};
+use collide::{CollisionShape, CollisionStrategy, Contact, ContactSet, Primitive};
+use collide::primitives::SupportFunction;
 
 mod simplex;
 mod epa;
@@ -63,10 +63,10 @@ pub struct GJK<P, T, S, E> {
 
 impl<P, T, S, E> GJK<P, T, S, E>
 where
-    P: EuclideanSpace<Scalar = Real>,
-    S: SimplexProcessor<Vector = P::Diff>,
-    T: Pose<P>,
-    E: EPA<T>,
+    P: Primitive,
+    S: SimplexProcessor<Point = P::Point>,
+    T: Pose<P::Point>,
+    E: EPA<P, T>,
 {
     /// Create a new GJK algorithm implementation
     pub fn new() -> Self {
@@ -84,16 +84,17 @@ where
     }
 }
 
-impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P::Point, T, S, E>
+impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P, T, S, E>
 where
     ID: Debug + Clone,
     P: Primitive,
     P::Aabb: Discrete<P::Aabb>,
     P::Point: Debug,
-    P::Vector: InnerSpace + Neg<Output = P::Vector> + Debug,
-    S: SimplexProcessor<Vector = P::Vector, Point = P::Point> + Debug,
+    <P::Point as EuclideanSpace>::Diff: InnerSpace
+        + Neg<Output = <P::Point as EuclideanSpace>::Diff> + Debug,
+    S: SimplexProcessor<Point = P::Point> + Debug,
     T: Pose<P::Point> + Debug,
-    E: EPA<T, Vector = P::Vector, Primitive = P, Point = P::Point> + Debug,
+    E: EPA<P, T> + Debug,
 {
     fn collide(
         &mut self,
@@ -107,35 +108,35 @@ where
         }
 
         let mut contacts = Vec::default();
-        for left_primitive in &left.primitives {
-            for right_primitive in &right.primitives {
-                if left.transformed_bound.intersects(&right.transformed_bound) {
-                    match gjk(
-                        &left_primitive,
-                        left_transform,
-                        &right_primitive,
-                        right_transform,
-                        &self.simplex_processor,
-                        &mut self.average,
-                    ) {
-                        Some(mut simplex) => {
-                            if left.strategy == CollisionStrategy::CollisionOnly ||
-                                right.strategy == CollisionStrategy::CollisionOnly
-                            {
-                                contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
-                            } else {
-                                contacts.append(&mut self.epa.process(
-                                    &mut simplex,
-                                    left_primitive,
-                                    left_transform,
-                                    right_primitive,
-                                    right_transform,
-                                ));
-                            }
+        for &(ref left_primitive, ref left_local_transform) in &left.primitives {
+            let left_transform = left_transform.concat(left_local_transform);
+            for &(ref right_primitive, ref right_local_transform) in &right.primitives {
+                let right_transform = right_transform.concat(right_local_transform);
+                match gjk(
+                    left_primitive,
+                    &left_transform,
+                    right_primitive,
+                    &right_transform,
+                    &self.simplex_processor,
+                    &mut self.average,
+                ) {
+                    Some(mut simplex) => {
+                        if left.strategy == CollisionStrategy::CollisionOnly ||
+                            right.strategy == CollisionStrategy::CollisionOnly
+                        {
+                            contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
+                        } else {
+                            contacts.append(&mut self.epa.process(
+                                &mut simplex,
+                                left_primitive,
+                                &left_transform,
+                                right_primitive,
+                                &right_transform,
+                            ));
                         }
-                        None => (),
-                    };
-                }
+                    }
+                    None => (),
+                };
             }
         }
 
@@ -151,18 +152,19 @@ where
 }
 
 fn gjk<P, T, S>(
-    left: &CollisionPrimitive<P, T>,
+    left: &P,
     left_transform: &T,
-    right: &CollisionPrimitive<P, T>,
+    right: &P,
     right_transform: &T,
     simplex_processor: &S,
     average: &mut RunningAverage,
 ) -> Option<Vec<SupportPoint<P::Point>>>
 where
-    P::Vector: Neg<Output = P::Vector> + InnerSpace,
-    P: Primitive,
+    P: SupportFunction,
+    P::Point: EuclideanSpace<Scalar = Real>,
+    <P::Point as EuclideanSpace>::Diff: Neg<Output = <P::Point as EuclideanSpace>::Diff> + InnerSpace,
     T: Pose<P::Point>,
-    S: SimplexProcessor<Vector = P::Vector, Point = P::Point>,
+    S: SimplexProcessor<Point = P::Point>,
 {
     let mut d = *right_transform.position() - *left_transform.position();
     let a = support(left, left_transform, right, right_transform, &d);
@@ -217,20 +219,21 @@ where
     }
 }
 
-pub(crate) fn support<P, T>(
-    left: &CollisionPrimitive<P, T>,
+pub(crate) fn support<S, T>(
+    left: &S,
     left_transform: &T,
-    right: &CollisionPrimitive<P, T>,
+    right: &S,
     right_transform: &T,
-    direction: &P::Vector,
-) -> SupportPoint<P::Point>
+    direction: &<S::Point as EuclideanSpace>::Diff,
+) -> SupportPoint<S::Point>
 where
-    P: Primitive,
-    T: Pose<P::Point>,
-    P::Vector: Neg<Output = P::Vector>,
+    S: SupportFunction,
+    S::Point: EuclideanSpace<Scalar = Real>,
+    <S::Point as EuclideanSpace>::Diff: Neg<Output = <S::Point as EuclideanSpace>::Diff>,
+    T: Pose<S::Point>,
 {
-    let l = left.get_far_point(direction, left_transform);
-    let r = right.get_far_point(&direction.neg(), right_transform);
+    let l = left.support_point(direction, left_transform);
+    let r = right.support_point(&direction.neg(), right_transform);
     SupportPoint {
         v: l - r,
         sup_a: l,
@@ -259,9 +262,9 @@ mod tests {
 
     #[test]
     fn test_support() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(-15., 0., 0.);
         let direction = Vector2::new(1., 0.);
         assert_eq!(
@@ -272,9 +275,9 @@ mod tests {
 
     #[test]
     fn test_gjk_miss() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(-15., 0., 0.);
         let processor = SimplexProcessor2::new();
         let mut average = RunningAverage::new();
@@ -292,9 +295,9 @@ mod tests {
 
     #[test]
     fn test_gjk_hit() {
-        let left = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let left = Rectangle::new(10., 10.);
         let left_transform = transform(15., 0., 0.);
-        let right = CollisionPrimitive2::new(Rectangle::new(10., 10.).into());
+        let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         let processor = SimplexProcessor2::new();
         let mut average = RunningAverage::new();
@@ -311,9 +314,9 @@ mod tests {
 
     #[test]
     fn test_gjk_3d_hit() {
-        let left = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
+        let left = Cuboid::new(10., 10., 10.);
         let left_transform = transform_3d(15., 0., 0., 0.);
-        let right = CollisionPrimitive3::new(Cuboid::new(10., 10., 10.).into());
+        let right = Cuboid::new(10., 10., 10.);
         let right_transform = transform_3d(7., 2., 0., 0.);
         let processor = SimplexProcessor3::new();
         let mut average = RunningAverage::new();
@@ -392,13 +395,13 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );
@@ -420,13 +423,13 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );
@@ -449,13 +452,13 @@ mod tests {
         let left = CollisionShape2::new_complex(
             CollisionStrategy::CollisionOnly,
             vec![
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., 5., 0.),
+                    transform(0., 5., 0.)
                 ),
-                CollisionPrimitive2::new_impl(
+                (
                     Rectangle::new(10., 10.).into(),
-                    transform(0., -5., 0.),
+                    transform(0., -5., 0.)
                 ),
             ],
         );

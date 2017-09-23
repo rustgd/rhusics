@@ -6,6 +6,8 @@ pub use self::gjk::{EPA2, EPA3, SimplexProcessor2, SimplexProcessor3, GJK};
 
 use std::fmt::Debug;
 
+use cgmath::EuclideanSpace;
+
 use collide::{CollisionShape, ContactSet, Primitive};
 
 mod gjk;
@@ -21,7 +23,7 @@ mod gjk;
 pub trait NarrowPhase<ID, P, T>: Debug
 where
     P: Primitive,
-    P::Vector: Debug,
+    <P::Point as EuclideanSpace>::Diff: Debug,
 {
     /// Check if two shapes collides, and give contact manifolds for any contacts found
     ///

@@ -4,29 +4,26 @@ pub use self::epa3d::EPA3;
 mod epa2d;
 mod epa3d;
 
-use cgmath::prelude::*;
-use collision::MinMax;
-
 use super::SupportPoint;
 use Real;
-use collide::{CollisionPrimitive, Contact, Primitive};
+use collide::Contact;
+use collide::primitives::SupportFunction;
 
 pub const EPA_TOLERANCE: Real = 0.00001;
 pub const MAX_ITERATIONS: u32 = 100;
 
-pub trait EPA<T> {
-    type Vector: VectorSpace<Scalar = Real> + ElementWise + Array<Element = Real>;
-    type Point: EuclideanSpace<Scalar = Real, Diff = Self::Vector> + MinMax;
-    type Primitive: Primitive<Vector = Self::Vector, Point = Self::Point>;
-
+pub trait EPA<P, T>
+where
+    P : SupportFunction,
+{
     fn process(
         &self,
-        simplex: &mut Vec<SupportPoint<Self::Point>>,
-        left: &CollisionPrimitive<Self::Primitive, T>,
+        simplex: &mut Vec<SupportPoint<P::Point>>,
+        left: &P,
         left_transform: &T,
-        right: &CollisionPrimitive<Self::Primitive, T>,
+        right: &P,
         right_transform: &T,
-    ) -> Vec<Contact<Self::Point>>;
+    ) -> Vec<Contact<P::Point>>;
 
     fn new() -> Self;
 }

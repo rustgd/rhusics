@@ -80,9 +80,9 @@ where
         let mut active = vec![0];
         for index in 1..shapes.len() {
             let mut i = 0;
-            // for all currently active bounds, go through and remove any that are to the left of
-            // the current bound, any others are potential hits, do a real bound intersection test
-            // for those, and add to pairs if the bounds intersect.
+// for all currently active bounds, go through and remove any that are to the left of
+// the current bound, any others are potential hits, do a real bound intersection test
+// for those, and add to pairs if the bounds intersect.
             while i < active.len() {
                 if shapes[active[i]].bound().max()[self.sweep_axis] <
                     shapes[index].bound().min()[self.sweep_axis]
@@ -96,15 +96,15 @@ where
                 }
             }
 
-            // current bound should be active for the next iteration
+// current bound should be active for the next iteration
             active.push(index);
 
-            // update variance
+// update variance
             self.variance
                 .add_to_sum(&shapes[index].bound().min(), &shapes[index].bound().max());
         }
 
-        // compute sweep axis for the next iteration
+// compute sweep axis for the next iteration
         let (axis, _) = self.variance.compute_axis(shapes.len() as Real);
         self.sweep_axis = axis;
 

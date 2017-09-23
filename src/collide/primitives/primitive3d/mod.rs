@@ -11,78 +11,25 @@
 //!
 //! ```
 //! # use rhusics::collide::primitives::primitive3d::*;
-//! use rhusics::collide::Primitive;
+//! use rhusics::collide::primitives::HasAABB;
 //! let p : Primitive3 = Cuboid::new(10., 34., 22.).into();
 //! p.get_bound();
 //! ```
 
+pub use self::cuboid::Cuboid;
 pub use self::polytope::ConvexPolytope;
+pub use self::sphere::Sphere;
 
 use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
-use collision::Aabb3;
+use collision::{Aabb3, Ray3};
 
-use super::Primitive;
+use super::{HasAABB, SupportFunction, DiscreteTransformed, ContinuousTransformed};
 use {Pose, Real};
 
 mod polytope;
-
-/// Sphere primitive
-#[derive(Debug, Clone)]
-pub struct Sphere {
-    /// Radius of the sphere
-    pub radius: Real,
-}
-
-impl Sphere {
-    /// Create a new sphere primitive
-    pub fn new(radius: Real) -> Self {
-        Self { radius }
-    }
-}
-
-/// Cuboid primitive.
-///
-/// Have a cached set of corner points to speed up computation.
-#[derive(Debug, Clone)]
-pub struct Cuboid {
-    /// Dimensions of the box
-    pub dim: Vector3<Real>,
-    half_dim: Vector3<Real>,
-    corners: Vec<Point3<Real>>,
-}
-
-impl Cuboid {
-    /// Create a new rectangle primitive from component dimensions
-    pub fn new(dim_x: Real, dim_y: Real, dim_z: Real) -> Self {
-        Self::new_impl(Vector3::new(dim_x, dim_y, dim_z))
-    }
-
-    /// Create a new rectangle primitive from a vector of component dimensions
-    pub fn new_impl(dim: Vector3<Real>) -> Self {
-        Self {
-            dim,
-            half_dim: dim / 2.,
-            corners: Self::generate_corners(&dim),
-        }
-    }
-
-    fn generate_corners(dimensions: &Vector3<Real>) -> Vec<Point3<Real>> {
-        let two = 2.;
-        vec![
-            Point3::new(dimensions.x, dimensions.y, dimensions.z) / two,
-            Point3::new(-dimensions.x, dimensions.y, dimensions.z) / two,
-            Point3::new(-dimensions.x, -dimensions.y, dimensions.z) / two,
-            Point3::new(dimensions.x, -dimensions.y, dimensions.z) / two,
-            Point3::new(dimensions.x, dimensions.y, -dimensions.z) / two,
-            Point3::new(-dimensions.x, dimensions.y, -dimensions.z) / two,
-            Point3::new(-dimensions.x, -dimensions.y, -dimensions.z) / two,
-            Point3::new(dimensions.x, -dimensions.y, -dimensions.z) / two,
-        ]
-    }
-}
-
-
+mod sphere;
+mod cuboid;
 
 /// Base enum for all 3D primitives
 #[derive(Debug, Clone)]
@@ -116,126 +63,66 @@ impl Into<Primitive3> for ConvexPolytope {
     }
 }
 
-impl Primitive for Primitive3 {
-    type Vector = Vector3<Real>;
-    type Point = Point3<Real>;
+impl HasAABB for Primitive3 {
     type Aabb = Aabb3<Real>;
 
     fn get_bound(&self) -> Aabb3<Real> {
         match *self {
-            Primitive3::Sphere(ref sphere) => Aabb3::new(
-                Point3::from_value(-sphere.radius),
-                Point3::from_value(sphere.radius),
-            ),
-
-            Primitive3::Cuboid(ref b) => {
-                Aabb3::new(Point3::from_vec(-b.half_dim), Point3::from_vec(b.half_dim))
-            }
-
+            Primitive3::Sphere(ref sphere) => sphere.get_bound(),
+            Primitive3::Cuboid(ref b) => b.get_bound(),
             Primitive3::ConvexPolytope(ref c) => c.get_bound(),
-        }
-    }
-
-    fn get_far_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
-    where
-        T: Pose<Point3<Real>>,
-    {
-        match *self {
-            Primitive3::Sphere(ref sphere) => {
-                transform.position() + direction.normalize_to(sphere.radius)
-            }
-
-            Primitive3::Cuboid(ref b) => ::util::get_max_point(&b.corners, direction, transform),
-
-            Primitive3::ConvexPolytope(ref c) => c.get_far_point(direction, transform),
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std;
+impl SupportFunction for Primitive3 {
+    type Point = Point3<Real>;
 
-    use cgmath::{Point3, Quaternion, Rad, Rotation3, Vector3};
-
-    use super::*;
-    use BodyPose;
-
-    // sphere
-    #[test]
-    fn test_sphere_far_1() {
-        test_sphere(1., 0., 0., 10., 0., 0., 0.);
+    fn support_point<T>(&self, direction: &Vector3<Real>, transform: &T) -> Point3<Real>
+    where
+        T: Pose<Point3<Real>>,
+    {
+        match *self {
+            Primitive3::Sphere(ref sphere) => sphere.support_point(direction, transform),
+            Primitive3::Cuboid(ref b) => b.support_point(direction, transform),
+            Primitive3::ConvexPolytope(ref c) => c.support_point(direction, transform),
+        }
     }
+}
 
-    #[test]
-    fn test_sphere_far_2() {
-        test_sphere(
-            1.,
-            1.,
-            1.,
-            5.773502691896258,
-            5.773502691896258,
-            5.773502691896258,
-            0.,
-        );
+
+
+impl DiscreteTransformed<Ray3<Real>> for Primitive3 {
+    type Point = Point3<Real>;
+
+    fn intersects_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> bool
+    where
+        T: Transform<Self::Point>,
+    {
+        match *self {
+            Primitive3::Sphere(ref sphere) => sphere.intersects_transformed(ray, transform),
+            Primitive3::Cuboid(ref cuboid) => cuboid.intersects_transformed(ray, transform),
+            Primitive3::ConvexPolytope(ref polytope) => {
+                polytope.intersects_transformed(ray, transform)
+            }
+        }
     }
+}
 
-    #[test]
-    fn test_sphere_far_3() {
-        test_sphere(1., 0., 0., 10., 0., 0., -std::f64::consts::PI as Real / 4.);
-    }
+impl ContinuousTransformed<Ray3<Real>> for Primitive3 {
+    type Point = Point3<Real>;
+    type Result = Point3<Real>;
 
-    #[test]
-    fn test_sphere_far_4() {
-        let sphere: Primitive3 = Sphere::new(10.).into();
-        let direction = Vector3::new(1., 0., 0.);
-        let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
-            BodyPose::new(Point3::new(0., 10., 0.), Quaternion::from_angle_z(Rad(0.)));
-        let point = sphere.get_far_point(&direction, &transform);
-        assert_eq!(Point3::new(10., 10., 0.), point);
-    }
-
-    #[test]
-    fn test_sphere_bound() {
-        let sphere: Primitive3 = Sphere::new(10.).into();
-        assert_eq!(bound(-10., -10., -10., 10., 10., 10.), sphere.get_bound())
-    }
-
-    fn test_sphere(dx: Real, dy: Real, dz: Real, px: Real, py: Real, pz: Real, rot: Real) {
-        let sphere: Primitive3 = Sphere::new(10.).into();
-        let direction = Vector3::new(dx, dy, dz);
-        let transform: BodyPose<Point3<Real>, Quaternion<Real>> =
-            BodyPose::new(Point3::new(0., 0., 0.), Quaternion::from_angle_z(Rad(rot)));
-        let point = sphere.get_far_point(&direction, &transform);
-        assert_approx_eq!(px, point.x);
-        assert_approx_eq!(py, point.y);
-        assert_approx_eq!(pz, point.z);
-    }
-
-    // box
-    // not testing far point as ::util::get_max_point is rigorously tested
-    #[test]
-    fn test_rectangle_bound() {
-        let r: Primitive3 = Cuboid::new(10., 10., 10.).into();
-        assert_eq!(bound(-5., -5., -5., 5., 5., 5.), r.get_bound())
-    }
-
-    // convex polyhedron
-    // not testing bound as ::util::get_bound is fairly well tested
-    // not testing far point as ::util::get_max_point is rigorously tested
-
-    // util
-    fn bound(
-        min_x: Real,
-        min_y: Real,
-        min_z: Real,
-        max_x: Real,
-        max_y: Real,
-        max_z: Real,
-    ) -> Aabb3<Real> {
-        Aabb3::new(
-            Point3::new(min_x, min_y, min_z),
-            Point3::new(max_x, max_y, max_z),
-        )
+    fn intersection_transformed<T>(&self, ray: &Ray3<Real>, transform: &T) -> Option<Point3<Real>>
+    where
+        T: Transform<Point3<Real>>,
+    {
+        match *self {
+            Primitive3::Sphere(ref sphere) => sphere.intersection_transformed(ray, transform),
+            Primitive3::Cuboid(ref cuboid) => cuboid.intersection_transformed(ray, transform),
+            Primitive3::ConvexPolytope(ref polytope) => {
+                polytope.intersection_transformed(ray, transform)
+            }
+        }
     }
 }
