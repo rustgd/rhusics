@@ -4,26 +4,28 @@ use cgmath::prelude::*;
 use super::*;
 use {Pose, Real};
 use collide::{CollisionStrategy, Contact};
-use collide::narrow::gjk::{support, SupportPoint};
+use collide::narrow::gjk::SupportPoint;
 use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
 pub struct EPA3;
 
-impl<P, T> EPA<P, T> for EPA3
-where
-    P: SupportFunction<Point = Point3<Real>>,
-    T: Pose<Point3<Real>>,
-{
-    fn process(
+impl EPA for EPA3 {
+    type Point = Point3<Real>;
+
+    fn process<P, T>(
         &self,
         mut simplex: &mut Vec<SupportPoint<Point3<Real>>>,
         left: &P,
         left_transform: &T,
         right: &P,
         right_transform: &T,
-    ) -> Vec<Contact<Point3<Real>>> {
+    ) -> Vec<Contact<Point3<Real>>>
+    where
+        P: SupportFunction<Point = Point3<Real>>,
+        T: Pose<Point3<Real>>,
+    {
         if simplex.len() < 4 {
             return Vec::default();
         }
@@ -32,7 +34,13 @@ where
         loop {
             let p = {
                 let face = polytope.closest_face_to_origin();
-                let p = support(left, left_transform, right, right_transform, &face.normal);
+                let p = SupportPoint::from_minkowski(
+                    left,
+                    left_transform,
+                    right,
+                    right_transform,
+                    &face.normal,
+                );
                 let d = p.v.dot(face.normal);
                 if d - face.distance < EPA_TOLERANCE || i >= MAX_ITERATIONS {
                     return contact(&polytope, face);
@@ -61,6 +69,10 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
     ]
 }
 
+/// This function returns the contact point in world space coordinates on shape A.
+///
+/// Compute the closest point to the origin on the given simplex face, then use that to interpolate
+/// the support points coming from the A shape.
 fn point(polytope: &Polytope, face: &Face) -> Point3<Real> {
     let (u, v, w) = ::util::barycentric_vector(
         face.normal * face.distance,

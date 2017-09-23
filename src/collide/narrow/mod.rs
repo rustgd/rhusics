@@ -2,7 +2,7 @@
 //!
 //! Currently only supports GJK/EPA.
 
-pub use self::gjk::{EPA2, EPA3, SimplexProcessor2, SimplexProcessor3, GJK};
+pub use self::gjk::{GJK2, GJK3, GJK};
 
 use std::fmt::Debug;
 
@@ -18,7 +18,6 @@ mod gjk;
 ///
 /// - `ID`: user supplied ID type for the shapes, will be returned as part of any contact manifolds
 /// - `P`: collision primitive type
-/// - `A`: bounding box type
 /// - `T`: model-to-world transform type
 pub trait NarrowPhase<ID, P, T>: Debug
 where

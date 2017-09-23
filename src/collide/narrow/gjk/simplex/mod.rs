@@ -17,5 +17,6 @@ pub trait SimplexProcessor {
         simplex: &mut Vec<SupportPoint<Self::Point>>,
         d: &mut <Self::Point as EuclideanSpace>::Diff,
     ) -> bool;
+
     fn new() -> Self;
 }

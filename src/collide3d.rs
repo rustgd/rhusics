@@ -1,6 +1,8 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
 pub use collide::CollisionStrategy;
+pub use collide::broad::SweepAndPrune3;
+pub use collide::narrow::GJK3;
 pub use collide::primitives::primitive3d::*;
 
 use std::fmt::Debug;
@@ -11,9 +13,8 @@ use specs::{Component, Entity, World};
 
 use {BodyPose, Pose, Real};
 use collide::*;
-use collide::broad::{BruteForce, SweepAndPrune, Variance3};
+use collide::broad::BruteForce;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
-use collide::narrow::{EPA3, SimplexProcessor3, GJK};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
@@ -26,13 +27,6 @@ pub type CollisionShape3<T> = CollisionShape<Primitive3, T>;
 /// Broad phase brute force algorithm for 3D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
 pub type BroadBruteForce3 = BruteForce;
-
-/// Broad phase sweep and prune algorithm for 3D, see
-/// [SweepAndPrune](../collide/broad/struct.SweepAndPrune.html) for more information.
-pub type SweepAndPrune3 = SweepAndPrune<Variance3>;
-
-/// GJK algorithm for 3D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
-pub type GJK3<T> = GJK<Primitive3, T, SimplexProcessor3, EPA3>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.

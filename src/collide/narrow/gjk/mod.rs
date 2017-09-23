@@ -1,15 +1,11 @@
-pub use self::epa::{EPA2, EPA3};
-pub use self::simplex::{SimplexProcessor2, SimplexProcessor3};
-
-use std;
 use std::fmt::Debug;
 use std::ops::Neg;
 
 use cgmath::prelude::*;
-use collision::Discrete;
+use collision::prelude::*;
 
-use self::epa::EPA;
-use self::simplex::SimplexProcessor;
+use self::epa::{EPA, EPA2, EPA3};
+use self::simplex::{SimplexProcessor, SimplexProcessor2, SimplexProcessor3};
 use super::NarrowPhase;
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, Contact, ContactSet, Primitive};
@@ -19,6 +15,12 @@ mod simplex;
 mod epa;
 
 const MAX_ITERATIONS: u32 = 100;
+
+/// GJK algorithm for 2D, see [GJK](struct.GJK.html) for more information.
+pub type GJK2 = GJK<SimplexProcessor2, EPA2>;
+
+/// GJK algorithm for 3D, see [GJK](struct.GJK.html) for more information.
+pub type GJK3 = GJK<SimplexProcessor3, EPA3>;
 
 #[derive(Debug)]
 struct RunningAverage {
@@ -44,8 +46,6 @@ impl RunningAverage {
 ///
 /// # Type parameters:
 ///
-/// - `P`: collision primitive type.
-/// - `T`: transform type
 /// - `S`: simplex processor type. Should be either
 ///        [`SimplexProcessor2`](struct.SimplexProcessor2.html) or
 ///        [`SimplexProcessor3`](struct.SimplexProcessor3.html)
@@ -54,19 +54,17 @@ impl RunningAverage {
 ///        [`EPA3`](struct.EPA3.html)
 ///
 #[derive(Debug)]
-pub struct GJK<P, T, S, E> {
+pub struct GJK<S, E> {
     simplex_processor: S,
     epa: E,
     average: RunningAverage,
-    marker: std::marker::PhantomData<(P, T)>,
 }
 
-impl<P, T, S, E> GJK<P, T, S, E>
+impl<S, E> GJK<S, E>
 where
-    P: Primitive,
-    S: SimplexProcessor<Point = P::Point>,
-    T: Pose<P::Point>,
-    E: EPA<P, T>,
+    S: SimplexProcessor,
+    S::Point: MinMax,
+    E: EPA<Point = S::Point>,
 {
     /// Create a new GJK algorithm implementation
     pub fn new() -> Self {
@@ -74,7 +72,6 @@ where
             simplex_processor: S::new(),
             average: RunningAverage::new(),
             epa: E::new(),
-            marker: std::marker::PhantomData,
         }
     }
 
@@ -82,9 +79,52 @@ where
     pub fn get_average(&self) -> f64 {
         self.average.average
     }
+
+    /// Do intersection test on the given primitives
+    fn intersection<P, T>(&mut self,
+                          left: &P,
+                          left_transform: &T,
+                          right: &P,
+                          right_transform: &T) -> Option<Vec<SupportPoint<P::Point>>>
+    where
+        P: Primitive,
+        S: SimplexProcessor<Point = P::Point>,
+        <P::Point as EuclideanSpace>::Diff: InnerSpace
+            + Neg<Output = <P::Point as EuclideanSpace>::Diff> + Debug,
+        T: Pose<P::Point>,
+    {
+        let mut d = *right_transform.position() - *left_transform.position();
+        let a = SupportPoint::from_minkowski(left, left_transform, right, right_transform, &d);
+        if a.v.dot(d) <= 0. {
+            self.average.add(0);
+            return None;
+        }
+        let mut simplex: Vec<SupportPoint<P::Point>> = Vec::default();
+        simplex.push(a);
+        d = d.neg();
+        let mut i = 0;
+        loop {
+            let a = SupportPoint::from_minkowski(left, left_transform, right, right_transform, &d);
+            if a.v.dot(d) <= 0. {
+                self.average.add(i + 1);
+                return None;
+            } else {
+                simplex.push(a);
+                if self.simplex_processor.check_origin(&mut simplex, &mut d) {
+                    self.average.add(i + 1);
+                    return Some(simplex);
+                }
+            }
+            i += 1;
+            if i >= MAX_ITERATIONS {
+                self.average.add(i);
+                return None;
+            }
+        }
+    }
 }
 
-impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<P, T, S, E>
+impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<S, E>
 where
     ID: Debug + Clone,
     P: Primitive,
@@ -94,7 +134,7 @@ where
         + Neg<Output = <P::Point as EuclideanSpace>::Diff> + Debug,
     S: SimplexProcessor<Point = P::Point> + Debug,
     T: Pose<P::Point> + Debug,
-    E: EPA<P, T> + Debug,
+    E: EPA<Point = P::Point> + Debug,
 {
     fn collide(
         &mut self,
@@ -112,13 +152,11 @@ where
             let left_transform = left_transform.concat(left_local_transform);
             for &(ref right_primitive, ref right_local_transform) in &right.primitives {
                 let right_transform = right_transform.concat(right_local_transform);
-                match gjk(
+                match self.intersection(
                     left_primitive,
                     &left_transform,
                     right_primitive,
                     &right_transform,
-                    &self.simplex_processor,
-                    &mut self.average,
                 ) {
                     Some(mut simplex) => {
                         if left.strategy == CollisionStrategy::CollisionOnly ||
@@ -151,51 +189,6 @@ where
     }
 }
 
-fn gjk<P, T, S>(
-    left: &P,
-    left_transform: &T,
-    right: &P,
-    right_transform: &T,
-    simplex_processor: &S,
-    average: &mut RunningAverage,
-) -> Option<Vec<SupportPoint<P::Point>>>
-where
-    P: SupportFunction,
-    P::Point: EuclideanSpace<Scalar = Real>,
-    <P::Point as EuclideanSpace>::Diff: Neg<Output = <P::Point as EuclideanSpace>::Diff> + InnerSpace,
-    T: Pose<P::Point>,
-    S: SimplexProcessor<Point = P::Point>,
-{
-    let mut d = *right_transform.position() - *left_transform.position();
-    let a = support(left, left_transform, right, right_transform, &d);
-    if a.v.dot(d) <= 0. {
-        average.add(0);
-        return None;
-    }
-    let mut simplex: Vec<SupportPoint<P::Point>> = Vec::default();
-    simplex.push(a);
-    d = d.neg();
-    let mut i = 0;
-    loop {
-        let a = support(left, left_transform, right, right_transform, &d);
-        if a.v.dot(d) <= 0. {
-            average.add(i + 1);
-            return None;
-        } else {
-            simplex.push(a);
-            if simplex_processor.check_origin(&mut simplex, &mut d) {
-                average.add(i + 1);
-                return Some(simplex);
-            }
-        }
-        i += 1;
-        if i >= MAX_ITERATIONS {
-            average.add(i);
-            return None;
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct SupportPoint<P>
 where
@@ -217,27 +210,27 @@ where
             sup_b: P::from_value(0.),
         }
     }
-}
 
-pub(crate) fn support<S, T>(
-    left: &S,
-    left_transform: &T,
-    right: &S,
-    right_transform: &T,
-    direction: &<S::Point as EuclideanSpace>::Diff,
-) -> SupportPoint<S::Point>
-where
-    S: SupportFunction,
-    S::Point: EuclideanSpace<Scalar = Real>,
-    <S::Point as EuclideanSpace>::Diff: Neg<Output = <S::Point as EuclideanSpace>::Diff>,
-    T: Pose<S::Point>,
-{
-    let l = left.support_point(direction, left_transform);
-    let r = right.support_point(&direction.neg(), right_transform);
-    SupportPoint {
-        v: l - r,
-        sup_a: l,
-        sup_b: r,
+    pub fn from_minkowski<S, T>(
+        left: &S,
+        left_transform: &T,
+        right: &S,
+        right_transform: &T,
+        direction: &P::Diff,
+    ) -> Self
+    where
+        S: SupportFunction<Point = P>,
+        P: MinMax,
+        P::Diff: Neg<Output = P::Diff>,
+        T: Pose<P>,
+    {
+        let l = left.support_point(direction, left_transform);
+        let r = right.support_point(&direction.neg(), right_transform);
+        Self {
+            v: l - r,
+            sup_a: l,
+            sup_b: r,
+        }
     }
 }
 
@@ -245,8 +238,7 @@ where
 mod tests {
     use cgmath::{Point2, Point3, Quaternion, Rad, Rotation2, Rotation3, Vector2};
 
-    use super::{gjk, support, RunningAverage};
-    use super::simplex::{SimplexProcessor, SimplexProcessor2, SimplexProcessor3};
+    use super::SupportPoint;
     use Real;
     use collide::narrow::NarrowPhase;
     use collide2d::*;
@@ -269,7 +261,13 @@ mod tests {
         let direction = Vector2::new(1., 0.);
         assert_eq!(
             Vector2::new(40., 0.),
-            support(&left, &left_transform, &right, &right_transform, &direction).v
+            SupportPoint::from_minkowski(
+                &left,
+                &left_transform,
+                &right,
+                &right_transform,
+                &direction,
+            ).v
         );
     }
 
@@ -279,17 +277,10 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = Rectangle::new(10., 10.);
         let right_transform = transform(-15., 0., 0.);
-        let processor = SimplexProcessor2::new();
-        let mut average = RunningAverage::new();
+        let mut gjk = GJK2::new();
         assert!(
-            gjk(
-                &left,
-                &left_transform,
-                &right,
-                &right_transform,
-                &processor,
-                &mut average,
-            ).is_none()
+            gjk.intersection(&left, &left_transform, &right, &right_transform)
+                .is_none()
         );
     }
 
@@ -299,16 +290,8 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
-        let processor = SimplexProcessor2::new();
-        let mut average = RunningAverage::new();
-        let simplex = gjk(
-            &left,
-            &left_transform,
-            &right,
-            &right_transform,
-            &processor,
-            &mut average,
-        );
+        let mut gjk = GJK2::new();
+        let simplex = gjk.intersection(&left, &left_transform, &right, &right_transform);
         assert!(simplex.is_some());
     }
 
@@ -318,16 +301,8 @@ mod tests {
         let left_transform = transform_3d(15., 0., 0., 0.);
         let right = Cuboid::new(10., 10., 10.);
         let right_transform = transform_3d(7., 2., 0., 0.);
-        let processor = SimplexProcessor3::new();
-        let mut average = RunningAverage::new();
-        let simplex = gjk(
-            &left,
-            &left_transform,
-            &right,
-            &right_transform,
-            &processor,
-            &mut average,
-        );
+        let mut gjk = GJK3::new();
+        let simplex = gjk.intersection(&left, &left_transform, &right, &right_transform);
         assert!(simplex.is_some());
     }
 
