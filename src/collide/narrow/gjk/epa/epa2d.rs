@@ -5,26 +5,27 @@ use cgmath::prelude::*;
 use super::*;
 use {Pose, Real};
 use collide::{CollisionStrategy, Contact};
-use collide::narrow::gjk::support;
 use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
 pub struct EPA2;
 
-impl<P, T> EPA<P, T> for EPA2
-where
-    P: SupportFunction<Point = Point2<Real>>,
-    T: Pose<Point2<Real>>,
-{
-    fn process(
+impl EPA for EPA2 {
+    type Point = Point2<Real>;
+
+    fn process<P, T>(
         &self,
         simplex: &mut Vec<SupportPoint<Point2<Real>>>,
         left: &P,
         left_transform: &T,
         right: &P,
         right_transform: &T,
-    ) -> Vec<Contact<Point2<Real>>> {
+    ) -> Vec<Contact<Point2<Real>>>
+    where
+        P: SupportFunction<Point = Point2<Real>>,
+        T: Pose<Point2<Real>>,
+    {
         let mut i = 0;
         if closest_edge(&simplex).is_none() {
             return Vec::default();
@@ -33,7 +34,13 @@ where
         loop {
             let e = closest_edge(&simplex);
             let e = e.unwrap();
-            let p = support(left, left_transform, right, right_transform, &e.normal);
+            let p = SupportPoint::from_minkowski(
+                left,
+                left_transform,
+                right,
+                right_transform,
+                &e.normal,
+            );
             let d = p.v.dot(e.normal);
             if d - e.distance < EPA_TOLERANCE {
                 return vec![
@@ -66,6 +73,10 @@ where
     }
 }
 
+/// This function returns the contact point in world space coordinates on shape A.
+///
+/// Compute the closest point to the origin on the given simplex edge, then use that to interpolate
+/// the support points coming from the A shape.
 fn point(simplex: &Vec<SupportPoint<Point2<Real>>>, edge: &Edge) -> Point2<Real> {
     let b = &simplex[edge.index];
     let a = if edge.index == 0 {

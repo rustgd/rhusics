@@ -1,11 +1,18 @@
-pub use self::variance::*;
-
 use std::clone::Clone;
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
+use self::variance::*;
 use Real;
 use collide::broad::*;
+
+/// Broad phase sweep and prune algorithm for 2D, see
+/// [SweepAndPrune](../collide/broad/struct.SweepAndPrune.html) for more information.
+pub type SweepAndPrune2 = SweepAndPrune<Variance2>;
+
+/// Broad phase sweep and prune algorithm for 3D, see
+/// [SweepAndPrune](../collide/broad/struct.SweepAndPrune.html) for more information.
+pub type SweepAndPrune3 = SweepAndPrune<Variance3>;
 
 /// Sweep and prune broad phase collision detection algorithm.
 ///

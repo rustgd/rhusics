@@ -1,6 +1,8 @@
 //! Type wrappers and convenience functions for 2D collision detection
 
 pub use collide::CollisionStrategy;
+pub use collide::broad::SweepAndPrune2;
+pub use collide::narrow::GJK2;
 pub use collide::primitives::primitive2d::*;
 
 use std::fmt::Debug;
@@ -11,9 +13,8 @@ use specs::{Component, Entity, World};
 
 use {BodyPose, Pose, Real};
 use collide::*;
-use collide::broad::{BruteForce, SweepAndPrune, Variance2};
+use collide::broad::BruteForce;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
-use collide::narrow::{EPA2, SimplexProcessor2, GJK};
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
@@ -26,13 +27,6 @@ pub type CollisionShape2<T> = CollisionShape<Primitive2, T>;
 /// Broad phase brute force algorithm for 2D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
 pub type BroadBruteForce2 = BruteForce;
-
-/// Broad phase sweep and prune algorithm for 2D, see
-/// [SweepAndPrune](../collide/broad/struct.SweepAndPrune.html) for more information.
-pub type SweepAndPrune2 = SweepAndPrune<Variance2>;
-
-/// GJK algorithm for 2D, see [GJK](../collide/narrow/struct.GJK.html) for more information.
-pub type GJK2<T> = GJK<Primitive2, T, SimplexProcessor2, EPA2>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
