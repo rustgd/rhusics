@@ -20,7 +20,7 @@ cgmath = "0.15"
 collision = { git = "https://github.com/kvark/collision-rs/" }
 specs = "0.9"
 rand = "0.3"
-shrev = "0.1"
+shrev = "0.4"
 
 [dev-dependencies]
 assert_approx_eq = "1"

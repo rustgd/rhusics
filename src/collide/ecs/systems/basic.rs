@@ -73,7 +73,7 @@ where
         ReadStorage<'a, T>,
         WriteStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
-        Option<FetchMut<'a, EventHandler>>,
+        Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
     );
 
     fn run(
@@ -105,10 +105,7 @@ where
                                 contact,
                             );
                             if let Some(ref mut events) = event_handler {
-                                match events.write_single(event) {
-                                    Err(err) => println!("Error in event write: {:?}", err),
-                                    _ => (),
-                                };
+                                events.write_single(event);
                             } else if let Some(ref mut c) = contacts {
                                 c.push(event);
                             }
@@ -126,10 +123,7 @@ where
                             (left_entity, right_entity),
                         );
                         if let Some(ref mut events) = event_handler {
-                            match events.write_single(event) {
-                                Err(err) => println!("Error in event write: {:?}", err),
-                                _ => (),
-                            };
+                            events.write_single(event);
                         } else if let Some(ref mut c) = contacts {
                             c.push(event);
                         }
