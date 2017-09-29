@@ -4,7 +4,7 @@ use std::ops::{Deref, DerefMut};
 use cgmath::prelude::*;
 use specs::{Component, Entity, VecStorage};
 
-use collide::{CollisionShape, ContactSet, Primitive};
+use collide::{CollisionShape, ContactEvent, Primitive};
 
 impl<P, T> Component for CollisionShape<P, T>
 where
@@ -28,7 +28,7 @@ where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
-    contacts: Vec<ContactSet<Entity, P>>,
+    contacts: Vec<ContactEvent<Entity, P>>,
 }
 
 impl<P> Default for Contacts<P>
@@ -48,7 +48,7 @@ where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
-    type Target = Vec<ContactSet<Entity, P>>;
+    type Target = Vec<ContactEvent<Entity, P>>;
 
     fn deref(&self) -> &Self::Target {
         &self.contacts

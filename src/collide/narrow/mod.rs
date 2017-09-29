@@ -8,7 +8,7 @@ use std::fmt::Debug;
 
 use cgmath::EuclideanSpace;
 
-use collide::{CollisionShape, ContactSet, Primitive};
+use collide::{CollisionShape, Contact, Primitive};
 
 mod gjk;
 
@@ -16,30 +16,31 @@ mod gjk;
 ///
 /// # Type parameters:
 ///
-/// - `ID`: user supplied ID type for the shapes, will be returned as part of any contact manifolds
 /// - `P`: collision primitive type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<ID, P, T>: Debug
+pub trait NarrowPhase<P, T>: Debug
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
-    /// Check if two shapes collides, and give contact manifolds for any contacts found
+    /// Check if two shapes collides, and give a contact manifold for the contact with the largest
+    /// penetration depth.
     ///
     /// # Parameters:
     ///
-    /// - `left`: tuple with the id of the first shape, the shape itself,
-    ///           and the current model-to-world transform for the shape
-    /// - `right`: tuple with the id of the second shape, the shape itself,
-    ///           and the current model-to-world transform for the shape
+    /// - `left`: the left shape
+    /// - `left_transform`: model-to-world transform for the left shape
+    /// - `right`: the right shape
+    /// - `right_transform`: model-to-world transform for the right shape
     ///
     /// # Returns:
     ///
-    /// Optionally returns the contact manifolds for any found collisions.
-    ///
+    /// Optionally returns the contact manifold for the contact with largest penetration depth
     fn collide(
-        &mut self,
-        left: (ID, &CollisionShape<P, T>, &T),
-        right: (ID, &CollisionShape<P, T>, &T),
-    ) -> Option<ContactSet<ID, P::Point>>;
+        &self,
+        left: &CollisionShape<P, T>,
+        left_transform: &T,
+        right: &CollisionShape<P, T>,
+        right_transform: &T,
+    ) -> Option<Contact<P::Point>>;
 }
