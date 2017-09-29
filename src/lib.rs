@@ -6,15 +6,6 @@
 //!
 //! Features:
 //!
-//! * Collision detection primitives for 2D and 3D:
-//!   * 2D
-//!     - Circle
-//!     - Rectangle
-//!     - Convex polygon with any number of vertices
-//!   * 3D
-//!     - Sphere
-//!     - Cuboid
-//!     - Convex polyhedron with any number of vertices
 //! * Two different broad phase collision detection implementations:
 //!   * Brute force
 //!   * Sweep and Prune
@@ -29,6 +20,7 @@
 //!   feature.
 //! * Has support for doing spatial sort/collision detection using the collision-rs DBVT.
 //! * Support for doing broad phase using the collision-rs DBVT.
+//! * Has support for all primitives in collision-rs
 //!
 //! # Examples
 //!
