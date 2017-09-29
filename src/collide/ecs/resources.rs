@@ -3,8 +3,9 @@ use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
 use specs::{Component, Entity, VecStorage};
+use collision::Primitive;
 
-use collide::{CollisionShape, ContactEvent, Primitive};
+use collide::{CollisionShape, ContactEvent};
 
 impl<P, T> Component for CollisionShape<P, T>
 where
