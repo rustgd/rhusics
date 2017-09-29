@@ -82,7 +82,6 @@ extern crate cgmath;
 extern crate collision;
 extern crate shrev;
 extern crate specs;
-extern crate bit_set;
 
 #[cfg(test)]
 #[macro_use]
@@ -209,8 +208,7 @@ where
 
     fn inverse_transform(&self) -> Option<Self> {
         Some(Self::new(
-            self.rotation.rotate_point(self.position) *
-                -P::Scalar::one(),
+            self.rotation.rotate_point(self.position) * -P::Scalar::one(),
             self.inverse_rotation,
         ))
     }

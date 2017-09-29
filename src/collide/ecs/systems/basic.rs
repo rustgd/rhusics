@@ -1,10 +1,11 @@
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
+use collision::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use Pose;
+use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactSet, ContainerShapeWrapper, Primitive};
 use collide::broad::{BroadCollisionData, BroadPhase};
 use collide::ecs::resources::Contacts;
@@ -24,7 +25,7 @@ use collide::narrow::NarrowPhase;
 pub struct BasicCollisionSystem<P, T, D>
 where
     P: Primitive,
-    P::Aabb: Clone + Debug,
+    P::Aabb: Clone + Debug + Aabb<Scalar = Real>,
 {
     narrow: Option<Box<NarrowPhase<Entity, P, T>>>,
     broad: Option<Box<BroadPhase<D>>>,
@@ -33,7 +34,7 @@ where
 impl<P, T, D> BasicCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone + Debug + Send + Sync + 'static,
+    P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
     T: Pose<P::Point> + Component,
     D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
@@ -62,7 +63,7 @@ where
 impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone + Debug + Send + Sync + 'static,
+    P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Pose<P::Point> + Send + Sync + Clone + 'static,
@@ -113,9 +114,9 @@ where
                     };
                 },
                 None => {
-// if we only have a broad phase, we generate contacts for aabb
-// intersections
-// right now, we only report the collision, no normal/depth calculation
+                    // if we only have a broad phase, we generate contacts for aabb
+                    // intersections
+                    // right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
                         let contact_set = ContactSet::new_single(
                             CollisionStrategy::CollisionOnly,

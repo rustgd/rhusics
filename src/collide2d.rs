@@ -3,12 +3,13 @@
 pub use collide::CollisionStrategy;
 pub use collide::broad::SweepAndPrune2;
 pub use collide::narrow::GJK2;
-pub use collide::primitives::primitive2d::*;
+pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
 use std::fmt::Debug;
 
 use cgmath::{Basis2, Point2};
 use collision::dbvt::DynamicBoundingVolumeTree;
+use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
 
 use {BodyPose, Pose, Real};
@@ -22,7 +23,7 @@ pub type Contacts2 = Contacts<Point2<Real>>;
 
 /// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
-pub type CollisionShape2<T> = CollisionShape<Primitive2, T>;
+pub type CollisionShape2<T> = CollisionShape<Primitive2<Real>, T>;
 
 /// Broad phase brute force algorithm for 2D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
@@ -31,26 +32,22 @@ pub type BroadBruteForce2 = BruteForce;
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
 pub type BasicCollisionSystem2<T> = BasicCollisionSystem<
-    Primitive2,
+    Primitive2<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive2>,
+    ContainerShapeWrapper<Entity, Primitive2<Real>>,
 >;
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2, T>;
+pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2<Real>, T>;
 
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
 pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
-    Primitive2,
+    Primitive2<Real>,
     T,
-    (usize,
-     ContainerShapeWrapper<
-        Entity,
-        Primitive2,
-    >),
+    (usize, ContainerShapeWrapper<Entity, Primitive2<Real>>),
 >;
 
 /// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
@@ -59,10 +56,7 @@ pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 /// Dynamic bounding volume tree for 2D
 
 pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<
-        Entity,
-        Primitive2,
-    >,
+    ContainerShapeWrapper<Entity, Primitive2<Real>>,
 >;
 
 /// Utility method for registering 2D components and resources with

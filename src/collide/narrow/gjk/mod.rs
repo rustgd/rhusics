@@ -4,12 +4,11 @@ use std::ops::Neg;
 use cgmath::prelude::*;
 use collision::prelude::*;
 
-use self::epa::{EPA, EPA2, EPA3};
+use self::epa::{EPA2, EPA3, EPA};
 use self::simplex::{SimplexProcessor, SimplexProcessor2, SimplexProcessor3};
 use super::NarrowPhase;
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, Contact, ContactSet, Primitive};
-use collide::primitives::SupportFunction;
 
 mod simplex;
 mod epa;
@@ -63,7 +62,7 @@ pub struct GJK<S, E> {
 impl<S, E> GJK<S, E>
 where
     S: SimplexProcessor,
-    S::Point: MinMax,
+    S::Point: MinMax + EuclideanSpace,
     E: EPA<Point = S::Point>,
 {
     /// Create a new GJK algorithm implementation
@@ -81,16 +80,20 @@ where
     }
 
     /// Do intersection test on the given primitives
-    fn intersection<P, T>(&mut self,
-                          left: &P,
-                          left_transform: &T,
-                          right: &P,
-                          right_transform: &T) -> Option<Vec<SupportPoint<P::Point>>>
+    fn intersection<P, T>(
+        &mut self,
+        left: &P,
+        left_transform: &T,
+        right: &P,
+        right_transform: &T,
+    ) -> Option<Vec<SupportPoint<P::Point>>>
     where
         P: Primitive,
+        P::Aabb: Aabb<Scalar = Real>,
         S: SimplexProcessor<Point = P::Point>,
         <P::Point as EuclideanSpace>::Diff: InnerSpace
-            + Neg<Output = <P::Point as EuclideanSpace>::Diff> + Debug,
+            + Neg<Output = <P::Point as EuclideanSpace>::Diff>
+            + Debug,
         T: Pose<P::Point>,
     {
         let mut d = *right_transform.position() - *left_transform.position();
@@ -128,10 +131,11 @@ impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<S, E>
 where
     ID: Debug + Clone,
     P: Primitive,
-    P::Aabb: Discrete<P::Aabb>,
+    P::Aabb: Discrete<P::Aabb> + Aabb<Scalar = Real>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: InnerSpace
-        + Neg<Output = <P::Point as EuclideanSpace>::Diff> + Debug,
+        + Neg<Output = <P::Point as EuclideanSpace>::Diff>
+        + Debug,
     S: SimplexProcessor<Point = P::Point> + Debug,
     T: Pose<P::Point> + Debug,
     E: EPA<Point = P::Point> + Debug,
@@ -141,8 +145,8 @@ where
         (ref left_id, ref left, ref left_transform): (ID, &CollisionShape<P, T>, &T),
         (ref right_id, ref right, ref right_transform): (ID, &CollisionShape<P, T>, &T),
     ) -> Option<ContactSet<ID, P::Point>> {
-        if !left.enabled || !right.enabled || left.primitives.is_empty() ||
-            right.primitives.is_empty()
+        if !left.enabled || !right.enabled || left.primitives.is_empty()
+            || right.primitives.is_empty()
         {
             return None;
         }
@@ -158,21 +162,19 @@ where
                     right_primitive,
                     &right_transform,
                 ) {
-                    Some(mut simplex) => {
-                        if left.strategy == CollisionStrategy::CollisionOnly ||
-                            right.strategy == CollisionStrategy::CollisionOnly
-                        {
-                            contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
-                        } else {
-                            contacts.append(&mut self.epa.process(
-                                &mut simplex,
-                                left_primitive,
-                                &left_transform,
-                                right_primitive,
-                                &right_transform,
-                            ));
-                        }
-                    }
+                    Some(mut simplex) => if left.strategy == CollisionStrategy::CollisionOnly
+                        || right.strategy == CollisionStrategy::CollisionOnly
+                    {
+                        contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
+                    } else {
+                        contacts.append(&mut self.epa.process(
+                            &mut simplex,
+                            left_primitive,
+                            &left_transform,
+                            right_primitive,
+                            &right_transform,
+                        ));
+                    },
                     None => (),
                 };
             }
