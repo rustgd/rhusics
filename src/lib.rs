@@ -79,9 +79,6 @@ extern crate specs;
 #[macro_use]
 extern crate assert_approx_eq;
 
-#[cfg(test)]
-extern crate genmesh;
-
 pub mod collide;
 pub mod collide2d;
 pub mod collide3d;
