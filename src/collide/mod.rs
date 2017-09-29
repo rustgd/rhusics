@@ -20,7 +20,7 @@ use {Pose, Real};
 /// This is used both to specify what collision strategy to use for each shape, and also each
 /// found contact will have this returned on it, detailing what data is relevant in the
 /// [`Contact`](struct.Contact.html).
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, PartialEq, Clone, PartialOrd)]
 pub enum CollisionStrategy {
     /// Compute full contact manifold for the collision
     FullResolution,
@@ -37,7 +37,7 @@ pub enum CollisionStrategy {
 ///         this will be [`Entity`](https://docs.rs/specs/0.9.5/specs/struct.Entity.html).
 /// - `V`: cgmath vector type
 #[derive(Debug, Clone)]
-pub struct ContactSet<ID, P>
+pub struct ContactEvent<ID, P>
 where
     P: EuclideanSpace,
     P::Diff: Debug,
@@ -45,24 +45,24 @@ where
     /// The ids of the two colliding bodies
     pub bodies: (ID, ID),
 
-    /// The list of contacts between the colliding bodies
-    pub contacts: Vec<Contact<P>>,
+    /// The contact between the colliding bodies
+    pub contact: Contact<P>,
 }
 
-impl<ID, P> ContactSet<ID, P>
+impl<ID, P> ContactEvent<ID, P>
 where
     ID: Clone + Debug,
     P: EuclideanSpace,
     P::Diff: VectorSpace + Zero + Debug,
 {
     /// Create a new contact set
-    pub fn new(bodies: (ID, ID), contacts: Vec<Contact<P>>) -> Self {
-        Self { bodies, contacts }
+    pub fn new(bodies: (ID, ID), contact: Contact<P>) -> Self {
+        Self { bodies, contact }
     }
 
     /// Convenience function to create a contact set with a single [`Contact`](struct.Contact.html).
     pub fn new_single(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
-        Self::new(bodies, vec![Contact::new(strategy)])
+        Self::new(bodies, Contact::new(strategy))
     }
 }
 

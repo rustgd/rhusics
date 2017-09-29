@@ -6,7 +6,7 @@ use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use {Pose, Real};
-use collide::{CollisionShape, CollisionStrategy, ContactSet, ContainerShapeWrapper, Primitive};
+use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
 use collide::broad::{BroadCollisionData, BroadPhase};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
@@ -27,7 +27,7 @@ where
     P: Primitive,
     P::Aabb: Clone + Debug + Aabb<Scalar = Real>,
 {
-    narrow: Option<Box<NarrowPhase<Entity, P, T>>>,
+    narrow: Option<Box<NarrowPhase<P, T>>>,
     broad: Option<Box<BroadPhase<D>>>,
 }
 
@@ -48,7 +48,7 @@ where
     }
 
     /// Specify what narrow phase algorithm to use
-    pub fn with_narrow_phase<N: NarrowPhase<Entity, P, T> + 'static>(mut self, narrow: N) -> Self {
+    pub fn with_narrow_phase<N: NarrowPhase<P, T> + 'static>(mut self, narrow: N) -> Self {
         self.narrow = Some(Box::new(narrow));
         self
     }
@@ -98,18 +98,21 @@ where
                     let right_shape = shapes.get(right_entity).unwrap();
                     let left_pose = poses.get(left_entity).unwrap();
                     let right_pose = poses.get(right_entity).unwrap();
-                    match narrow.collide(
-                        (left_entity, left_shape, left_pose),
-                        (right_entity, right_shape, right_pose),
-                    ) {
-                        Some(contact_set) => if let Some(ref mut events) = event_handler {
-                            match events.write_single(contact_set) {
-                                Err(err) => println!("Error in event write: {:?}", err),
-                                _ => (),
-                            };
-                        } else if let Some(ref mut c) = contacts {
-                            c.push(contact_set);
-                        },
+                    match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
+                        Some(contact) => {
+                            let event = ContactEvent::new(
+                                (left_entity.clone(), right_entity.clone()),
+                                contact,
+                            );
+                            if let Some(ref mut events) = event_handler {
+                                match events.write_single(event) {
+                                    Err(err) => println!("Error in event write: {:?}", err),
+                                    _ => (),
+                                };
+                            } else if let Some(ref mut c) = contacts {
+                                c.push(event);
+                            }
+                        }
                         None => (),
                     };
                 },
@@ -118,17 +121,17 @@ where
                     // intersections
                     // right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
-                        let contact_set = ContactSet::new_single(
+                        let event = ContactEvent::new_single(
                             CollisionStrategy::CollisionOnly,
                             (left_entity, right_entity),
                         );
                         if let Some(ref mut events) = event_handler {
-                            match events.write_single(contact_set) {
+                            match events.write_single(event) {
                                 Err(err) => println!("Error in event write: {:?}", err),
                                 _ => (),
                             };
                         } else if let Some(ref mut c) = contacts {
-                            c.push(contact_set);
+                            c.push(event);
                         }
                     }
                 }

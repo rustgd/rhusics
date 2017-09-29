@@ -8,26 +8,29 @@ use cgmath::prelude::*;
 use collision::prelude::*;
 
 use super::SupportPoint;
-use {Pose, Real};
+use Real;
 use collide::Contact;
 
 pub const EPA_TOLERANCE: Real = 0.00001;
 pub const MAX_ITERATIONS: u32 = 100;
 
 pub trait EPA {
-    type Point: EuclideanSpace<Scalar = Real> + MinMax;
+    type Point: EuclideanSpace<Scalar = Real>;
 
-    fn process<P, T>(
+    fn process<SL, SR, TL, TR>(
         &self,
-        simplex: &mut Vec<SupportPoint<P::Point>>,
-        left: &P,
-        left_transform: &T,
-        right: &P,
-        right_transform: &T,
-    ) -> Vec<Contact<P::Point>>
+        simplex: &mut Vec<SupportPoint<Self::Point>>,
+        left: &SL,
+        left_transform: &TL,
+        right: &SR,
+        right_transform: &TR,
+    ) -> Option<Contact<Self::Point>>
     where
-        P: SupportFunction<Point = Self::Point>,
-        T: Pose<Self::Point>;
+        SL: SupportFunction<Point = Self::Point>,
+        SR: SupportFunction<Point = Self::Point>,
+        TL: Transform<Self::Point>,
+        TR: Transform<Self::Point>;
+
 
     fn new() -> Self;
 }

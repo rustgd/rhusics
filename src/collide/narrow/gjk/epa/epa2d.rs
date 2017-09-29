@@ -4,7 +4,7 @@ use cgmath::prelude::*;
 use collision::prelude::*;
 
 use super::*;
-use {Pose, Real};
+use Real;
 use collide::{CollisionStrategy, Contact};
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
@@ -14,21 +14,23 @@ pub struct EPA2;
 impl EPA for EPA2 {
     type Point = Point2<Real>;
 
-    fn process<P, T>(
+    fn process<SL, SR, TL, TR>(
         &self,
         simplex: &mut Vec<SupportPoint<Point2<Real>>>,
-        left: &P,
-        left_transform: &T,
-        right: &P,
-        right_transform: &T,
-    ) -> Vec<Contact<Point2<Real>>>
+        left: &SL,
+        left_transform: &TL,
+        right: &SR,
+        right_transform: &TR,
+    ) -> Option<Contact<Point2<Real>>>
     where
-        P: SupportFunction<Point = Point2<Real>>,
-        T: Pose<Point2<Real>>,
+        SL: SupportFunction<Point = Self::Point>,
+        SR: SupportFunction<Point = Self::Point>,
+        TL: Transform<Self::Point>,
+        TR: Transform<Self::Point>,
     {
         let mut i = 0;
         if closest_edge(&simplex).is_none() {
-            return Vec::default();
+            return None;
         }
 
         loop {
@@ -43,27 +45,23 @@ impl EPA for EPA2 {
             );
             let d = p.v.dot(e.normal);
             if d - e.distance < EPA_TOLERANCE {
-                return vec![
-                    Contact::new_with_point(
-                        CollisionStrategy::FullResolution,
-                        e.normal,
-                        e.distance,
-                        point(&simplex, &e),
-                    ),
-                ];
+                return Some(Contact::new_with_point(
+                    CollisionStrategy::FullResolution,
+                    e.normal,
+                    e.distance,
+                    point(&simplex, &e),
+                ));
             } else {
                 simplex.insert(e.index, p);
             }
             i += 1;
             if i >= MAX_ITERATIONS {
-                return vec![
-                    Contact::new_with_point(
-                        CollisionStrategy::FullResolution,
-                        e.normal,
-                        e.distance,
-                        point(&simplex, &e),
-                    ),
-                ];
+                return Some(Contact::new_with_point(
+                    CollisionStrategy::FullResolution,
+                    e.normal,
+                    e.distance,
+                    point(&simplex, &e),
+                ));
             }
         }
     }
@@ -185,7 +183,7 @@ mod tests {
                 &left_transform,
                 &right,
                 &right_transform
-            ).is_empty()
+            ).is_none()
         );
     }
 
@@ -203,7 +201,7 @@ mod tests {
                 &left_transform,
                 &right,
                 &right_transform
-            ).is_empty()
+            ).is_none()
         );
     }
 
@@ -221,7 +219,7 @@ mod tests {
                 &left_transform,
                 &right,
                 &right_transform
-            ).is_empty()
+            ).is_none()
         );
     }
 
@@ -232,16 +230,17 @@ mod tests {
         let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
         let mut simplex = vec![sup(-2., 8.), sup(18., -12.), sup(-2., -12.)];
-        let contacts = EPA2.process(
+        let contact = EPA2.process(
             &mut simplex,
             &left,
             &left_transform,
             &right,
             &right_transform,
         );
-        assert_eq!(1, contacts.len());
-        assert_eq!(Vector2::new(-1., 0.), contacts[0].normal);
-        assert_eq!(2., contacts[0].penetration_depth);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(Vector2::new(-1., 0.), contact.normal);
+        assert_eq!(2., contact.penetration_depth);
     }
 
     fn sup(x: Real, y: Real) -> SupportPoint<Point2<Real>> {

@@ -7,8 +7,8 @@ use collision::prelude::*;
 use self::epa::{EPA2, EPA3, EPA};
 use self::simplex::{SimplexProcessor, SimplexProcessor2, SimplexProcessor3};
 use super::NarrowPhase;
-use {Pose, Real};
-use collide::{CollisionShape, CollisionStrategy, Contact, ContactSet, Primitive};
+use Real;
+use collide::{CollisionShape, CollisionStrategy, Contact, Primitive};
 
 mod simplex;
 mod epa;
@@ -20,26 +20,6 @@ pub type GJK2 = GJK<SimplexProcessor2, EPA2>;
 
 /// GJK algorithm for 3D, see [GJK](struct.GJK.html) for more information.
 pub type GJK3 = GJK<SimplexProcessor3, EPA3>;
-
-#[derive(Debug)]
-struct RunningAverage {
-    pub average: f64,
-    n: u32,
-}
-
-impl RunningAverage {
-    pub fn new() -> Self {
-        Self { average: 0., n: 0 }
-    }
-
-    pub fn add(&mut self, value: u32) {
-        let n0 = self.n as f64;
-        self.n += 1;
-        let n = self.n as f64;
-        self.average *= n0 / n;
-        self.average += (value as f64) / n;
-    }
-}
 
 /// Gilbert-Johnson-Keerthi narrow phase collision detection algorithm.
 ///
@@ -53,83 +33,129 @@ impl RunningAverage {
 ///        [`EPA3`](struct.EPA3.html)
 ///
 #[derive(Debug)]
-pub struct GJK<S, E> {
-    simplex_processor: S,
+pub struct GJK<SP, E> {
+    simplex_processor: SP,
     epa: E,
-    average: RunningAverage,
 }
 
-impl<S, E> GJK<S, E>
+impl<SP, E> GJK<SP, E>
 where
-    S: SimplexProcessor,
-    S::Point: MinMax + EuclideanSpace,
-    E: EPA<Point = S::Point>,
+    SP: SimplexProcessor,
+    E: EPA<Point = SP::Point>,
 {
     /// Create a new GJK algorithm implementation
     pub fn new() -> Self {
         Self {
-            simplex_processor: S::new(),
-            average: RunningAverage::new(),
+            simplex_processor: SP::new(),
             epa: E::new(),
         }
     }
 
-    /// Return the average amount of iterations run by the algorithm for each collision pair.
-    pub fn get_average(&self) -> f64 {
-        self.average.average
-    }
-
     /// Do intersection test on the given primitives
-    fn intersection<P, T>(
-        &mut self,
-        left: &P,
-        left_transform: &T,
-        right: &P,
-        right_transform: &T,
-    ) -> Option<Vec<SupportPoint<P::Point>>>
+    pub fn intersect<P, PL, PR, TL, TR>(
+        &self,
+        left: &PL,
+        left_transform: &TL,
+        right: &PR,
+        right_transform: &TR,
+    ) -> Option<Vec<SupportPoint<P>>>
     where
-        P: Primitive,
-        P::Aabb: Aabb<Scalar = Real>,
-        S: SimplexProcessor<Point = P::Point>,
-        <P::Point as EuclideanSpace>::Diff: InnerSpace
-            + Neg<Output = <P::Point as EuclideanSpace>::Diff>
-            + Debug,
-        T: Pose<P::Point>,
+        P: EuclideanSpace<Scalar = Real>,
+        PL: SupportFunction<Point = P>,
+        PR: SupportFunction<Point = P>,
+        SP: SimplexProcessor<Point = P>,
+        P::Diff: Neg<Output = P::Diff> + InnerSpace,
+        TL: Transform<P>,
+        TR: Transform<P>,
     {
-        let mut d = *right_transform.position() - *left_transform.position();
+        let right_pos = right_transform.transform_point(P::from_value(0.));
+        let left_pos = left_transform.transform_point(P::from_value(0.));
+        let mut d = right_pos - left_pos;
         let a = SupportPoint::from_minkowski(left, left_transform, right, right_transform, &d);
         if a.v.dot(d) <= 0. {
-            self.average.add(0);
             return None;
         }
-        let mut simplex: Vec<SupportPoint<P::Point>> = Vec::default();
+        let mut simplex: Vec<SupportPoint<P>> = Vec::default();
         simplex.push(a);
         d = d.neg();
         let mut i = 0;
         loop {
             let a = SupportPoint::from_minkowski(left, left_transform, right, right_transform, &d);
             if a.v.dot(d) <= 0. {
-                self.average.add(i + 1);
                 return None;
             } else {
                 simplex.push(a);
                 if self.simplex_processor.check_origin(&mut simplex, &mut d) {
-                    self.average.add(i + 1);
                     return Some(simplex);
                 }
             }
             i += 1;
             if i >= MAX_ITERATIONS {
-                self.average.add(i);
                 return None;
             }
         }
     }
+
+    /// Given a simplex that encloses the origin, compute the closest point on the Minkowski sum,
+    /// to the origin.
+    pub fn get_contact_manifold<P, PL, PR, TL, TR>(
+        &self,
+        mut simplex: &mut Vec<SupportPoint<P>>,
+        left: &PL,
+        left_transform: &TL,
+        right: &PR,
+        right_transform: &TR,
+    ) -> Option<Contact<P>>
+    where
+        P: EuclideanSpace<Scalar = Real>,
+        PL: SupportFunction<Point = P>,
+        PR: SupportFunction<Point = P>,
+        TL: Transform<P>,
+        TR: Transform<P>,
+        SP: SimplexProcessor<Point = P>,
+    {
+        self.epa
+            .process(&mut simplex, left, left_transform, right, right_transform)
+    }
+
+    /// Do intersection test on the given primitives, and return the actual intersection point
+    pub fn intersection<P, PL, PR, TL, TR>(
+        &self,
+        strategy: &CollisionStrategy,
+        left: &PL,
+        left_transform: &TL,
+        right: &PR,
+        right_transform: &TR,
+    ) -> Option<Contact<P>>
+    where
+        P: EuclideanSpace<Scalar = Real>,
+        P::Diff: Neg<Output = P::Diff> + InnerSpace,
+        PL: SupportFunction<Point = P>,
+        PR: SupportFunction<Point = P>,
+        TL: Transform<P>,
+        TR: Transform<P>,
+        SP: SimplexProcessor<Point = P>,
+    {
+        match self.intersect(left, left_transform, right, right_transform) {
+            None => None,
+            Some(mut simplex) => match *strategy {
+                CollisionStrategy::CollisionOnly => {
+                    Some(Contact::new(CollisionStrategy::CollisionOnly))
+                }
+                CollisionStrategy::FullResolution => self.get_contact_manifold(
+                    &mut simplex,
+                    left,
+                    left_transform,
+                    right,
+                    right_transform,
+                ),
+            },
+        }
+    }
 }
 
-impl<ID, P, T, S, E> NarrowPhase<ID, P, T> for GJK<S, E>
+impl<P, T, S, E> NarrowPhase<P, T> for GJK<S, E>
 where
-    ID: Debug + Clone,
     P: Primitive,
     P::Aabb: Discrete<P::Aabb> + Aabb<Scalar = Real>,
     P::Point: Debug,
@@ -137,57 +163,68 @@ where
         + Neg<Output = <P::Point as EuclideanSpace>::Diff>
         + Debug,
     S: SimplexProcessor<Point = P::Point> + Debug,
-    T: Pose<P::Point> + Debug,
+    T: Transform<P::Point> + Debug,
     E: EPA<Point = P::Point> + Debug,
 {
     fn collide(
-        &mut self,
-        (ref left_id, ref left, ref left_transform): (ID, &CollisionShape<P, T>, &T),
-        (ref right_id, ref right, ref right_transform): (ID, &CollisionShape<P, T>, &T),
-    ) -> Option<ContactSet<ID, P::Point>> {
+        &self,
+        left: &CollisionShape<P, T>,
+        left_transform: &T,
+        right: &CollisionShape<P, T>,
+        right_transform: &T,
+    ) -> Option<Contact<P::Point>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty()
             || right.primitives.is_empty()
         {
             return None;
         }
 
+        let strategy = max(&left.strategy, &right.strategy);
         let mut contacts = Vec::default();
         for &(ref left_primitive, ref left_local_transform) in &left.primitives {
             let left_transform = left_transform.concat(left_local_transform);
             for &(ref right_primitive, ref right_local_transform) in &right.primitives {
                 let right_transform = right_transform.concat(right_local_transform);
                 match self.intersection(
+                    &strategy,
                     left_primitive,
                     &left_transform,
                     right_primitive,
                     &right_transform,
                 ) {
-                    Some(mut simplex) => if left.strategy == CollisionStrategy::CollisionOnly
-                        || right.strategy == CollisionStrategy::CollisionOnly
-                    {
-                        contacts.push((Contact::new(CollisionStrategy::CollisionOnly)));
-                    } else {
-                        contacts.append(&mut self.epa.process(
-                            &mut simplex,
-                            left_primitive,
-                            &left_transform,
-                            right_primitive,
-                            &right_transform,
-                        ));
-                    },
+                    Some(contact) => contacts.push(contact),
                     None => (),
                 };
             }
         }
 
         if contacts.len() > 0 {
-            Some(ContactSet::new(
-                (left_id.clone(), right_id.clone()),
-                contacts,
-            ))
+            match strategy {
+                CollisionStrategy::CollisionOnly => Some(contacts[0].clone()),
+                CollisionStrategy::FullResolution => {
+                    // penetration depth defaults to 0., and can't be nan from epa,
+                    // so unwrapping is safe
+                    contacts
+                        .iter()
+                        .max_by(|l, r| {
+                            l.penetration_depth
+                                .partial_cmp(&r.penetration_depth)
+                                .unwrap()
+                        })
+                        .cloned()
+                }
+            }
         } else {
             None
         }
+    }
+}
+
+fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy {
+    if left > right {
+        left.clone()
+    } else {
+        right.clone()
     }
 }
 
@@ -213,18 +250,19 @@ where
         }
     }
 
-    pub fn from_minkowski<S, T>(
-        left: &S,
-        left_transform: &T,
-        right: &S,
-        right_transform: &T,
+    pub fn from_minkowski<SL, SR, TL, TR>(
+        left: &SL,
+        left_transform: &TL,
+        right: &SR,
+        right_transform: &TR,
         direction: &P::Diff,
     ) -> Self
     where
-        S: SupportFunction<Point = P>,
-        P: MinMax,
+        SL: SupportFunction<Point = P>,
+        SR: SupportFunction<Point = P>,
         P::Diff: Neg<Output = P::Diff>,
-        T: Pose<P>,
+        TL: Transform<P>,
+        TR: Transform<P>,
     {
         let l = left.support_point(direction, left_transform);
         let r = right.support_point(&direction.neg(), right_transform);
@@ -279,9 +317,9 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = Rectangle::new(10., 10.);
         let right_transform = transform(-15., 0., 0.);
-        let mut gjk = GJK2::new();
+        let gjk = GJK2::new();
         assert!(
-            gjk.intersection(&left, &left_transform, &right, &right_transform)
+            gjk.intersect(&left, &left_transform, &right, &right_transform)
                 .is_none()
         );
     }
@@ -292,8 +330,8 @@ mod tests {
         let left_transform = transform(15., 0., 0.);
         let right = Rectangle::new(10., 10.);
         let right_transform = transform(7., 2., 0.);
-        let mut gjk = GJK2::new();
-        let simplex = gjk.intersection(&left, &left_transform, &right, &right_transform);
+        let gjk = GJK2::new();
+        let simplex = gjk.intersect(&left, &left_transform, &right, &right_transform);
         assert!(simplex.is_some());
     }
 
@@ -303,8 +341,8 @@ mod tests {
         let left_transform = transform_3d(15., 0., 0., 0.);
         let right = Cuboid::new(10., 10., 10.);
         let right_transform = transform_3d(7., 2., 0., 0.);
-        let mut gjk = GJK3::new();
-        let simplex = gjk.intersection(&left, &left_transform, &right, &right_transform);
+        let gjk = GJK3::new();
+        let simplex = gjk.intersect(&left, &left_transform, &right, &right_transform);
         assert!(simplex.is_some());
     }
 
@@ -320,9 +358,9 @@ mod tests {
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(-15., 0., 0.);
-        let mut gjk = GJK2::new();
+        let gjk = GJK2::new();
         assert!(
-            gjk.collide((1, &left, &left_transform), (2, &right, &right_transform))
+            gjk.collide(&left, &left_transform, &right, &right_transform)
                 .is_none()
         );
     }
@@ -339,12 +377,11 @@ mod tests {
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 2., 0.);
-        let mut gjk = GJK2::new();
-        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
-        assert!(set.is_some());
-        let contact_set = set.unwrap();
-        assert_eq!((1, 2), contact_set.bodies);
-        assert_eq!(1, contact_set.contacts.len());
+        let gjk = GJK2::new();
+        let contact = gjk.collide(&left, &left_transform, &right, &right_transform);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(CollisionStrategy::CollisionOnly, contact.strategy);
     }
 
     #[test]
@@ -359,12 +396,11 @@ mod tests {
             Cuboid::new(10., 10., 10.).into(),
         );
         let right_transform = transform_3d(7., 2., 0., 0.);
-        let mut gjk = GJK3::new();
-        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
-        assert!(set.is_some());
-        let contact_set = set.unwrap();
-        assert_eq!((1, 2), contact_set.bodies);
-        assert_eq!(1, contact_set.contacts.len());
+        let gjk = GJK3::new();
+        let contact = gjk.collide(&left, &left_transform, &right, &right_transform);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(CollisionStrategy::CollisionOnly, contact.strategy);
     }
 
     #[test]
@@ -382,9 +418,9 @@ mod tests {
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(-15., 0., 0.);
-        let mut gjk = GJK2::new();
+        let gjk = GJK2::new();
         assert!(
-            gjk.collide((1, &left, &left_transform), (2, &right, &right_transform))
+            gjk.collide(&left, &left_transform, &right, &right_transform)
                 .is_none()
         );
     }
@@ -404,12 +440,11 @@ mod tests {
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 6., 0.);
-        let mut gjk = GJK2::new();
-        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
-        assert!(set.is_some());
-        let contact_set = set.unwrap();
-        assert_eq!((1, 2), contact_set.bodies);
-        assert_eq!(1, contact_set.contacts.len());
+        let gjk = GJK2::new();
+        let contact = gjk.collide(&left, &left_transform, &right, &right_transform);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(CollisionStrategy::CollisionOnly, contact.strategy);
     }
 
     #[test]
@@ -427,11 +462,10 @@ mod tests {
             Rectangle::new(10., 10.).into(),
         );
         let right_transform = transform(7., 4., 0.);
-        let mut gjk = GJK2::new();
-        let set = gjk.collide((1, &left, &left_transform), (2, &right, &right_transform));
-        assert!(set.is_some());
-        let contact_set = set.unwrap();
-        assert_eq!((1, 2), contact_set.bodies);
-        assert_eq!(2, contact_set.contacts.len());
+        let gjk = GJK2::new();
+        let contact = gjk.collide(&left, &left_transform, &right, &right_transform);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(CollisionStrategy::CollisionOnly, contact.strategy);
     }
 }

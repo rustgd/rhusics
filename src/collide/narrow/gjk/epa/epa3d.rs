@@ -3,7 +3,7 @@ use cgmath::prelude::*;
 use collision::prelude::*;
 
 use super::*;
-use {Pose, Real};
+use Real;
 use collide::{CollisionStrategy, Contact};
 use collide::narrow::gjk::SupportPoint;
 
@@ -14,20 +14,22 @@ pub struct EPA3;
 impl EPA for EPA3 {
     type Point = Point3<Real>;
 
-    fn process<P, T>(
+    fn process<SL, SR, TL, TR>(
         &self,
         mut simplex: &mut Vec<SupportPoint<Point3<Real>>>,
-        left: &P,
-        left_transform: &T,
-        right: &P,
-        right_transform: &T,
-    ) -> Vec<Contact<Point3<Real>>>
+        left: &SL,
+        left_transform: &TL,
+        right: &SR,
+        right_transform: &TR,
+    ) -> Option<Contact<Point3<Real>>>
     where
-        P: SupportFunction<Point = Point3<Real>>,
-        T: Pose<Point3<Real>>,
+        SL: SupportFunction<Point = Self::Point>,
+        SR: SupportFunction<Point = Self::Point>,
+        TL: Transform<Self::Point>,
+        TR: Transform<Self::Point>,
     {
         if simplex.len() < 4 {
-            return Vec::default();
+            return None;
         }
         let mut polytope = Polytope::new(&mut simplex);
         let mut i = 1;
@@ -58,15 +60,13 @@ impl EPA for EPA3 {
 }
 
 #[inline]
-fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
-    vec![
-        Contact::new_with_point(
-            CollisionStrategy::FullResolution,
-            face.normal.clone(), // negate ?
-            face.distance,
-            point(polytope, face),
-        ),
-    ]
+fn contact(polytope: &Polytope, face: &Face) -> Option<Contact<Point3<Real>>> {
+    Some(Contact::new_with_point(
+        CollisionStrategy::FullResolution,
+        face.normal.clone(), // negate ?
+        face.distance,
+        point(polytope, face),
+    ))
 }
 
 /// This function returns the contact point in world space coordinates on shape A.
@@ -281,16 +281,17 @@ mod tests {
             sup(-2., -12., 0.),
             sup(8., -2., -10.),
         ];
-        let contacts = EPA3.process(
+        let contact = EPA3.process(
             &mut simplex,
             &left,
             &left_transform,
             &right,
             &right_transform,
         );
-        assert_eq!(1, contacts.len());
-        assert_eq!(Vector3::new(-1., 0., 0.), contacts[0].normal);
-        assert_eq!(2., contacts[0].penetration_depth);
+        assert!(contact.is_some());
+        let contact = contact.unwrap();
+        assert_eq!(Vector3::new(-1., 0., 0.), contact.normal);
+        assert_eq!(2., contact.penetration_depth);
     }
 
     fn assert_face(
