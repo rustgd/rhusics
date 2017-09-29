@@ -1,11 +1,11 @@
 use cgmath::{Point2, Vector2};
 use cgmath::num_traits::Float;
 use cgmath::prelude::*;
+use collision::prelude::*;
 
 use super::*;
 use {Pose, Real};
 use collide::{CollisionStrategy, Contact};
-use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 2D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
@@ -48,7 +48,7 @@ impl EPA for EPA2 {
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e)
+                        point(&simplex, &e),
                     ),
                 ];
             } else {
@@ -61,7 +61,7 @@ impl EPA for EPA2 {
                         CollisionStrategy::FullResolution,
                         e.normal,
                         e.distance,
-                        point(&simplex, &e)
+                        point(&simplex, &e),
                     ),
                 ];
             }
@@ -184,7 +184,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }
@@ -202,7 +202,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }
@@ -220,7 +220,7 @@ mod tests {
                 &left,
                 &left_transform,
                 &right,
-                &right_transform,
+                &right_transform
             ).is_empty()
         );
     }

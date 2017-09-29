@@ -10,7 +10,6 @@ use collision::prelude::*;
 use super::SupportPoint;
 use {Pose, Real};
 use collide::Contact;
-use collide::primitives::SupportFunction;
 
 pub const EPA_TOLERANCE: Real = 0.00001;
 pub const MAX_ITERATIONS: u32 = 100;

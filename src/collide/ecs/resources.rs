@@ -37,7 +37,9 @@ where
     P::Diff: Debug,
 {
     fn default() -> Self {
-        Self { contacts: Vec::default() }
+        Self {
+            contacts: Vec::default(),
+        }
     }
 }
 

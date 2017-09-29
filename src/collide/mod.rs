@@ -1,11 +1,10 @@
 //! Generic data structures and algorithms for collision detection
 
-pub use self::primitives::Primitive;
+pub use collision::prelude::Primitive;
 
 pub mod broad;
 pub mod narrow;
 pub mod ecs;
-pub mod primitives;
 
 use std::fmt::Debug;
 
@@ -154,6 +153,7 @@ where
 impl<P, T> CollisionShape<P, T>
 where
     P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
     T: Pose<P::Point>,
 {
     /// Create a new collision shape, with multiple collision primitives.
@@ -220,6 +220,7 @@ where
 pub struct ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
     /// The id
@@ -233,7 +234,7 @@ where
 impl<ID, P> ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
-    P::Aabb: Clone,
+    P::Aabb: Clone + Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
     /// Create a new shape
@@ -263,7 +264,7 @@ impl<ID, P> TreeValue for ContainerShapeWrapper<ID, P>
 where
     ID: Clone + Debug,
     P: Primitive,
-    P::Aabb: Aabb,
+    P::Aabb: Aabb<Scalar = Real>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
@@ -281,6 +282,7 @@ where
 impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
     type Id = ID;
@@ -299,6 +301,7 @@ where
 impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
 where
     P: Primitive + Debug,
+    P::Aabb: Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
     type Id = ID;
@@ -316,6 +319,7 @@ where
 fn get_bound<P, T>(primitives: &Vec<(P, T)>) -> P::Aabb
 where
     P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
     T: Pose<P::Point>,
 {
     primitives

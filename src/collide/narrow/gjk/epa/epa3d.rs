@@ -1,11 +1,11 @@
 use cgmath::{Point3, Vector3};
 use cgmath::prelude::*;
+use collision::prelude::*;
 
 use super::*;
 use {Pose, Real};
 use collide::{CollisionStrategy, Contact};
 use collide::narrow::gjk::SupportPoint;
-use collide::primitives::SupportFunction;
 
 /// EPA algorithm implementation for 3D. Only to be used in [`GJK`](struct.GJK.html).
 #[derive(Debug)]
@@ -64,7 +64,7 @@ fn contact(polytope: &Polytope, face: &Face) -> Vec<Contact<Point3<Real>>> {
             CollisionStrategy::FullResolution,
             face.normal.clone(), // negate ?
             face.distance,
-            point(polytope, face)
+            point(polytope, face),
         ),
     ]
 }
@@ -81,9 +81,9 @@ fn point(polytope: &Polytope, face: &Face) -> Point3<Real> {
         polytope.vertices[face.vertices[2]].v,
     );
 
-    polytope.vertices[face.vertices[0]].sup_a * u +
-        polytope.vertices[face.vertices[1]].sup_a.to_vec() * v +
-        polytope.vertices[face.vertices[2]].sup_a.to_vec() * w
+    polytope.vertices[face.vertices[0]].sup_a * u
+        + polytope.vertices[face.vertices[1]].sup_a.to_vec() * v
+        + polytope.vertices[face.vertices[2]].sup_a.to_vec() * w
 }
 
 #[derive(Debug)]
@@ -116,13 +116,9 @@ impl<'a> Polytope<'a> {
         let mut edges = Vec::default();
         let mut i = 0;
         while i < self.faces.len() {
-            let dot = self.faces[i].normal.dot(
-                sup.v -
-                    self.vertices[self.faces[i]
-                                      .vertices
-                                      [0]]
-                        .v,
-            );
+            let dot = self.faces[i]
+                .normal
+                .dot(sup.v - self.vertices[self.faces[i].vertices[0]].v);
             if dot > 0. {
                 let face = self.faces.swap_remove(i);
                 remove_or_add_edge(&mut edges, (face.vertices[0], face.vertices[1]));
