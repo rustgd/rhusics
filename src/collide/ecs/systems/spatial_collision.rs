@@ -107,7 +107,7 @@ where
         ReadStorage<'a, T>,
         ReadStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
-        Option<FetchMut<'a, EventHandler>>,
+        Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
         FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>,
     );
 
@@ -162,10 +162,7 @@ where
                         let event =
                             ContactEvent::new((left_entity.clone(), right_entity.clone()), contact);
                         if let Some(ref mut events) = event_handler {
-                            match events.write_single(event) {
-                                Err(err) => println!("Error in event write: {:?}", err),
-                                _ => (),
-                            };
+                            events.write_single(event);
                         } else if let Some(ref mut c) = contacts {
                             c.push(event);
                         }
@@ -183,10 +180,7 @@ where
                         (left_entity, right_entity),
                     );
                     if let Some(ref mut events) = event_handler {
-                        match events.write_single(event) {
-                            Err(err) => println!("Error in event write: {:?}", err),
-                            _ => (),
-                        };
+                        events.write_single(event);
                     } else if let Some(ref mut c) = contacts {
                         c.push(event);
                     }
