@@ -1,5 +1,6 @@
 //! Generic data structures and algorithms for collision detection
 
+pub use collision::{CollisionStrategy, Contact};
 pub use collision::prelude::Primitive;
 
 pub mod broad;
@@ -14,20 +15,6 @@ use collision::prelude::*;
 
 use self::broad::BroadCollisionData;
 use {Pose, Real};
-
-/// Collision strategy to use for collisions.
-///
-/// This is used both to specify what collision strategy to use for each shape, and also each
-/// found contact will have this returned on it, detailing what data is relevant in the
-/// [`Contact`](struct.Contact.html).
-#[derive(Debug, PartialEq, Clone, PartialOrd)]
-pub enum CollisionStrategy {
-    /// Compute full contact manifold for the collision
-    FullResolution,
-
-    /// Only report that a collision occurred, skip computing contact information for the collision.
-    CollisionOnly,
-}
 
 /// Contains all the contacts found between two bodies in a single pass.
 ///
@@ -63,66 +50,6 @@ where
     /// Convenience function to create a contact set with a single [`Contact`](struct.Contact.html).
     pub fn new_single(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
         Self::new(bodies, Contact::new(strategy))
-    }
-}
-
-/// Contact manifold for a single collision contact point.
-///
-/// # Type parameters
-///
-/// - `P`: cgmath point type
-#[derive(Debug, Clone)]
-pub struct Contact<P: EuclideanSpace> {
-    /// The collision strategy used for this contact.
-    pub strategy: CollisionStrategy,
-
-    /// The collision normal. Only applicable if the collision strategy is not `CollisionOnly`
-    pub normal: P::Diff,
-
-    /// The penetration depth. Only applicable if the collision strategy is not `CollisionOnly`
-    pub penetration_depth: P::Scalar,
-
-    /// The contact point. Only applicable if the collision strategy is not `CollisionOnly`
-    pub contact_point: P,
-}
-
-impl<P> Contact<P>
-where
-    P: EuclideanSpace,
-    P::Diff: VectorSpace + Zero,
-{
-    /// Create a new contact manifold, with default collision normal and penetration depth
-    pub fn new(strategy: CollisionStrategy) -> Self {
-        Self::new_impl(strategy, P::Diff::zero(), P::Scalar::zero())
-    }
-
-    /// Create a new contact manifold, with the given collision normal and penetration depth
-    pub fn new_impl(
-        strategy: CollisionStrategy,
-        normal: P::Diff,
-        penetration_depth: P::Scalar,
-    ) -> Self {
-        Self::new_with_point(
-            strategy,
-            normal,
-            penetration_depth,
-            P::from_value(P::Scalar::zero()),
-        )
-    }
-
-    /// Create a new contact manifold, complete with contact point
-    pub fn new_with_point(
-        strategy: CollisionStrategy,
-        normal: P::Diff,
-        penetration_depth: P::Scalar,
-        contact_point: P,
-    ) -> Self {
-        Self {
-            strategy,
-            normal,
-            penetration_depth,
-            contact_point,
-        }
     }
 }
 

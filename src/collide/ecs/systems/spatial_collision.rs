@@ -26,7 +26,6 @@ use collide::narrow::NarrowPhase;
 /// [`Pose`](../../trait.Pose.html) and
 /// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 ///
-#[derive(Debug)]
 pub struct SpatialCollisionSystem<P, T, D>
 where
     P: Primitive,

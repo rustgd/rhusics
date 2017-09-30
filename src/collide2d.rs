@@ -2,7 +2,7 @@
 
 pub use collide::CollisionStrategy;
 pub use collide::broad::SweepAndPrune2;
-pub use collide::narrow::GJK2;
+pub use collision::algorithm::minkowski::GJK2;
 pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
 use std::fmt::Debug;

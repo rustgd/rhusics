@@ -67,7 +67,7 @@
 //! }
 //! ```
 
-#![deny(missing_docs, missing_debug_implementations, trivial_casts, unsafe_code, unstable_features,
+#![deny(missing_docs, trivial_casts, unsafe_code, unstable_features,
        unused_import_braces, unused_qualifications)]
 
 extern crate cgmath;
@@ -75,17 +75,12 @@ extern crate collision;
 extern crate shrev;
 extern crate specs;
 
-#[cfg(test)]
-#[macro_use]
-extern crate assert_approx_eq;
-
 pub mod collide;
 pub mod collide2d;
 pub mod collide3d;
 
 use cgmath::prelude::*;
 
-mod util;
 mod ecs;
 
 #[cfg(not(feature = "double"))]
