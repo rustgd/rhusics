@@ -2,8 +2,8 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
-use specs::{Component, Entity, VecStorage};
 use collision::Primitive;
+use specs::{Component, Entity, VecStorage};
 
 use collide::{CollisionShape, ContactEvent};
 

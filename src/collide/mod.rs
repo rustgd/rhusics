@@ -3,17 +3,17 @@
 pub use collision::{CollisionStrategy, Contact};
 pub use collision::prelude::Primitive;
 
-pub mod broad;
 pub mod narrow;
 pub mod ecs;
+pub mod broad;
 
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
+use collision::algorithm::broad_phase::HasBound;
 use collision::dbvt::TreeValue;
 use collision::prelude::*;
 
-use self::broad::BroadCollisionData;
 use {Pose, Real};
 
 /// Contains all the contacts found between two bodies in a single pass.
@@ -206,40 +206,16 @@ where
     }
 }
 
-impl<ID, P> BroadCollisionData for ContainerShapeWrapper<ID, P>
+impl<ID, P> HasBound for ContainerShapeWrapper<ID, P>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
 {
-    type Id = ID;
     type Bound = P::Aabb;
 
-    fn id(&self) -> &ID {
-        &self.id
-    }
-
-    fn bound(&self) -> &P::Aabb {
+    fn get_bound(&self) -> &P::Aabb {
         &self.bound
-    }
-}
-
-// Used for data coming out of the collision-rs DBVT.
-impl<ID, P> BroadCollisionData for (usize, ContainerShapeWrapper<ID, P>)
-where
-    P: Primitive + Debug,
-    P::Aabb: Aabb<Scalar = Real>,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-{
-    type Id = ID;
-    type Bound = P::Aabb;
-
-    fn id(&self) -> &ID {
-        &self.1.id
-    }
-
-    fn bound(&self) -> &P::Aabb {
-        &self.1.bound
     }
 }
 

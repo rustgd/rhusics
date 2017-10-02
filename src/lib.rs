@@ -67,8 +67,8 @@
 //! }
 //! ```
 
-#![deny(missing_docs, trivial_casts, unsafe_code, unstable_features,
-       unused_import_braces, unused_qualifications)]
+#![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
+       unused_qualifications)]
 
 extern crate cgmath;
 extern crate collision;
