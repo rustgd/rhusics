@@ -40,7 +40,7 @@ pub trait BroadCollisionData {
 /// - `ID`: id type of collision shapes
 /// - `A`: Aabb bounding box type
 ///
-pub trait BroadPhase<D>: Debug
+pub trait BroadPhase<D>: Debug + Send
 where
     D: BroadCollisionData,
 {
