@@ -5,7 +5,7 @@ pub use collision::algorithm::broad_phase::*;
 use collision::prelude::*;
 
 /// Broad phase
-pub trait BroadPhase<A>
+pub trait BroadPhase<A>: Send
 where
     A: HasBound,
 {
@@ -27,7 +27,7 @@ impl<A, V> BroadPhase<A> for SweepAndPrune<V>
 where
     A: HasBound,
     A::Bound: Aabb + Discrete<A::Bound>,
-    V: Variance<Bound = A::Bound>,
+    V: Variance<Bound = A::Bound> + Send,
 {
     fn find_potentials(&mut self, shapes: &mut [A]) -> Vec<(usize, usize)> {
         self.find_collider_pairs(shapes)
