@@ -60,7 +60,7 @@ where
     D::Bound: Aabb<Scalar = Real> + Discrete<D::Bound> + Debug,
     <D::Bound as Aabb>::Point: EuclideanSpace,
     <D::Bound as Aabb>::Diff: VectorSpace + ElementWise,
-    V: Variance<Point = <D::Bound as Aabb>::Point> + Debug,
+    V: Variance<Point = <D::Bound as Aabb>::Point> + Debug + Send,
 {
     fn compute(&mut self, shapes: &mut Vec<D>) -> Vec<(D::Id, D::Id)> {
         let mut pairs = Vec::<(D::Id, D::Id)>::default();
