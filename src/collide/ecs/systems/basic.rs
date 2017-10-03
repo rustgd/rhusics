@@ -7,7 +7,7 @@ use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, Wr
 
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
-use collide::broad::{BroadCollisionData, BroadPhase};
+use collide::broad::{BroadPhase, HasBound};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -36,7 +36,7 @@ where
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
     T: Pose<P::Point> + Component,
-    D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
+    D: HasBound<Bound = P::Aabb>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -89,18 +89,20 @@ where
                 shape.update(&pose);
                 info.push(ContainerShapeWrapper::new(entity, shape.bound()));
             }
-            let potentials = broad.compute(&mut info);
+            let potentials = broad.find_potentials(&mut info);
 
             match self.narrow {
-                Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
-                    let left_shape = shapes.get(left_entity).unwrap();
-                    let right_shape = shapes.get(right_entity).unwrap();
-                    let left_pose = poses.get(left_entity).unwrap();
-                    let right_pose = poses.get(right_entity).unwrap();
+                Some(ref mut narrow) => for (left_index, right_index) in potentials {
+                    let left_entity = &info[left_index];
+                    let right_entity = &info[right_index];
+                    let left_shape = shapes.get(left_entity.id).unwrap();
+                    let right_shape = shapes.get(right_entity.id).unwrap();
+                    let left_pose = poses.get(left_entity.id).unwrap();
+                    let right_pose = poses.get(right_entity.id).unwrap();
                     match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
                         Some(contact) => {
                             let event = ContactEvent::new(
-                                (left_entity.clone(), right_entity.clone()),
+                                (left_entity.id.clone(), right_entity.id.clone()),
                                 contact,
                             );
                             if let Some(ref mut events) = event_handler {
@@ -116,10 +118,12 @@ where
                     // if we only have a broad phase, we generate contacts for aabb
                     // intersections
                     // right now, we only report the collision, no normal/depth calculation
-                    for (left_entity, right_entity) in potentials {
+                    for (left_index, right_index) in potentials {
+                        let left_entity = &info[left_index];
+                        let right_entity = &info[right_index];
                         let event = ContactEvent::new_single(
                             CollisionStrategy::CollisionOnly,
-                            (left_entity, right_entity),
+                            (left_entity.id, right_entity.id),
                         );
                         if let Some(ref mut events) = event_handler {
                             events.write_single(event);

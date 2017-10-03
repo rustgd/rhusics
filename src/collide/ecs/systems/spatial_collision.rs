@@ -8,7 +8,7 @@ use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
 use {Pose, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
-use collide::broad::{BroadCollisionData, BroadPhase};
+use collide::broad::{BroadPhase, HasBound};
 use collide::ecs::resources::Contacts;
 use collide::narrow::NarrowPhase;
 
@@ -49,7 +49,7 @@ where
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
     T: Pose<P::Point> + Component,
-    D: BroadCollisionData<Bound = P::Aabb, Id = Entity>,
+    D: HasBound<Bound = P::Aabb>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -120,9 +120,17 @@ where
 
         let potentials = if let Some(ref mut broad) = self.broad {
             // Overridden broad phase, use that
-            let potentials = broad.compute(tree.values());
+            let potentials = broad.find_potentials(tree.values());
             tree.reindex_values();
             potentials
+                .iter()
+                .map(|&(ref l, ref r)| {
+                    (
+                        tree.values()[*l].1.id.clone(),
+                        tree.values()[*r].1.id.clone(),
+                    )
+                })
+                .collect()
         } else {
             // Fallback to DBVT based broad phase
             let mut potentials = Vec::default();

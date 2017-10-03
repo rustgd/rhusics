@@ -1,20 +1,19 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
 pub use collide::CollisionStrategy;
-pub use collide::broad::SweepAndPrune3;
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
 use std::fmt::Debug;
 
 use cgmath::{Point3, Quaternion};
+use collision::algorithm::broad_phase::BruteForce;
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
 use specs::{Component, Entity, World};
 
 use {BodyPose, Pose, Real};
 use collide::*;
-use collide::broad::BruteForce;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
@@ -28,6 +27,9 @@ pub type CollisionShape3<T> = CollisionShape<Primitive3<Real>, T>;
 /// Broad phase brute force algorithm for 3D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
 pub type BroadBruteForce3 = BruteForce;
+
+/// Broad phase sweep and prune algorithm
+pub type SweepAndPrune3 = ::collision::algorithm::broad_phase::SweepAndPrune3<Real>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
