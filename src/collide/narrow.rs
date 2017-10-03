@@ -19,7 +19,7 @@ use collide::CollisionShape;
 ///
 /// - `P`: collision primitive type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<P, T>
+pub trait NarrowPhase<P, T>: Send
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug,
@@ -53,8 +53,8 @@ where
         + InnerSpace
         + Neg<Output = <P::Point as EuclideanSpace>::Diff>,
     P::Aabb: Discrete<P::Aabb> + Aabb<Scalar = Real>,
-    S: SimplexProcessor<Point = P::Point>,
-    E: EPA<Point = P::Point>,
+    S: SimplexProcessor<Point = P::Point> + Send,
+    E: EPA<Point = P::Point> + Send,
     T: Transform<P::Point>,
 {
     fn collide(
