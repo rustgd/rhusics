@@ -5,7 +5,7 @@ use collision::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use {Pose, Real};
+use Real;
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
 use collide::broad::{BroadPhase, HasBound};
 use collide::ecs::resources::Contacts;
@@ -18,7 +18,6 @@ use collide::narrow::NarrowPhase;
 /// if both broad and narrow phase is activated.
 ///
 /// Can handle any transform component type, as long as the type implements
-/// [`Pose`](../../trait.Pose.html) and
 /// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 ///
 pub struct BasicCollisionSystem<P, T, D>
@@ -35,7 +34,7 @@ where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
-    T: Pose<P::Point> + Component,
+    T: Transform<P::Point> + Component,
     D: HasBound<Bound = P::Aabb>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
@@ -65,7 +64,7 @@ where
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-    T: Component + Pose<P::Point> + Send + Sync + Clone + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
 {
     type SystemData = (
         Entities<'a>,

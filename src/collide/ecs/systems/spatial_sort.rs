@@ -7,7 +7,7 @@ use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::prelude::*;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use {Pose, Real};
+use Real;
 use collide::{CollisionShape, ContainerShapeWrapper, Primitive};
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
@@ -43,13 +43,13 @@ where
         + Debug
         + Send
         + Sync
-        + 'static
         + Aabb<Scalar = Real>
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
     P::Point: Debug,
-    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-    T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
+    T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
+    for <'b : 'a> &'b T::Storage: Join<Type=T>,
 {
     type SystemData = (
         Entities<'a>,
@@ -60,27 +60,27 @@ where
 
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
-        for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
-            // update the bound in the shape
-            if pose.dirty() {
-                shape.update(&pose);
-            }
 
+        for (entity, pose, shape) in (&*entities, (&poses).open().1, &mut shapes).join() {
+            shape.update(&pose);
+
+            match self.entities.get(&entity).cloned() {
+                Some(node_index) => tree.update_node(
+                    node_index,
+                    ContainerShapeWrapper::new(entity, shape.bound()),
+                ),
+
+                _ => (),
+            }
+        }
+
+        for (entity, _, shape) in (&*entities, &poses, &shapes).join() {
             // entity still exists, remove from deletion list
             keys.remove(&entity);
 
-            let node_index = match self.entities.get(&entity) {
-                Some(node_index) => Some(node_index.clone()),
-                None => None,
-            };
-            match node_index {
+            match self.entities.get(&entity) {
                 // entity exists in tree, possibly update it with new values
-                Some(node_index) => if pose.dirty() {
-                    tree.update_node(
-                        node_index,
-                        ContainerShapeWrapper::new(entity, shape.bound()),
-                    );
-                },
+                Some(_) => (),
 
                 // entity does not exist in tree, add it to the tree and entities map
                 None => {
