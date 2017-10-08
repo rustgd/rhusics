@@ -15,6 +15,7 @@ use specs::{Component, Entity, World};
 use {BodyPose, Real};
 use collide::*;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
+use collide::util::ContainerShapeWrapper;
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
