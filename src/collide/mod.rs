@@ -14,7 +14,7 @@ use collision::algorithm::broad_phase::HasBound;
 use collision::dbvt::TreeValue;
 use collision::prelude::*;
 
-use {Pose, Real};
+use Real;
 
 /// Contains all the contacts found between two bodies in a single pass.
 ///
@@ -81,7 +81,7 @@ impl<P, T> CollisionShape<P, T>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real>,
-    T: Pose<P::Point>,
+    T: Transform<P::Point>,
 {
     /// Create a new collision shape, with multiple collision primitives.
     ///
@@ -142,7 +142,7 @@ where
     }
 }
 
-/// Shape wrapper for use with containers
+/// Shape wrapper for use with containers such as DBVT, or for use with broad phase algorithms
 #[derive(Debug, Clone)]
 pub struct ContainerShapeWrapper<ID, P>
 where
@@ -223,7 +223,7 @@ fn get_bound<P, T>(primitives: &Vec<(P, T)>) -> P::Aabb
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real>,
-    T: Pose<P::Point>,
+    T: Transform<P::Point>,
 {
     primitives
         .iter()

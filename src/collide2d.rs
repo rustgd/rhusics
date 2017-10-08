@@ -6,13 +6,13 @@ pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
 use std::fmt::Debug;
 
-use cgmath::{Basis2, Point2};
+use cgmath::{Basis2, Point2, Transform};
 use collision::algorithm::broad_phase::BruteForce;
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
 
-use {BodyPose, Pose, Real};
+use {BodyPose, Real};
 use collide::*;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
@@ -41,7 +41,11 @@ pub type BasicCollisionSystem2<T> = BasicCollisionSystem<
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem2<T> = SpatialSortingSystem<Primitive2<Real>, T>;
+pub type SpatialSortingSystem2<T> = SpatialSortingSystem<
+    Primitive2<Real>,
+    T,
+    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+>;
 
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
@@ -71,11 +75,11 @@ pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
 ///
 /// # Type parameters
 ///
-/// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
+/// - `T`: Transform type that implements
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 pub fn world_register<T>(world: &mut World)
 where
-    T: Pose<Point2<Real>> + Component + Send + Sync + 'static,
+    T: Transform<Point2<Real>> + Component + Send + Sync + 'static,
 {
     world.register::<T>();
     world.register::<CollisionShape2<T>>();
@@ -95,11 +99,11 @@ where
 ///
 /// # Type parameters
 ///
-/// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
+/// - `T`: Transform type that implements
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 pub fn world_register_with_spatial<T>(mut world: &mut World)
 where
-    T: Pose<Point2<Real>> + Component + Clone + Debug + Send + Sync + 'static,
+    T: Transform<Point2<Real>> + Component + Clone + Debug + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
     world.add_resource(DynamicBoundingVolumeTree2::new());

@@ -1,5 +1,5 @@
 use cgmath::prelude::*;
-use specs::{Component, VecStorage};
+use specs::{Component, DenseVecStorage, FlaggedStorage};
 
 use {BodyPose, Real};
 
@@ -8,5 +8,5 @@ where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
 {
-    type Storage = VecStorage<BodyPose<P, R>>;
+    type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
 }
