@@ -23,8 +23,9 @@ use collide::narrow::NarrowPhase;
 /// pose.
 ///
 /// Can handle any transform component type, as long as the type implements
-/// [`Pose`](../../trait.Pose.html) and
-/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html), and as long as the
+/// storage is wrapped in
+/// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
 pub struct SpatialCollisionSystem<P, T, D>
 where

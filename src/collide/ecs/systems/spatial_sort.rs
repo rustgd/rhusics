@@ -18,7 +18,8 @@ use collide::{CollisionShape, Primitive};
 ///
 /// Can handle any transform component type, as long as the type implements
 /// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html), and as long as the
-/// storage is [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html)
+/// storage is wrapped in
+/// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html)
 ///
 /// ## Type parameters:
 ///

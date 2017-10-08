@@ -18,7 +18,9 @@ use collide::narrow::NarrowPhase;
 /// if both broad and narrow phase is activated.
 ///
 /// Can handle any transform component type, as long as the type implements
-/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html), and as long as the
+/// storage is wrapped in a
+/// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
 pub struct BasicCollisionSystem<P, T, D>
 where
@@ -89,12 +91,14 @@ where
                 shape.update(&pose);
                 info.push((entity, &*shape).into());
             }
-            let potentials = broad.find_potentials(&mut info);
+            let potentials = broad
+                .find_potentials(&mut info)
+                .iter()
+                .map(|&(a, b)| (info[a].entity(), info[b].entity()))
+                .collect::<Vec<_>>();
 
             match self.narrow {
-                Some(ref mut narrow) => for (left_index, right_index) in potentials {
-                    let left_entity = info[left_index].entity();
-                    let right_entity = info[right_index].entity();
+                Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
                     let left_shape = shapes.get(left_entity).unwrap();
                     let right_shape = shapes.get(right_entity).unwrap();
                     let left_pose = poses.get(left_entity).unwrap();
@@ -118,9 +122,7 @@ where
                     // if we only have a broad phase, we generate contacts for aabb
                     // intersections
                     // right now, we only report the collision, no normal/depth calculation
-                    for (left_index, right_index) in potentials {
-                        let left_entity = info[left_index].entity();
-                        let right_entity = info[right_index].entity();
+                    for (left_entity, right_entity) in potentials {
                         let event = ContactEvent::new_single(
                             CollisionStrategy::CollisionOnly,
                             (left_entity, right_entity),
