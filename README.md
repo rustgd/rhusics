@@ -48,7 +48,7 @@ pub fn main() {
 # Features:
 
 * Has support for all primitives in collision-rs
-* Two different broad phase collision detection implementations:
+* Has support for the following broad phase algorithms in collision-rs:
   * Brute force
   * Sweep and Prune
 * Narrow phase collision detection using GJK, and optionally EPA for full contact information
@@ -65,6 +65,5 @@ pub fn main() {
 
 # TODO:
 
-* Ray intersection tests with actual geometry
-* Continuous collision detection
+* Continuous collision detection, using GJK
 * Impulse solver
