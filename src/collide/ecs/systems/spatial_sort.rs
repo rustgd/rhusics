@@ -49,7 +49,7 @@ where
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
-    for <'b : 'a> &'b T::Storage: Join<Type=T>,
+    for <'b : 'a> &'b T::Storage: Join<Type = &'b T>,
 {
     type SystemData = (
         Entities<'a>,
