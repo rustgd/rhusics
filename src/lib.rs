@@ -89,28 +89,6 @@ pub(crate) type Real = f32;
 #[cfg(feature = "double")]
 pub(crate) type Real = f64;
 
-/// Trait bound used for transforms throughout the library
-pub trait Pose<P>: Transform<P>
-where
-    P: EuclideanSpace<Scalar = Real>,
-{
-    /// The rotational data type used by the concrete implementation
-    type Rotation: Rotation<P>;
-
-    /// Borrows the position attribute
-    fn position(&self) -> &P;
-
-    /// Borrows the rotation attribute
-    fn rotation(&self) -> &Self::Rotation;
-
-    /// Checks to see if the transform is dirty. Used by the collision system to see if bounds need
-    /// to be recalculated.
-    fn dirty(&self) -> bool;
-
-    /// Borrows the inverse rotation attribute
-    fn inverse_rotation(&self) -> &Self::Rotation;
-}
-
 /// Transform that implements [`Pose`](trait.Pose.html), and can be used as the transform
 /// component throughout the library.
 #[derive(Clone, Debug)]
@@ -195,29 +173,5 @@ where
             self.rotation.rotate_point(self.position) * -P::Scalar::one(),
             self.inverse_rotation,
         ))
-    }
-}
-
-impl<P, R> Pose<P> for BodyPose<P, R>
-where
-    P: EuclideanSpace<Scalar = Real>,
-    R: Rotation<P>,
-{
-    type Rotation = R;
-
-    fn position(&self) -> &P {
-        &self.position
-    }
-
-    fn rotation(&self) -> &R {
-        &self.rotation
-    }
-
-    fn dirty(&self) -> bool {
-        self.dirty
-    }
-
-    fn inverse_rotation(&self) -> &R {
-        &self.inverse_rotation
     }
 }

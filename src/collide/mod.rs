@@ -142,7 +142,7 @@ where
     }
 }
 
-/// Shape wrapper for use with containers
+/// Shape wrapper for use with containers such as DBVT, or for use with broad phase algorithms
 #[derive(Debug, Clone)]
 pub struct ContainerShapeWrapper<ID, P>
 where

@@ -2,10 +2,16 @@ use std::fmt::Debug;
 use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
-use collision::Primitive;
+use collision::{Aabb, Primitive};
 use specs::{Component, Entity, VecStorage};
 
-use collide::{CollisionShape, ContactEvent};
+use collide::{CollisionShape, ContactEvent, ContainerShapeWrapper};
+
+use Real;
+
+pub trait GetEntity {
+    fn entity(&self) -> Entity;
+}
 
 impl<P, T> Component for CollisionShape<P, T>
 where
@@ -63,5 +69,28 @@ where
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.contacts
+    }
+}
+
+impl<'a, P, T> From<(Entity, &'a CollisionShape<P, T>)> for ContainerShapeWrapper<Entity, P>
+where
+    P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
+    <P::Point as EuclideanSpace>::Diff: Debug,
+    T: Transform<P::Point>,
+{
+    fn from((entity, ref shape): (Entity, &CollisionShape<P, T>)) -> Self {
+        Self::new(entity, shape.bound())
+    }
+}
+
+impl<P> GetEntity for ContainerShapeWrapper<Entity, P>
+where
+    P: Primitive,
+    P::Aabb: Aabb<Scalar = Real>,
+    <P::Point as EuclideanSpace>::Diff: Debug,
+{
+    fn entity(&self) -> Entity {
+        self.id
     }
 }

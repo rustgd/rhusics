@@ -1,15 +1,15 @@
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree};
+use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
-use {Pose, Real};
-use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
+use Real;
+use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
-use collide::ecs::resources::Contacts;
+use collide::ecs::resources::{Contacts, GetEntity};
 use collide::narrow::NarrowPhase;
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
@@ -48,7 +48,7 @@ where
         + Union<P::Aabb, Output = P::Aabb>
         + Contains<P::Aabb>
         + SurfaceArea<Scalar = Real>,
-    T: Pose<P::Point> + Component,
+    T: Transform<P::Point> + Component,
     D: HasBound<Bound = P::Aabb>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
@@ -72,20 +72,18 @@ where
     }
 }
 
-fn discrete_visitor<P>(
-    bound: &P::Aabb,
-) -> DiscreteVisitor<P::Aabb, ContainerShapeWrapper<Entity, P>>
+fn discrete_visitor<P, D>(bound: &P::Aabb) -> DiscreteVisitor<P::Aabb, D>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real> + Debug + Discrete<P::Aabb>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug,
+    D: TreeValue<Bound = P::Aabb>,
 {
-    DiscreteVisitor::<P::Aabb, ContainerShapeWrapper<Entity, P>>::new(bound)
+    DiscreteVisitor::<P::Aabb, D>::new(bound)
 }
 
-impl<'a, P, T> System<'a>
-    for SpatialCollisionSystem<P, T, (usize, ContainerShapeWrapper<Entity, P>)>
+impl<'a, P, T, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D)>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -99,7 +97,9 @@ where
         + SurfaceArea<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
-    T: Component + Clone + Debug + Pose<P::Point> + Send + Sync + 'static,
+    T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
+    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    D: Send + Sync + 'static + TreeValue<Bound = P::Aabb> + HasBound<Bound = P::Aabb> + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
@@ -107,7 +107,7 @@ where
         ReadStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
         Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>,
+        FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(
@@ -126,8 +126,8 @@ where
                 .iter()
                 .map(|&(ref l, ref r)| {
                     (
-                        tree.values()[*l].1.id.clone(),
-                        tree.values()[*r].1.id.clone(),
+                        tree.values()[*l].1.entity().clone(),
+                        tree.values()[*r].1.entity().clone(),
                     )
                 })
                 .collect()
@@ -135,22 +135,18 @@ where
             // Fallback to DBVT based broad phase
             let mut potentials = Vec::default();
             // find changed values, do intersection tests against tree for each
-            for (entity, pose, shape) in (&*entities, &poses, &shapes).join() {
-                if pose.dirty() {
-                    for (v, _) in tree.query(&mut discrete_visitor::<P>(shape.bound())) {
-                        if entity != v.id {
-                            let n = if entity < v.id {
-                                (entity, v.id.clone())
-                            } else {
-                                (v.id.clone(), entity)
-                            };
-                            let pos = match potentials.binary_search(&n) {
-                                Err(pos) => Some(pos),
-                                Ok(_) => None,
-                            };
-                            if let Some(pos) = pos {
-                                potentials.insert(pos, n);
-                            }
+            // uses FlaggedStorage
+            for (entity, _, shape) in (&*entities, (&poses).open().1, &shapes).join() {
+                for (v, _) in tree.query(&mut discrete_visitor::<P, D>(shape.bound())) {
+                    let e = v.entity();
+                    if entity != e {
+                        let n = if entity < e {
+                            (entity, e.clone())
+                        } else {
+                            (e.clone(), entity)
+                        };
+                        if let Err(pos) = potentials.binary_search(&n) {
+                            potentials.insert(pos, n);
                         }
                     }
                 }
@@ -159,7 +155,7 @@ where
         };
 
         match self.narrow {
-            Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
+            Some(ref narrow) => for (left_entity, right_entity) in potentials {
                 let left_shape = shapes.get(left_entity).unwrap();
                 let right_shape = shapes.get(right_entity).unwrap();
                 let left_pose = poses.get(left_entity).unwrap();

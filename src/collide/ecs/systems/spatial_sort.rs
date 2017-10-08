@@ -3,12 +3,12 @@ use std::fmt::Debug;
 use std::marker::PhantomData;
 
 use cgmath::prelude::*;
-use collision::dbvt::DynamicBoundingVolumeTree;
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use Real;
-use collide::{CollisionShape, ContainerShapeWrapper, Primitive};
+use collide::{CollisionShape, Primitive};
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
@@ -17,17 +17,24 @@ use collide::{CollisionShape, ContainerShapeWrapper, Primitive};
 /// sorting. Will update entries in the tree where the pose is dirty.
 ///
 /// Can handle any transform component type, as long as the type implements
-/// [`Pose`](../../trait.Pose.html) and
-/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html), and as long as the
+/// storage is [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html)
+///
+/// ## Type parameters:
+///
+/// - `P`: Primitive type, needs to implement `Primitive`.
+/// - `T`: Transform type, needs to implement `Transform` and have `FlaggedStorage`.
+/// - `D`: Type of values stored in the DBVT, needs to implement `TreeValue` and
+///        `From<(Entity, CollisionShape)>`
 ///
 #[derive(Debug)]
-pub struct SpatialSortingSystem<P, T> {
+pub struct SpatialSortingSystem<P, T, D> {
     entities: HashMap<Entity, usize>,
-    marker: PhantomData<(P, T)>,
+    marker: PhantomData<(P, T, D)>,
 }
 
-impl<P, T> SpatialSortingSystem<P, T> {
-    /// Create a new collision detection system, with no broad or narrow phase activated.
+impl<P, T, D> SpatialSortingSystem<P, T, D> {
+    /// Create a new sorting system.
     pub fn new() -> Self {
         Self {
             entities: HashMap::default(),
@@ -36,7 +43,7 @@ impl<P, T> SpatialSortingSystem<P, T> {
     }
 }
 
-impl<'a, P, T> System<'a> for SpatialSortingSystem<P, T>
+impl<'a, P, T, D> System<'a> for SpatialSortingSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -49,54 +56,47 @@ where
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
-    for <'b : 'a> &'b T::Storage: Join<Type = &'b T>,
+    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    D: Send + Sync + 'static + TreeValue<Bound = P::Aabb>,
+    for<'c: 'a> D: From<(Entity, &'c CollisionShape<P, T>)>,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         WriteStorage<'a, CollisionShape<P, T>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<ContainerShapeWrapper<Entity, P>>>,
+        FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
 
+        // Check for updated poses that are already in the tree
+        // Uses FlaggedStorage
         for (entity, pose, shape) in (&*entities, (&poses).open().1, &mut shapes).join() {
             shape.update(&pose);
 
-            match self.entities.get(&entity).cloned() {
-                Some(node_index) => tree.update_node(
-                    node_index,
-                    ContainerShapeWrapper::new(entity, shape.bound()),
-                ),
-
-                _ => (),
+            // Update the wrapper in the tree for the shape
+            if let Some(node_index) = self.entities.get(&entity).cloned() {
+                tree.update_node(node_index, (entity, &*shape).into());
             }
         }
 
+        // For all active shapes, remove them from the deletion list, and add any new entities
+        // to the tree.
         for (entity, _, shape) in (&*entities, &poses, &shapes).join() {
             // entity still exists, remove from deletion list
             keys.remove(&entity);
 
-            match self.entities.get(&entity) {
-                // entity exists in tree, possibly update it with new values
-                Some(_) => (),
-
-                // entity does not exist in tree, add it to the tree and entities map
-                None => {
-                    let node_index = tree.insert(ContainerShapeWrapper::new(entity, shape.bound()));
-                    self.entities.insert(entity, node_index);
-                }
+            // if entity does not exist in entities list, add it to the tree and entities list
+            if let None = self.entities.get(&entity) {
+                let node_index = tree.insert((entity, &*shape).into());
+                self.entities.insert(entity, node_index);
             }
         }
 
         // remove entities that are missing from the tree
         for entity in keys {
-            let node_index = match self.entities.get(&entity) {
-                Some(node_index) => Some(node_index.clone()),
-                None => None,
-            };
-            match node_index {
+            match self.entities.get(&entity).cloned() {
                 Some(node_index) => {
                     tree.remove(node_index);
                     self.entities.remove(&entity);

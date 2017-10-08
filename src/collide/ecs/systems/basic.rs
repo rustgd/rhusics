@@ -6,9 +6,9 @@ use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use Real;
-use collide::{CollisionShape, CollisionStrategy, ContactEvent, ContainerShapeWrapper, Primitive};
+use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
-use collide::ecs::resources::Contacts;
+use collide::ecs::resources::{Contacts, GetEntity};
 use collide::narrow::NarrowPhase;
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
@@ -58,13 +58,14 @@ where
     }
 }
 
-impl<'a, P, T> System<'a> for BasicCollisionSystem<P, T, ContainerShapeWrapper<Entity, P>>
+impl<'a, P, T, D> System<'a> for BasicCollisionSystem<P, T, D>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    for<'b: 'a> D: HasBound<Bound = P::Aabb> + From<(Entity, &'b CollisionShape<P, T>)> + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
@@ -83,25 +84,25 @@ where
         }
 
         if let Some(ref mut broad) = self.broad {
-            let mut info: Vec<ContainerShapeWrapper<Entity, P>> = Vec::default();
+            let mut info = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose);
-                info.push(ContainerShapeWrapper::new(entity, shape.bound()));
+                info.push((entity, &*shape).into());
             }
             let potentials = broad.find_potentials(&mut info);
 
             match self.narrow {
                 Some(ref mut narrow) => for (left_index, right_index) in potentials {
-                    let left_entity = &info[left_index];
-                    let right_entity = &info[right_index];
-                    let left_shape = shapes.get(left_entity.id).unwrap();
-                    let right_shape = shapes.get(right_entity.id).unwrap();
-                    let left_pose = poses.get(left_entity.id).unwrap();
-                    let right_pose = poses.get(right_entity.id).unwrap();
+                    let left_entity = info[left_index].entity();
+                    let right_entity = info[right_index].entity();
+                    let left_shape = shapes.get(left_entity).unwrap();
+                    let right_shape = shapes.get(right_entity).unwrap();
+                    let left_pose = poses.get(left_entity).unwrap();
+                    let right_pose = poses.get(right_entity).unwrap();
                     match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
                         Some(contact) => {
                             let event = ContactEvent::new(
-                                (left_entity.id.clone(), right_entity.id.clone()),
+                                (left_entity.clone(), right_entity.clone()),
                                 contact,
                             );
                             if let Some(ref mut events) = event_handler {
@@ -118,11 +119,11 @@ where
                     // intersections
                     // right now, we only report the collision, no normal/depth calculation
                     for (left_index, right_index) in potentials {
-                        let left_entity = &info[left_index];
-                        let right_entity = &info[right_index];
+                        let left_entity = info[left_index].entity();
+                        let right_entity = info[right_index].entity();
                         let event = ContactEvent::new_single(
                             CollisionStrategy::CollisionOnly,
-                            (left_entity.id, right_entity.id),
+                            (left_entity, right_entity),
                         );
                         if let Some(ref mut events) = event_handler {
                             events.write_single(event);

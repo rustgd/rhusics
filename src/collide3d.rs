@@ -6,13 +6,13 @@ pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
 use std::fmt::Debug;
 
-use cgmath::{Point3, Quaternion};
+use cgmath::{Point3, Quaternion, Transform};
 use collision::algorithm::broad_phase::BruteForce;
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
 use specs::{Component, Entity, World};
 
-use {BodyPose, Pose, Real};
+use {BodyPose, Real};
 use collide::*;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
@@ -41,7 +41,11 @@ pub type BasicCollisionSystem3<T> = BasicCollisionSystem<
 
 /// Spatial sorting system for 3D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem3<T> = SpatialSortingSystem<Primitive3<Real>, T>;
+pub type SpatialSortingSystem3<T> = SpatialSortingSystem<
+    Primitive3<Real>,
+    T,
+    ContainerShapeWrapper<Entity, Primitive3<Real>>,
+>;
 
 /// Spatial collision system for 3D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
@@ -74,7 +78,7 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 pub fn world_register<'a, T>(world: &mut World)
 where
-    T: Pose<Point3<Real>> + Component + Send + Sync + 'static,
+    T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
 {
     world.register::<T>();
     world.register::<CollisionShape3<T>>();
@@ -98,7 +102,7 @@ where
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 pub fn world_register_with_spatial<T>(mut world: &mut World)
 where
-    T: Pose<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,
+    T: Transform<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,
 {
     world_register::<T>(&mut world);
     world.add_resource(DynamicBoundingVolumeTree3::new());
