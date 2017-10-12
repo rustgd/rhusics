@@ -15,6 +15,16 @@ use collision::prelude::*;
 
 use Real;
 
+/// Control continuous mode for shapes
+#[derive(Debug, Clone, PartialOrd, PartialEq)]
+pub enum CollisionMode {
+    /// Discrete collision mode
+    Discrete,
+
+    /// Continuous collision mode
+    Continuous,
+}
+
 /// Contains all the contacts found between two bodies in a single pass.
 ///
 /// # Type parameters
@@ -74,6 +84,7 @@ where
     transformed_bound: P::Aabb,
     primitives: Vec<(P, T)>,
     strategy: CollisionStrategy,
+    mode: CollisionMode,
 }
 
 impl<P, T> CollisionShape<P, T>
@@ -91,7 +102,11 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitives`: List of all primitives that make up this shape.
-    pub fn new_complex(strategy: CollisionStrategy, primitives: Vec<(P, T)>) -> Self {
+    pub fn new_complex(
+        strategy: CollisionStrategy,
+        mode: CollisionMode,
+        primitives: Vec<(P, T)>,
+    ) -> Self {
         let bound = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
@@ -99,6 +114,7 @@ where
             enabled: true,
             transformed_bound: bound,
             strategy,
+            mode,
         }
     }
 
@@ -109,8 +125,8 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
-    pub fn new_simple(strategy: CollisionStrategy, primitive: P) -> Self {
-        Self::new_complex(strategy, vec![(primitive, T::one())])
+    pub fn new_simple(strategy: CollisionStrategy, mode: CollisionMode, primitive: P) -> Self {
+        Self::new_complex(strategy, mode, vec![(primitive, T::one())])
     }
 
     /// Convenience function to create a simple collision shape with only a single given primitive,
@@ -121,17 +137,37 @@ where
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
     /// - `transform`: Local-to-model transform of the primitive.
-    pub fn new_simple_offset(strategy: CollisionStrategy, primitive: P, transform: T) -> Self {
-        Self::new_complex(strategy, vec![(primitive, transform)])
+    pub fn new_simple_offset(
+        strategy: CollisionStrategy,
+        mode: CollisionMode,
+        primitive: P,
+        transform: T,
+    ) -> Self {
+        Self::new_complex(strategy, mode, vec![(primitive, transform)])
     }
 
     /// Update the cached transformed bounding box in world space coordinates.
     ///
-    /// # Parameters
+    /// If the end transform is given, that will always be used. If the collision mode of the shape
+    /// is `Continuous`, both the start and end transforms will be added to the transformed bounding
+    /// box. This will make broad phase detect collisions for the whole transformation path.
     ///
-    /// - `transform`: Current model-to-world transform of the shape.
-    pub fn update(&mut self, transform: &T) {
-        self.transformed_bound = self.base_bound.transform(transform);
+    /// ## Parameters
+    ///
+    /// - `start`: Current model-to-world transform of the shape at the start of the frame.
+    /// - `end`: Optional model-to-world transform of the shaped at the end of the frame.
+    pub fn update(&mut self, start: &T, end: Option<&T>) {
+        self.transformed_bound = match end {
+            None => self.base_bound.transform(start),
+            Some(end_t) => {
+                let base = self.base_bound.transform(end_t);
+                if self.mode == CollisionMode::Continuous {
+                    base.union(&self.base_bound.transform(start))
+                } else {
+                    base
+                }
+            }
+        };
     }
 
     /// Return the current transformed bound for the shape

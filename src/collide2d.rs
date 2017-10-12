@@ -1,6 +1,6 @@
 //! Type wrappers and convenience functions for 2D collision detection
 
-pub use collide::CollisionStrategy;
+pub use collide::{CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK2;
 pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
@@ -12,7 +12,7 @@ use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
 
-use {BodyPose, Real};
+use {BodyPose, NextFrame, Real};
 use collide::*;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 use collide::util::ContainerShapeWrapper;
@@ -83,6 +83,7 @@ where
     T: Transform<Point2<Real>> + Component + Send + Sync + 'static,
 {
     world.register::<T>();
+    world.register::<NextFrame<T>>();
     world.register::<CollisionShape2<T>>();
     world.add_resource(Contacts2::default());
 }

@@ -6,7 +6,7 @@ use collision::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
-use Real;
+use {NextFrame, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
 use collide::ecs::resources::{Contacts, GetEntity};
@@ -105,16 +105,17 @@ where
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
+        ReadStorage<'a, NextFrame<T>>,
         ReadStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
         Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
-    fn run(
-        &mut self,
-        (entities, poses, shapes, mut contacts, mut event_handler, mut tree): Self::SystemData,
-    ) {
+    fn run(&mut self, system_data: Self::SystemData) {
+        let (entities, poses, next_poses, shapes, mut contacts, mut event_handler, mut tree) =
+            system_data;
+
         if let Some(ref mut c) = contacts {
             c.clear();
         }
@@ -152,6 +153,23 @@ where
                     }
                 }
             }
+            // find changed next frame values, do intersection tests against tree for each
+            // uses FlaggedStorage
+            for (entity, _, shape) in (&*entities, (&next_poses).open().1, &shapes).join() {
+                for (v, _) in tree.query(&mut discrete_visitor::<P, D>(shape.bound())) {
+                    let e = v.entity();
+                    if entity != e {
+                        let n = if entity < e {
+                            (entity, e.clone())
+                        } else {
+                            (e.clone(), entity)
+                        };
+                        if let Err(pos) = potentials.binary_search(&n) {
+                            potentials.insert(pos, n);
+                        }
+                    }
+                }
+            }
             potentials
         };
 
@@ -161,7 +179,16 @@ where
                 let right_shape = shapes.get(right_entity).unwrap();
                 let left_pose = poses.get(left_entity).unwrap();
                 let right_pose = poses.get(right_entity).unwrap();
-                match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
+                let left_next_pose = next_poses.get(left_entity).as_ref().map(|p| &p.value);
+                let right_next_pose = next_poses.get(right_entity).as_ref().map(|p| &p.value);
+                match narrow.collide_continuous(
+                    left_shape,
+                    left_pose,
+                    left_next_pose,
+                    right_shape,
+                    right_pose,
+                    right_next_pose,
+                ) {
                     Some(contact) => {
                         let event =
                             ContactEvent::new((left_entity.clone(), right_entity.clone()), contact);

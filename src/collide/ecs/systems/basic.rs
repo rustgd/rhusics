@@ -5,7 +5,7 @@ use collision::prelude::*;
 use shrev::EventHandler;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use Real;
+use {NextFrame, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
 use collide::ecs::resources::{Contacts, GetEntity};
@@ -72,15 +72,16 @@ where
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
+        ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
         Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
     );
 
-    fn run(
-        &mut self,
-        (entities, poses, mut shapes, mut contacts, mut event_handler): Self::SystemData,
-    ) {
+    fn run(&mut self, system_data: Self::SystemData) {
+        let (entities, poses, next_poses, mut shapes, mut contacts, mut event_handler) =
+            system_data;
+
         if let Some(ref mut c) = contacts {
             c.clear();
         }
@@ -88,7 +89,7 @@ where
         if let Some(ref mut broad) = self.broad {
             let mut info = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
-                shape.update(&pose);
+                shape.update(&pose, next_poses.get(entity).map(|p| &p.value));
                 info.push((entity, &*shape).into());
             }
             let potentials = broad

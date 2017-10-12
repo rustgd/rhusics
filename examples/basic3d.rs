@@ -6,7 +6,8 @@ use cgmath::{Point3, Quaternion, Rad, Rotation3, Transform};
 use specs::{RunNow, World};
 
 use rhusics::collide3d::{world_register, BasicCollisionSystem3, BodyPose3, BroadBruteForce3,
-                         CollisionShape3, CollisionStrategy, Contacts3, Cuboid, GJK3};
+                         CollisionMode, CollisionShape3, CollisionStrategy, Contacts3, Cuboid,
+                         GJK3};
 
 pub fn main() {
     let mut world = World::new();
@@ -16,6 +17,7 @@ pub fn main() {
         .create_entity()
         .with(CollisionShape3::<BodyPose3>::new_simple(
             CollisionStrategy::FullResolution,
+            CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
         ))
         .with(BodyPose3::one());
@@ -24,6 +26,7 @@ pub fn main() {
         .create_entity()
         .with(CollisionShape3::<BodyPose3>::new_simple(
             CollisionStrategy::FullResolution,
+            CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
         ))
         .with(BodyPose3::new(
