@@ -6,15 +6,24 @@ pub use collision::prelude::Primitive;
 pub mod narrow;
 pub mod ecs;
 pub mod broad;
+pub mod util;
 
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::algorithm::broad_phase::HasBound;
-use collision::dbvt::TreeValue;
 use collision::prelude::*;
 
 use Real;
+
+/// Control continuous mode for shapes
+#[derive(Debug, Clone, PartialOrd, PartialEq)]
+pub enum CollisionMode {
+    /// Discrete collision mode
+    Discrete,
+
+    /// Continuous collision mode
+    Continuous,
+}
 
 /// Contains all the contacts found between two bodies in a single pass.
 ///
@@ -75,6 +84,7 @@ where
     transformed_bound: P::Aabb,
     primitives: Vec<(P, T)>,
     strategy: CollisionStrategy,
+    mode: CollisionMode,
 }
 
 impl<P, T> CollisionShape<P, T>
@@ -92,7 +102,11 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitives`: List of all primitives that make up this shape.
-    pub fn new_complex(strategy: CollisionStrategy, primitives: Vec<(P, T)>) -> Self {
+    pub fn new_complex(
+        strategy: CollisionStrategy,
+        mode: CollisionMode,
+        primitives: Vec<(P, T)>,
+    ) -> Self {
         let bound = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
@@ -100,6 +114,7 @@ where
             enabled: true,
             transformed_bound: bound,
             strategy,
+            mode,
         }
     }
 
@@ -110,8 +125,8 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
-    pub fn new_simple(strategy: CollisionStrategy, primitive: P) -> Self {
-        Self::new_complex(strategy, vec![(primitive, T::one())])
+    pub fn new_simple(strategy: CollisionStrategy, mode: CollisionMode, primitive: P) -> Self {
+        Self::new_complex(strategy, mode, vec![(primitive, T::one())])
     }
 
     /// Convenience function to create a simple collision shape with only a single given primitive,
@@ -122,100 +137,43 @@ where
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
     /// - `transform`: Local-to-model transform of the primitive.
-    pub fn new_simple_offset(strategy: CollisionStrategy, primitive: P, transform: T) -> Self {
-        Self::new_complex(strategy, vec![(primitive, transform)])
+    pub fn new_simple_offset(
+        strategy: CollisionStrategy,
+        mode: CollisionMode,
+        primitive: P,
+        transform: T,
+    ) -> Self {
+        Self::new_complex(strategy, mode, vec![(primitive, transform)])
     }
 
     /// Update the cached transformed bounding box in world space coordinates.
     ///
-    /// # Parameters
+    /// If the end transform is given, that will always be used. If the collision mode of the shape
+    /// is `Continuous`, both the start and end transforms will be added to the transformed bounding
+    /// box. This will make broad phase detect collisions for the whole transformation path.
     ///
-    /// - `transform`: Current model-to-world transform of the shape.
-    pub fn update(&mut self, transform: &T) {
-        self.transformed_bound = self.base_bound.transform(transform);
+    /// ## Parameters
+    ///
+    /// - `start`: Current model-to-world transform of the shape at the start of the frame.
+    /// - `end`: Optional model-to-world transform of the shaped at the end of the frame.
+    pub fn update(&mut self, start: &T, end: Option<&T>) {
+        self.transformed_bound = match end {
+            None => self.base_bound.transform(start),
+            Some(end_t) => {
+                let base = self.base_bound.transform(end_t);
+                if self.mode == CollisionMode::Continuous {
+                    base.union(&self.base_bound.transform(start))
+                } else {
+                    base
+                }
+            }
+        };
     }
 
     /// Return the current transformed bound for the shape
     ///
     pub fn bound(&self) -> &P::Aabb {
         &self.transformed_bound
-    }
-}
-
-/// Shape wrapper for use with containers such as DBVT, or for use with broad phase algorithms
-#[derive(Debug, Clone)]
-pub struct ContainerShapeWrapper<ID, P>
-where
-    P: Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-{
-    /// The id
-    pub id: ID,
-
-    /// The bounding volume
-    pub bound: P::Aabb,
-    fat_factor: <P::Point as EuclideanSpace>::Diff,
-}
-
-impl<ID, P> ContainerShapeWrapper<ID, P>
-where
-    P: Primitive,
-    P::Aabb: Clone + Aabb<Scalar = Real>,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-{
-    /// Create a new shape
-    pub fn new_impl(
-        id: ID,
-        bound: &P::Aabb,
-        fat_factor: <P::Point as EuclideanSpace>::Diff,
-    ) -> Self {
-        Self {
-            id,
-            bound: bound.clone(),
-            fat_factor,
-        }
-    }
-
-    /// Create a new shape
-    pub fn new(id: ID, bound: &P::Aabb) -> Self {
-        Self::new_impl(
-            id,
-            bound,
-            <P::Point as EuclideanSpace>::Diff::from_value(Real::one()),
-        )
-    }
-}
-
-impl<ID, P> TreeValue for ContainerShapeWrapper<ID, P>
-where
-    ID: Clone + Debug,
-    P: Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
-    P::Point: Debug,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-{
-    type Bound = P::Aabb;
-
-    fn bound(&self) -> &Self::Bound {
-        &self.bound
-    }
-
-    fn fat_bound(&self) -> Self::Bound {
-        self.bound.add_margin(self.fat_factor)
-    }
-}
-
-impl<ID, P> HasBound for ContainerShapeWrapper<ID, P>
-where
-    P: Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-{
-    type Bound = P::Aabb;
-
-    fn get_bound(&self) -> &P::Aabb {
-        &self.bound
     }
 }
 

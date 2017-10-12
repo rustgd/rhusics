@@ -7,7 +7,7 @@ use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use Real;
+use {NextFrame, Real};
 use collide::{CollisionShape, Primitive};
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
@@ -64,17 +64,31 @@ where
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
+        ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
-    fn run(&mut self, (entities, poses, mut shapes, mut tree): Self::SystemData) {
+    fn run(&mut self, (entities, poses, next_poses, mut shapes, mut tree): Self::SystemData) {
         let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
 
         // Check for updated poses that are already in the tree
         // Uses FlaggedStorage
         for (entity, pose, shape) in (&*entities, (&poses).open().1, &mut shapes).join() {
-            shape.update(&pose);
+            shape.update(&pose, None);
+
+            // Update the wrapper in the tree for the shape
+            if let Some(node_index) = self.entities.get(&entity).cloned() {
+                tree.update_node(node_index, (entity, &*shape).into());
+            }
+        }
+
+        // Check for updated next frame poses that are already in the tree
+        // Uses FlaggedStorage
+        for (entity, pose, next_pose, shape) in
+            (&*entities, &poses, (&next_poses).open().1, &mut shapes).join()
+        {
+            shape.update(&pose, Some(&next_pose.value));
 
             // Update the wrapper in the tree for the shape
             if let Some(node_index) = self.entities.get(&entity).cloned() {

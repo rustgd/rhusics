@@ -5,11 +5,14 @@ use cgmath::prelude::*;
 use collision::{Aabb, Primitive};
 use specs::{Component, Entity, VecStorage};
 
-use collide::{CollisionShape, ContactEvent, ContainerShapeWrapper};
+use collide::{CollisionShape, ContactEvent};
+use collide::util::ContainerShapeWrapper;
 
 use Real;
 
+/// Retrieve the entity for the given object
 pub trait GetEntity {
+    /// Return the entity
     fn entity(&self) -> Entity;
 }
 

@@ -1,6 +1,6 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
-pub use collide::CollisionStrategy;
+pub use collide::{CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
@@ -12,9 +12,10 @@ use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
 use specs::{Component, Entity, World};
 
-use {BodyPose, Real};
+use {BodyPose, NextFrame, Real};
 use collide::*;
 use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
+use collide::util::ContainerShapeWrapper;
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
@@ -81,6 +82,7 @@ where
     T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
 {
     world.register::<T>();
+    world.register::<NextFrame<T>>();
     world.register::<CollisionShape3<T>>();
     world.add_resource(Contacts3::default());
 }

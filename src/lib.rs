@@ -32,9 +32,7 @@
 //! use cgmath::{Transform, Rotation2, Rad, Point2};
 //! use specs::{World, RunNow};
 //!
-//! use rhusics::collide2d::{CollisionShape2, BasicCollisionSystem2, BodyPose2,
-//!                          BroadBruteForce2, GJK2, world_register, Rectangle,
-//!                          Contacts2, CollisionStrategy};
+//! use rhusics::collide2d::*;
 //!
 //! pub fn main() {
 //!     let mut world = World::new();
@@ -44,6 +42,7 @@
 //!         .create_entity()
 //!         .with(CollisionShape2::<BodyPose2>::new_simple(
 //!             CollisionStrategy::FullResolution,
+//!             CollisionMode::Discrete,
 //!             Rectangle::new(10., 10.).into(),
 //!         ))
 //!         .with(BodyPose2::one());
@@ -52,6 +51,7 @@
 //!         .create_entity()
 //!         .with(CollisionShape2::<BodyPose2>::new_simple(
 //!             CollisionStrategy::FullResolution,
+//!             CollisionMode::Discrete,
 //!             Rectangle::new(10., 10.).into(),
 //!         ))
 //!         .with(BodyPose2::new(
@@ -75,11 +75,16 @@ extern crate collision;
 extern crate shrev;
 extern crate specs;
 
+#[cfg(test)]
+#[macro_use]
+extern crate approx;
+
 pub mod collide;
 pub mod collide2d;
 pub mod collide3d;
 
 use cgmath::prelude::*;
+use collision::prelude::*;
 
 mod ecs;
 
@@ -88,6 +93,13 @@ pub(crate) type Real = f32;
 
 #[cfg(feature = "double")]
 pub(crate) type Real = f64;
+
+/// Wrapper for data computed for the next frame
+#[derive(Clone, Debug)]
+pub struct NextFrame<T> {
+    /// Wrapped value
+    pub value: T,
+}
 
 /// Transform that implements [`Pose`](trait.Pose.html), and can be used as the transform
 /// component throughout the library.
@@ -173,5 +185,33 @@ where
             self.rotation.rotate_point(self.position) * -P::Scalar::one(),
             self.inverse_rotation,
         ))
+    }
+}
+
+impl<P, R> TranslationInterpolate<P::Scalar> for BodyPose<P, R>
+where
+    P: EuclideanSpace<Scalar = Real>,
+    P::Diff: VectorSpace + InnerSpace,
+    R: Rotation<P> + Clone,
+{
+    fn translation_interpolate(&self, other: &Self, amount: P::Scalar) -> Self {
+        BodyPose::new(
+            P::from_vec(self.position.to_vec().lerp(other.position.to_vec(), amount)),
+            other.rotation.clone(),
+        )
+    }
+}
+
+impl<P, R> Interpolate<P::Scalar> for BodyPose<P, R>
+where
+    P: EuclideanSpace<Scalar = Real>,
+    P::Diff: VectorSpace + InnerSpace,
+    R: Rotation<P> + Interpolate<P::Scalar>,
+{
+    fn interpolate(&self, other: &Self, amount: P::Scalar) -> Self {
+        BodyPose::new(
+            P::from_vec(self.position.to_vec().lerp(other.position.to_vec(), amount)),
+            self.rotation.interpolate(&other.rotation, amount),
+        )
     }
 }

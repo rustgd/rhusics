@@ -8,7 +8,7 @@ use collision::Ray3;
 use collision::dbvt::query_ray_closest;
 use specs::{Fetch, RunNow, System, World};
 
-use rhusics::collide3d::{world_register_with_spatial, BodyPose3, CollisionShape3,
+use rhusics::collide3d::{world_register_with_spatial, BodyPose3, CollisionMode, CollisionShape3,
                          CollisionStrategy, Contacts3, Cuboid, DynamicBoundingVolumeTree3, GJK3,
                          SpatialCollisionSystem3, SpatialSortingSystem3};
 
@@ -33,6 +33,7 @@ pub fn main() {
         .create_entity()
         .with(CollisionShape3::<BodyPose3>::new_simple(
             CollisionStrategy::FullResolution,
+            CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
         ))
         .with(BodyPose3::one());
@@ -41,6 +42,7 @@ pub fn main() {
         .create_entity()
         .with(CollisionShape3::<BodyPose3>::new_simple(
             CollisionStrategy::FullResolution,
+            CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
         ))
         .with(BodyPose3::new(
