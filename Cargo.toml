@@ -19,7 +19,6 @@ double = []
 cgmath = "0.15"
 collision = "0.12"
 specs = "0.9"
-rand = "0.3"
 shrev = "0.4"
 
 [dev-dependencies]
