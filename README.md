@@ -64,8 +64,8 @@ pub fn main() {
   feature.
 * Has support for doing spatial sort/collision detection using the collision-rs DBVT.
 * Support for doing broad phase using the collision-rs DBVT.
+* Continuous collision detection, using GJK
 
 # TODO:
 
-* Continuous collision detection, using GJK
 * Impulse solver
