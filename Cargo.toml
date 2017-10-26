@@ -23,4 +23,4 @@ rand = "0.3"
 shrev = "0.4"
 
 [dev-dependencies]
-approx = "*"
+approx = "0.1"
