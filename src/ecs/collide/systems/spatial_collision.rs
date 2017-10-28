@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
-use shrev::EventHandler;
+use shrev::EventChannel;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
 use {NextFrame, Real};
@@ -108,12 +108,12 @@ where
         ReadStorage<'a, NextFrame<T>>,
         ReadStorage<'a, CollisionShape<P, T>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
-        Option<FetchMut<'a, EventHandler<ContactEvent<Entity, P::Point>>>>,
+        Option<FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(&mut self, system_data: Self::SystemData) {
-        let (entities, poses, next_poses, shapes, mut contacts, mut event_handler, mut tree) =
+        let (entities, poses, next_poses, shapes, mut contacts, mut event_channel, mut tree) =
             system_data;
 
         if let Some(ref mut c) = contacts {
@@ -192,8 +192,8 @@ where
                     Some(contact) => {
                         let event =
                             ContactEvent::new((left_entity.clone(), right_entity.clone()), contact);
-                        if let Some(ref mut events) = event_handler {
-                            events.write_single(event);
+                        if let Some(ref mut events) = event_channel {
+                            events.single_write(event);
                         } else if let Some(ref mut c) = contacts {
                             c.push(event);
                         }
@@ -210,8 +210,8 @@ where
                         CollisionStrategy::CollisionOnly,
                         (left_entity, right_entity),
                     );
-                    if let Some(ref mut events) = event_handler {
-                        events.write_single(event);
+                    if let Some(ref mut events) = event_channel {
+                        events.single_write(event);
                     } else if let Some(ref mut c) = contacts {
                         c.push(event);
                     }
