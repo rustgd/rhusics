@@ -1,36 +1,25 @@
 //! Type wrappers and convenience functions for 2D collision detection
 
-pub use collide::{CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK2;
 pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
+pub use collide::{CollisionMode, CollisionStrategy};
+pub use collide::prelude2d::*;
+
 use std::fmt::Debug;
 
-use cgmath::{Basis2, Point2, Transform};
-use collision::algorithm::broad_phase::BruteForce;
+use cgmath::{Point2, Transform};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
 
-use {BodyPose, NextFrame, Real};
-use collide::*;
-use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
+use {NextFrame, Real};
 use collide::util::ContainerShapeWrapper;
+use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
 pub type Contacts2 = Contacts<Point2<Real>>;
-
-/// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
-/// information
-pub type CollisionShape2<T> = CollisionShape<Primitive2<Real>, T>;
-
-/// Broad phase brute force algorithm for 2D, see
-/// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
-pub type BroadBruteForce2 = BruteForce;
-
-/// Broad phase sweep and prune algorithm
-pub type SweepAndPrune2 = ::collision::algorithm::broad_phase::SweepAndPrune2<Real>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
@@ -56,9 +45,6 @@ pub type SpatialCollisionSystem2<T> = SpatialCollisionSystem<
     T,
     (usize, ContainerShapeWrapper<Entity, Primitive2<Real>>),
 >;
-
-/// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
-pub type BodyPose2 = BodyPose<Point2<Real>, Basis2<Real>>;
 
 /// Dynamic bounding volume tree for 2D
 

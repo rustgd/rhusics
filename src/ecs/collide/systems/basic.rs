@@ -8,8 +8,8 @@ use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, Wr
 use {NextFrame, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
-use collide::ecs::resources::{Contacts, GetEntity};
 use collide::narrow::NarrowPhase;
+use ecs::collide::resources::{Contacts, GetEntity};
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).

@@ -24,55 +24,16 @@
 //!
 //! # Examples
 //!
-//! ```rust
-//! extern crate rhusics;
-//! extern crate cgmath;
-//! extern crate specs;
-//!
-//! use cgmath::{Transform, Rotation2, Rad, Point2};
-//! use specs::{World, RunNow};
-//!
-//! use rhusics::collide2d::*;
-//!
-//! pub fn main() {
-//!     let mut world = World::new();
-//!     world_register::<BodyPose2>(&mut world);
-//!
-//!     world
-//!         .create_entity()
-//!         .with(CollisionShape2::<BodyPose2>::new_simple(
-//!             CollisionStrategy::FullResolution,
-//!             CollisionMode::Discrete,
-//!             Rectangle::new(10., 10.).into(),
-//!         ))
-//!         .with(BodyPose2::one());
-//!
-//!     world
-//!         .create_entity()
-//!         .with(CollisionShape2::<BodyPose2>::new_simple(
-//!             CollisionStrategy::FullResolution,
-//!             CollisionMode::Discrete,
-//!             Rectangle::new(10., 10.).into(),
-//!         ))
-//!         .with(BodyPose2::new(
-//!             Point2::new(3., 2.),
-//!             Rotation2::from_angle(Rad(0.)),
-//!         ));
-//!
-//!     let mut system = BasicCollisionSystem2::<BodyPose2>::new()
-//!         .with_broad_phase(BroadBruteForce2::default())
-//!         .with_narrow_phase(GJK2::new());
-//!     system.run_now(&world.res);
-//!     println!("Contacts: {:?}", *world.read_resource::<Contacts2>());
-//! }
-//! ```
+//! See the `examples/` directory for examples.
 
 #![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
        unused_qualifications)]
 
 extern crate cgmath;
 extern crate collision;
+#[cfg(feature = "ecs")]
 extern crate shrev;
+#[cfg(feature = "ecs")]
 extern crate specs;
 
 #[cfg(test)]
@@ -80,13 +41,11 @@ extern crate specs;
 extern crate approx;
 
 pub mod collide;
-pub mod collide2d;
-pub mod collide3d;
+#[cfg(feature = "ecs")]
+pub mod ecs;
 
 use cgmath::prelude::*;
 use collision::prelude::*;
-
-mod ecs;
 
 #[cfg(not(feature = "double"))]
 pub(crate) type Real = f32;

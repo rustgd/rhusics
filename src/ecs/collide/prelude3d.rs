@@ -1,36 +1,25 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
-pub use collide::{CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
+pub use collide::{CollisionMode, CollisionStrategy};
+pub use collide::prelude3d::*;
+
 use std::fmt::Debug;
 
-use cgmath::{Point3, Quaternion, Transform};
-use collision::algorithm::broad_phase::BruteForce;
+use cgmath::{Point3, Transform};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
 use specs::{Component, Entity, World};
 
-use {BodyPose, NextFrame, Real};
-use collide::*;
-use collide::ecs::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
+use {NextFrame, Real};
 use collide::util::ContainerShapeWrapper;
+use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
 pub type Contacts3 = Contacts<Point3<Real>>;
-
-/// Collision shape for 3D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
-/// information
-pub type CollisionShape3<T> = CollisionShape<Primitive3<Real>, T>;
-
-/// Broad phase brute force algorithm for 3D, see
-/// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
-pub type BroadBruteForce3 = BruteForce;
-
-/// Broad phase sweep and prune algorithm
-pub type SweepAndPrune3 = ::collision::algorithm::broad_phase::SweepAndPrune3<Real>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
@@ -56,9 +45,6 @@ pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
     T,
     (usize, ContainerShapeWrapper<Entity, Primitive3<Real>>),
 >;
-
-/// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
-pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;
 
 /// Dynamic bounding volume tree for 3D
 pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<

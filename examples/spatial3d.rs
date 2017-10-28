@@ -8,9 +8,10 @@ use collision::Ray3;
 use collision::dbvt::query_ray_closest;
 use specs::{Fetch, RunNow, System, World};
 
-use rhusics::collide3d::{world_register_with_spatial, BodyPose3, CollisionMode, CollisionShape3,
-                         CollisionStrategy, Contacts3, Cuboid, DynamicBoundingVolumeTree3, GJK3,
-                         SpatialCollisionSystem3, SpatialSortingSystem3};
+use rhusics::ecs::collide::prelude3d::{world_register_with_spatial, BodyPose3, CollisionMode,
+                                       CollisionShape3, CollisionStrategy, Contacts3, Cuboid,
+                                       DynamicBoundingVolumeTree3, GJK3, SpatialCollisionSystem3,
+                                       SpatialSortingSystem3};
 
 struct RayCastSystem;
 

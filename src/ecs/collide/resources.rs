@@ -3,12 +3,26 @@ use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
 use collision::{Aabb, Primitive};
-use specs::{Component, Entity, VecStorage};
+use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
 
+use {BodyPose, NextFrame, Real};
 use collide::{CollisionShape, ContactEvent};
 use collide::util::ContainerShapeWrapper;
 
-use Real;
+impl<P, R> Component for BodyPose<P, R>
+where
+    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
+    R: Rotation<P> + Send + Sync + 'static,
+{
+    type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
+}
+
+impl<T> Component for NextFrame<T>
+where
+    T: Send + Sync + 'static,
+{
+    type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
+}
 
 /// Retrieve the entity for the given object
 pub trait GetEntity {
@@ -22,7 +36,7 @@ where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Send + Sync + 'static,
 {
-    type Storage = VecStorage<CollisionShape<P, T>>;
+    type Storage = DenseVecStorage<CollisionShape<P, T>>;
 }
 
 /// Contacts storage for use in ECS.
