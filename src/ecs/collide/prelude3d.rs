@@ -23,7 +23,7 @@ use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, Spati
 pub type Contacts3 = Contacts<Point3<Real>>;
 
 /// Contact event for 2D
-pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
+pub type ContactEvent3 = ContactEvent<Entity, Point3<Real>>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
