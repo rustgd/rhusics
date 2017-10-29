@@ -14,12 +14,16 @@ use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
 
 use {NextFrame, Real};
+use collide::ContactEvent;
 use collide::util::ContainerShapeWrapper;
 use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
 /// information.
 pub type Contacts2 = Contacts<Point2<Real>>;
+
+/// Contact event for 2D
+pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
