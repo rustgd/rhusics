@@ -15,11 +15,25 @@ keywords = ["gamedev", "cgmath", "specs", "physics"]
 [features]
 double = []
 
+ecs = ["specs", "shrev"]
+
 [dependencies]
 cgmath = "0.15"
 collision = "0.12"
-specs = "0.9"
-shrev = "0.4"
+specs = { version = "0.10", optional = true}
+shrev = { version = "0.6", optional = true}
 
 [dev-dependencies]
 approx = "0.1"
+
+[[example]]
+name = "basic2d"
+required-features = ["ecs"]
+
+[[example]]
+name = "basic3d"
+required-features = ["ecs"]
+
+[[example]]
+name = "spatial3d"
+required-features = ["ecs"]

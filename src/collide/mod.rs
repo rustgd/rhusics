@@ -4,9 +4,10 @@ pub use collision::{CollisionStrategy, Contact};
 pub use collision::prelude::Primitive;
 
 pub mod narrow;
-pub mod ecs;
 pub mod broad;
 pub mod util;
+pub mod prelude2d;
+pub mod prelude3d;
 
 use std::fmt::Debug;
 
