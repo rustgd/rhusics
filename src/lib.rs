@@ -103,6 +103,16 @@ where
         self.dirty = true;
     }
 
+    /// Borrows the position attribute
+    pub fn position(&self) -> &P {
+        &self.position
+    }
+
+    /// Borrows the rotation attribute
+    pub fn rotation(&self) -> &R {
+        &self.rotation
+    }
+
     /// Clear the dirty flag
     pub fn clear(&mut self) {
         self.dirty = false;
