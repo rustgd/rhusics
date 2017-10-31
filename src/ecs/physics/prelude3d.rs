@@ -2,13 +2,14 @@
 
 pub use ecs::collide::prelude3d::*;
 pub use physics::prelude3d::*;
+pub use ecs::physics::DeltaTime;
 
 use cgmath::{Point3, Quaternion};
 use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
-use ecs::physics::{DeltaTime, LinearContactSolverSystem};
+use ecs::physics::LinearContactSolverSystem;
 
 /// Linear contact resolve system for 3D
 pub type LinearContactSolverSystem3 = LinearContactSolverSystem<Point3<Real>, Quaternion<Real>>;

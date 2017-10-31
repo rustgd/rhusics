@@ -2,13 +2,14 @@
 
 pub use ecs::collide::prelude2d::*;
 pub use physics::prelude2d::*;
+pub use ecs::physics::DeltaTime;
 
 use cgmath::{Basis2, Point2};
 use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
-use ecs::physics::{DeltaTime, LinearContactSolverSystem};
+use ecs::physics::LinearContactSolverSystem;
 
 /// Linear contact resolve system for 2D
 pub type LinearContactSolverSystem2 = LinearContactSolverSystem<Point2<Real>, Basis2<Real>>;
