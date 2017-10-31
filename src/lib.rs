@@ -43,6 +43,7 @@ extern crate approx;
 pub mod collide;
 #[cfg(feature = "ecs")]
 pub mod ecs;
+pub mod physics;
 
 use cgmath::prelude::*;
 use collision::prelude::*;
