@@ -1,5 +1,5 @@
 //! Physics systems
 
-pub use self::linear_impulse::*;
+pub use self::impulse_solver::*;
 
-mod linear_impulse;
+mod impulse_solver;

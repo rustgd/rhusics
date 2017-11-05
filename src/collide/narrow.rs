@@ -200,16 +200,14 @@ mod tests {
         let right_transform = transform(15., 0., 0.);
         let gjk = GJK2::<Real>::new();
 
-        assert!(
-            gjk.collide_continuous(
-                &left,
-                &left_start_transform,
-                Some(&left_start_transform),
-                &right,
-                &right_transform,
-                Some(&right_transform)
-            ).is_none()
-        );
+        assert!(gjk.collide_continuous(
+            &left,
+            &left_start_transform,
+            Some(&left_start_transform),
+            &right,
+            &right_transform,
+            Some(&right_transform)
+        ).is_none());
 
         let contact = gjk.collide_continuous(
             &left,

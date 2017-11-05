@@ -55,7 +55,7 @@ pub(crate) type Real = f32;
 pub(crate) type Real = f64;
 
 /// Wrapper for data computed for the next frame
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct NextFrame<T> {
     /// Wrapped value
     pub value: T,
@@ -63,7 +63,7 @@ pub struct NextFrame<T> {
 
 /// Transform that implements [`Pose`](trait.Pose.html), and can be used as the transform
 /// component throughout the library.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct BodyPose<P, R>
 where
     P: EuclideanSpace<Scalar = Real>,
