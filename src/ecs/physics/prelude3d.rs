@@ -1,8 +1,8 @@
 //! 3D physics ECS
 
 pub use ecs::collide::prelude3d::*;
-pub use physics::prelude3d::*;
 pub use ecs::physics::DeltaTime;
+pub use physics::prelude3d::*;
 
 use cgmath::{Point3, Quaternion};
 use shrev::EventChannel;
@@ -17,9 +17,11 @@ pub type LinearContactSolverSystem3 = LinearContactSolverSystem<Point3<Real>, Qu
 /// Register required components and resources in world
 pub fn world_physics_register(world: &mut World) {
     world.add_resource(DeltaTime { delta_seconds: 0. });
-    world.register::<Mass>();
+    world.register::<Mass3>();
     world.register::<Velocity3>();
     world.register::<NextFrame<Velocity3>>();
+    world.register::<RigidBody>();
+    world.register::<ForceAccumulator3>();
     world.add_resource(EventChannel::<ContactEvent3>::new());
     world_register::<BodyPose3>(world);
 }
@@ -27,9 +29,11 @@ pub fn world_physics_register(world: &mut World) {
 /// Register required components and resources in world
 pub fn world_physics_register_with_spatial(world: &mut World) {
     world.add_resource(DeltaTime { delta_seconds: 0. });
-    world.register::<Mass>();
+    world.register::<Mass3>();
     world.register::<Velocity3>();
     world.register::<NextFrame<Velocity3>>();
+    world.register::<RigidBody>();
+    world.register::<ForceAccumulator3>();
     world.add_resource(EventChannel::<ContactEvent3>::new());
     world_register_with_spatial::<BodyPose3>(world);
 }

@@ -9,6 +9,7 @@ use {BodyPose, NextFrame, Real};
 use collide::ContactEvent;
 use ecs::physics::resources::DeltaTime;
 use physics::{linear_resolve_contact, LinearResolveData, Mass, Velocity};
+use physics::prelude2d::Mass2;
 
 /// Linear contact solver system.
 ///
@@ -38,7 +39,7 @@ where
     type SystemData = (
         Fetch<'a, DeltaTime>,
         Fetch<'a, EventChannel<ContactEvent<Entity, P>>>,
-        ReadStorage<'a, Mass>,
+        ReadStorage<'a, Mass2>,
         WriteStorage<'a, Velocity<P::Diff>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff>>>,
         WriteStorage<'a, BodyPose<P, R>>,
@@ -110,12 +111,10 @@ where
             (&velocities, &mut next_velocities, &poses, &mut next_poses).join()
         {
             next_pose.value = BodyPose::new(
-                *pose.position() + velocity.linear * time.delta_seconds,
+                *pose.position() + *velocity.linear() * time.delta_seconds,
                 pose.rotation().clone(),
             );
-            next_velocity.value = Velocity {
-                linear: velocity.linear,
-            };
+            next_velocity.value = Velocity::from_linear(*velocity.linear());
         }
     }
 }

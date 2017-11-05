@@ -1,7 +1,7 @@
 use specs::{Component, DenseVecStorage};
 
 use Real;
-use physics::{Mass, Velocity};
+use physics::{ForceAccumulator, Mass, RigidBody, Velocity};
 
 impl<V> Component for Velocity<V>
 where
@@ -10,7 +10,18 @@ where
     type Storage = DenseVecStorage<Self>;
 }
 
-impl Component for Mass {
+impl<I> Component for Mass<I> {
+    type Storage = DenseVecStorage<Self>;
+}
+
+impl Component for RigidBody {
+    type Storage = DenseVecStorage<Self>;
+}
+
+impl<V> Component for ForceAccumulator<V>
+where
+    V: Send + Sync + 'static,
+{
     type Storage = DenseVecStorage<Self>;
 }
 

@@ -19,7 +19,7 @@ ecs = ["specs", "shrev"]
 
 [dependencies]
 cgmath = "0.15"
-collision = "0.12"
+collision = { git = "https://github.com/kvark/collision-rs/" }
 specs = { version = "0.10", optional = true}
 shrev = { version = "0.6", optional = true}
 
