@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use cgmath::num_traits::NumCast;
 
-use super::{Mass, Velocity};
+use super::{Mass, Material, Velocity};
 use {BodyPose, NextFrame, Real};
 use collide::ContactEvent;
 
@@ -11,24 +11,27 @@ const POSITIONAL_CORRECTION_PERCENT: f32 = 0.2;
 const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
 
 /// Data used for linear contact resolution
-pub struct LinearResolveData<'a, P, R>
+pub struct LinearResolveData<'a, P, R, I>
 where
     P: EuclideanSpace<Scalar = Real> + 'a,
     R: Rotation<P> + 'a,
+    I: 'a,
 {
     /// Velocity for next frame
     pub velocity: Option<&'a NextFrame<Velocity<P::Diff>>>,
     /// Position for next frame
     pub position: Option<&'a NextFrame<BodyPose<P, R>>>,
     /// Mass
-    pub mass: Option<&'a Mass>,
+    pub mass: Option<&'a Mass<I>>,
+    /// Material
+    pub material: Option<&'a Material>,
 }
 
 /// Linear contact resolution
-pub fn linear_resolve_contact<'a, ID, P, R>(
+pub fn linear_resolve_contact<'a, ID, P, R, I>(
     contact: &ContactEvent<ID, P>,
-    a: LinearResolveData<'a, P, R>,
-    b: LinearResolveData<'a, P, R>,
+    a: LinearResolveData<'a, P, R, I>,
+    b: LinearResolveData<'a, P, R, I>,
 ) -> (
     Option<NextFrame<BodyPose<P, R>>>,
     Option<NextFrame<BodyPose<P, R>>>,
@@ -69,7 +72,9 @@ where
     if velocity_along_normal > 0. {
         return (a_position_new, b_position_new, None, None);
     }
-    let e = 1.0; // TODO: restitution
+    let a_res = a.material.map(|m| m.restitution()).unwrap_or(1.);
+    let b_res = b.material.map(|m| m.restitution()).unwrap_or(1.);
+    let e = a_res.min(b_res);
     let j = -(1. + e) * velocity_along_normal / total_inverse_mass;
 
     let impulse = contact.contact.normal * j;
@@ -105,8 +110,6 @@ where
     V: VectorSpace<Scalar = Real>,
 {
     NextFrame {
-        value: Velocity {
-            linear: velocity.value.linear + impulse,
-        },
+        value: Velocity::from_linear(velocity.value.linear + impulse),
     }
 }
