@@ -10,7 +10,10 @@ where
     type Storage = DenseVecStorage<Self>;
 }
 
-impl<I> Component for Mass<I> {
+impl<I> Component for Mass<I>
+where
+    I: Send + Sync + 'static,
+{
     type Storage = DenseVecStorage<Self>;
 }
 

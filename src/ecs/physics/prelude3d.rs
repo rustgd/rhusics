@@ -4,15 +4,15 @@ pub use ecs::collide::prelude3d::*;
 pub use ecs::physics::DeltaTime;
 pub use physics::prelude3d::*;
 
-use cgmath::{Point3, Quaternion};
+use cgmath::{Matrix3, Point3, Quaternion};
 use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
-use ecs::physics::LinearContactSolverSystem;
+use ecs::physics::LinearSolverSystem;
 
 /// Linear contact resolve system for 3D
-pub type LinearContactSolverSystem3 = LinearContactSolverSystem<Point3<Real>, Quaternion<Real>>;
+pub type LinearSolverSystem3 = LinearSolverSystem<Point3<Real>, Quaternion<Real>, Matrix3<Real>>;
 
 /// Register required components and resources in world
 pub fn world_physics_register(world: &mut World) {

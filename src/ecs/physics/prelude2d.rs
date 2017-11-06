@@ -9,10 +9,10 @@ use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
-use ecs::physics::LinearContactSolverSystem;
+use ecs::physics::LinearSolverSystem;
 
 /// Linear contact resolve system for 2D
-pub type LinearContactSolverSystem2 = LinearContactSolverSystem<Point2<Real>, Basis2<Real>>;
+pub type LinearSolverSystem2 = LinearSolverSystem<Point2<Real>, Basis2<Real>, Real>;
 
 /// Register required components and resources in world
 pub fn world_physics_register(world: &mut World) {

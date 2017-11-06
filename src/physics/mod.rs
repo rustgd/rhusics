@@ -1,16 +1,18 @@
 //! Physics related functionality
 //!
 
-pub use self::simple::{linear_resolve_contact, LinearResolveData};
+pub use self::resolution::{linear_resolve_contact, LinearResolveData};
 
 pub mod prelude2d;
 pub mod prelude3d;
 
-use cgmath::{VectorSpace, Zero};
+use std::ops::Mul;
+
+use cgmath::{Matrix3, SquareMatrix, VectorSpace, Zero};
 
 use Real;
 
-mod simple;
+mod resolution;
 mod volumes;
 
 /// Velocity
@@ -52,13 +54,35 @@ pub struct Mass<I> {
     mass: Real,
     inverse_mass: Real,
 
-    inertia: I, // TODO: 3d inertia
+    inertia: I,
     inverse_inertia: I,
+}
+
+/// Used by mass for inertia, needs
+pub trait Inertia: Mul<Self, Output = Self> + Zero + Copy {
+    /// Compute the inverse of the inertia
+    fn invert(&self) -> Self;
+}
+
+impl Inertia for Real {
+    fn invert(&self) -> Self {
+        if *self == 0. {
+            0.
+        } else {
+            1. / *self
+        }
+    }
+}
+
+impl Inertia for Matrix3<Real> {
+    fn invert(&self) -> Self {
+        SquareMatrix::invert(self).unwrap_or(Matrix3::zero())
+    }
 }
 
 impl<I> Mass<I>
 where
-    I: Zero + Copy,
+    I: Inertia,
 {
     /// Create new mass object
     pub fn new(mass: Real) -> Self {
@@ -68,7 +92,7 @@ where
     /// Create new mass object with inertia
     pub fn new_with_inertia(mass: Real, inertia: I) -> Self {
         let inverse_mass = if mass.is_infinite() { 0. } else { 1. / mass };
-        let inverse_inertia = inertia; // FIXME
+        let inverse_inertia = inertia.invert();
         Mass {
             mass,
             inverse_mass,

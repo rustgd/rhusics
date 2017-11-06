@@ -11,9 +11,7 @@ impl Volume<Real> for Primitive2<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
         use collision::primitive::Primitive2::*;
         match *self {
-            Particle(_) => {
-                Mass::new(material.density())
-            }
+            Particle(_) => Mass::new(material.density()),
             Circle(ref circle) => {
                 use std::f64::consts::PI;
                 let pi = PI as Real;
