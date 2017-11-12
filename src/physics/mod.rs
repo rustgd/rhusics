@@ -1,14 +1,14 @@
 //! Physics related functionality
 //!
 
-pub use self::resolution::{linear_resolve_contact, LinearResolveData};
+pub use self::resolution::{linear_resolve_contact, resolve_contact, Cross, ResolveData};
 
 pub mod prelude2d;
 pub mod prelude3d;
 
 use std::ops::Mul;
 
-use cgmath::{Matrix3, SquareMatrix, VectorSpace, Zero};
+use cgmath::{Matrix, Matrix3, Quaternion, SquareMatrix, VectorSpace, Zero};
 
 use Real;
 
@@ -17,34 +17,57 @@ mod volumes;
 
 /// Velocity
 #[derive(Debug, Clone)]
-pub struct Velocity<V>
+pub struct Velocity<L, A>
 where
-    V: Clone,
+    L: Clone,
+    A: Clone,
 {
-    linear: V,
-    angular: V,
+    linear: L,
+    angular: A,
 }
 
-impl<V> Velocity<V>
+impl<L, A> Default for Velocity<L, A>
 where
-    V: Clone + Zero,
+    L: Clone + Zero,
+    A: Clone + Zero,
+{
+    fn default() -> Self {
+        Self::new(L::zero(), A::zero())
+    }
+}
+
+impl<L, A> Velocity<L, A>
+where
+    L: Clone + Zero,
+    A: Clone + Zero,
 {
     /// Create new velocity object
-    pub fn from_linear(linear: V) -> Self {
-        Self {
-            linear,
-            angular: V::zero(),
-        }
+    pub fn new(linear: L, angular: A) -> Self {
+        Self { linear, angular }
+    }
+    /// Create new velocity object with only linear velocity
+    pub fn from_linear(linear: L) -> Self {
+        Self::new(linear, A::zero())
     }
 
     /// Set linear velocity
-    pub fn set_linear(&mut self, linear: V) {
+    pub fn set_linear(&mut self, linear: L) {
         self.linear = linear;
     }
 
     /// Get linear velocity
-    pub fn linear(&self) -> &V {
+    pub fn linear(&self) -> &L {
         &self.linear
+    }
+
+    /// Set angular velocity
+    pub fn set_angular(&mut self, angular: A) {
+        self.angular = angular;
+    }
+
+    /// Get angular velocity
+    pub fn angular(&self) -> &A {
+        &self.angular
     }
 }
 
@@ -60,11 +83,17 @@ pub struct Mass<I> {
 
 /// Used by mass for inertia, needs
 pub trait Inertia: Mul<Self, Output = Self> + Zero + Copy {
+    /// Orientation type for rotating the inertia to create a world space inertia tensor
+    type Orientation: Into<Self>;
     /// Compute the inverse of the inertia
     fn invert(&self) -> Self;
+    /// Compute the inertia tensor
+    fn tensor(&self, orientation: &Self::Orientation) -> Self;
 }
 
 impl Inertia for Real {
+    type Orientation = Real;
+
     fn invert(&self) -> Self {
         if *self == 0. {
             0.
@@ -72,11 +101,22 @@ impl Inertia for Real {
             1. / *self
         }
     }
+
+    fn tensor(&self, _: &Real) -> Self {
+        *self
+    }
 }
 
 impl Inertia for Matrix3<Real> {
+    type Orientation = Quaternion<Real>;
+
     fn invert(&self) -> Self {
         SquareMatrix::invert(self).unwrap_or(Matrix3::zero())
+    }
+
+    fn tensor(&self, orientation: &Quaternion<Real>) -> Self {
+        let mat3 = Matrix3::from(*orientation);
+        mat3 * (*self * mat3.transpose())
     }
 }
 
@@ -117,6 +157,26 @@ where
     /// Get inverse mass
     pub fn inverse_mass(&self) -> Real {
         self.inverse_mass
+    }
+
+    /// Get inertia in local space
+    pub fn local_inertia(&self) -> I {
+        self.inertia
+    }
+
+    /// Get inertia tensor in world space
+    pub fn world_inertia(&self, orientation: &I::Orientation) -> I {
+        self.inertia.tensor(orientation)
+    }
+
+    /// Get inverse inertia in local space
+    pub fn local_inverse_inertia(&self) -> I {
+        self.inverse_inertia
+    }
+
+    /// Get inverse inertia in local space
+    pub fn world_inverse_inertia(&self, orientation: &I::Orientation) -> I {
+        self.inverse_inertia.tensor(orientation)
     }
 }
 

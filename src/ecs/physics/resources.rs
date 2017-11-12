@@ -3,9 +3,10 @@ use specs::{Component, DenseVecStorage};
 use Real;
 use physics::{ForceAccumulator, Mass, RigidBody, Velocity};
 
-impl<V> Component for Velocity<V>
+impl<V, A> Component for Velocity<V, A>
 where
     V: Send + Sync + 'static + Clone,
+    A: Send + Sync + 'static + Clone,
 {
     type Storage = DenseVecStorage<Self>;
 }
