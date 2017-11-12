@@ -12,7 +12,7 @@ use {NextFrame, Real};
 use ecs::physics::LinearSolverSystem;
 
 /// Linear contact resolve system for 2D
-pub type LinearSolverSystem2 = LinearSolverSystem<Point2<Real>, Basis2<Real>, Real>;
+pub type LinearSolverSystem2 = LinearSolverSystem<Point2<Real>, Basis2<Real>, Real, Real>;
 
 /// Register required components and resources in world
 pub fn world_physics_register<Y>(world: &mut World)

@@ -1,5 +1,6 @@
 use std::fmt::Debug;
 use std::marker;
+use std::ops::{Add, Mul, Sub};
 
 use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use shrev::{EventChannel, ReaderId};
@@ -8,28 +9,28 @@ use specs::{Entity, Fetch, Join, ReadStorage, System, WriteStorage};
 use {BodyPose, NextFrame, Real};
 use collide::ContactEvent;
 use ecs::physics::resources::DeltaTime;
-use physics::{linear_resolve_contact, ForceAccumulator, Inertia, Mass, ResolveData, RigidBody,
-              Velocity};
+use physics::{resolve_contact, ApplyAngular, Cross, ForceAccumulator, Inertia, Mass, ResolveData,
+              RigidBody, Velocity};
 
-/// Linear physics solver system.
+/// Impulse physics solver system.
 ///
 /// Will do contact resolution, update positions and velocities, do force integration and set up
-/// the next frames positions and velocities. Only handles linear quantities, no angular movement.
-pub struct LinearSolverSystem<P, R, I, A>
+/// the next frames positions and velocities.
+pub struct ImpulseSolverSystem<P, R, I, A, O>
 where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
     contact_reader: ReaderId<ContactEvent<Entity, P>>,
-    m: marker::PhantomData<(R, I, A)>,
+    m: marker::PhantomData<(R, I, A, O)>,
 }
 
-impl<P, R, I, A> LinearSolverSystem<P, R, I, A>
+impl<P, R, I, A, O> ImpulseSolverSystem<P, R, I, A, O>
 where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
-    /// Create a linear contact solver system.
+    /// Create an impulse contact solver system.
     pub fn new(contact_reader: ReaderId<ContactEvent<Entity, P>>) -> Self {
         Self {
             contact_reader,
@@ -38,13 +39,35 @@ where
     }
 }
 
-impl<'a, P, R, I, A> System<'a> for LinearSolverSystem<P, R, I, A>
+impl<'a, P, R, I, A, O> System<'a> for ImpulseSolverSystem<P, R, I, A, O>
 where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'a + 'static,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
-    R: Rotation<P> + Send + Sync + 'static,
-    I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Copy + Send + Sync + 'static,
+    P::Diff: VectorSpace<Scalar = Real>
+        + InnerSpace
+        + Debug
+        + Send
+        + Sync
+        + 'static
+        + Cross<P::Diff, Output = O>
+        + Mul<I, Output = P::Diff>,
+    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
+    O: Cross<P::Diff, Output = P::Diff>,
+    A: Cross<P::Diff, Output = P::Diff>
+        + Mul<Real, Output = A>
+        + Clone
+        + Copy
+        + Zero
+        + Send
+        + Sync
+        + 'static,
+    for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
+    I: Inertia<Orientation = R>
+        + Mul<A, Output = A>
+        + From<R>
+        + Mul<O, Output = O>
+        + Send
+        + Sync
+        + 'static,
 {
     type SystemData = (
         Fetch<'a, DeltaTime>,
@@ -104,23 +127,25 @@ fn compute_next_frame<P, R, I, A>(
 ) where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
-    R: Rotation<P> + Send + Sync + 'static,
-    I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Copy + Send + Sync + 'static,
+    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
+    I: Inertia<Orientation = R> + Mul<A, Output = A> + From<R> + Send + Sync + 'static,
+    A: Mul<Real, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
 {
     // Do force integration
-    for (next_velocity, force, mass) in (&mut *next_velocities, forces, masses).join() {
+    for (next_velocity, next_pose, force, mass) in
+        (&mut *next_velocities, &*next_poses, forces, masses).join()
+    {
         let a = force.consume_force() * mass.inverse_mass();
         let new_velocity = *next_velocity.value.linear() + a * time.delta_seconds;
         next_velocity.value.set_linear(new_velocity);
+        let a = mass.world_inverse_inertia(next_pose.value.rotation()) * force.consume_torque();
+        let new_velocity = *next_velocity.value.angular() + a * time.delta_seconds;
+        next_velocity.value.set_angular(new_velocity);
     }
 
     // Compute next frames position
     for (next_velocity, pose, next_pose) in (next_velocities, poses, next_poses).join() {
-        next_pose.value = BodyPose::new(
-            *pose.position() + *next_velocity.value.linear() * time.delta_seconds,
-            pose.rotation().clone(),
-        );
+        next_pose.value = next_velocity.value.apply(pose, time.delta_seconds)
     }
 }
 
@@ -146,7 +171,7 @@ fn update_current_frame<P, R, A>(
     }
 }
 
-fn contact_resolution<P, R, I, A>(
+fn contact_resolution<P, R, I, A, O>(
     contacts: &EventChannel<ContactEvent<Entity, P>>,
     contact_reader: &mut ReaderId<ContactEvent<Entity, P>>,
     masses: &ReadStorage<Mass<I>>,
@@ -156,13 +181,22 @@ fn contact_resolution<P, R, I, A>(
     poses: &WriteStorage<BodyPose<P, R>>,
 ) where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
+    P::Diff: VectorSpace<Scalar = Real>
+        + InnerSpace
+        + Debug
+        + Send
+        + Sync
+        + 'static
+        + Cross<P::Diff, Output = O>
+        + Mul<I, Output = P::Diff>,
     R: Rotation<P> + Send + Sync + 'static,
-    I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Send + Sync + 'static,
+    O: Cross<P::Diff, Output = P::Diff>,
+    A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + Send + Sync + 'static,
+    for<'a> &'a A: Sub<O, Output = A> + Add<O, Output = A>,
+    I: Inertia<Orientation = R> + From<R> + Mul<O, Output = O> + Send + Sync + 'static,
 {
     for contact in contacts.read(contact_reader) {
-        let change_set = linear_resolve_contact(
+        let change_set = resolve_contact(
             contact,
             ResolveData {
                 velocity: next_velocities.get(contact.bodies.0),
