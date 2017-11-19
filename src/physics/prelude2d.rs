@@ -15,4 +15,4 @@ pub type Velocity2 = Velocity<Vector2<Real>, Real>;
 pub type Mass2 = Mass<Real>;
 
 /// 2D force accumulator
-pub type ForceAccumulator2 = ForceAccumulator<Vector2<Real>>;
+pub type ForceAccumulator2 = ForceAccumulator<Vector2<Real>, Real>;

@@ -8,9 +8,10 @@ pub mod prelude3d;
 
 use std::ops::Mul;
 
-use cgmath::{Matrix, Matrix3, Quaternion, SquareMatrix, VectorSpace, Zero};
+use cgmath::{EuclideanSpace, Euler, Matrix, Matrix3, Quaternion, Rad, Rotation, SquareMatrix,
+             Transform, Vector3, VectorSpace, Zero};
 
-use Real;
+use {BodyPose, Real};
 
 mod resolution;
 mod volumes;
@@ -68,6 +69,58 @@ where
     /// Get angular velocity
     pub fn angular(&self) -> &A {
         &self.angular
+    }
+
+    /// Apply velocity to pose
+    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: Real) -> BodyPose<P, R>
+    where
+        P: EuclideanSpace<Scalar = Real, Diff = L>,
+        L: VectorSpace<Scalar = Real>,
+        R: ApplyAngular<A> + Rotation<P>,
+    {
+        BodyPose::new(
+            self.apply_linear(pose.position(), dt),
+            self.apply_angular(pose.rotation(), dt),
+        )
+    }
+
+    /// Apply linear velocity to a linear quantity
+    pub fn apply_linear<P>(&self, linear: &P, dt: Real) -> P
+    where
+        P: EuclideanSpace<Scalar = Real, Diff = L>,
+        L: VectorSpace<Scalar = Real>,
+    {
+        *linear + self.linear * dt
+    }
+
+    /// Apply angular velocity to a rotational quantitiy
+    pub fn apply_angular<R>(&self, rotation: &R, dt: Real) -> R
+    where
+        R: ApplyAngular<A>,
+    {
+        rotation.apply(&self.angular, dt)
+    }
+}
+
+/// Apply an angular velocity to a rotational quantitiy
+pub trait ApplyAngular<A> {
+    /// Apply
+    fn apply(&self, velocity: &A, dt: Real) -> Self;
+}
+
+impl ApplyAngular<Real> for Real {
+    fn apply(&self, velocity: &Real, dt: Real) -> Self {
+        self + velocity * dt
+    }
+}
+
+impl ApplyAngular<Vector3<Real>> for Quaternion<Real> {
+    fn apply(&self, velocity: &Vector3<Real>, dt: Real) -> Self {
+        self * Quaternion::from(Euler {
+            x: Rad(velocity.x * dt),
+            y: Rad(velocity.y * dt),
+            z: Rad(velocity.z * dt),
+        })
     }
 }
 
@@ -287,28 +340,58 @@ impl RigidBody {
 }
 
 /// Force accumulator for a rigid body
-pub struct ForceAccumulator<V> {
-    force: V,
+pub struct ForceAccumulator<F, T> {
+    force: F,
+    torque: T,
 }
 
-impl<V> ForceAccumulator<V>
+impl<F, T> ForceAccumulator<F, T>
 where
-    V: VectorSpace<Scalar = Real> + Zero,
+    F: VectorSpace<Scalar = Real> + Zero,
+    T: Zero + Copy + Clone,
 {
     /// Create a new force accumulator
     pub fn new() -> Self {
-        Self { force: V::zero() }
+        Self {
+            force: F::zero(),
+            torque: T::zero(),
+        }
     }
 
     /// Add a force vector to the accumulator
-    pub fn add(&mut self, force: V) {
+    pub fn add_force(&mut self, force: F) {
         self.force = self.force + force;
     }
 
+    /// Add a torque vector to the accumulator
+    pub fn add_torque(&mut self, torque: T) {
+        self.torque = self.torque + torque;
+    }
+
+    /// Add a force on a given point on the body
+    pub fn add_force_at_point<P, R>(&mut self, force: F, position: P, pose: &BodyPose<P, R>)
+    where
+        P: EuclideanSpace<Scalar = Real, Diff = F>,
+        R: Rotation<P>,
+        F: Cross<F, Output = T>,
+    {
+        let current_pos = pose.transform_point(P::origin());
+        let r = position - current_pos;
+        self.add_force(force);
+        self.add_torque(r.cross(&force));
+    }
+
     /// Consume the force vector
-    pub fn consume(&mut self) -> V {
+    pub fn consume_force(&mut self) -> F {
         let v = self.force.clone();
-        self.force = V::zero();
+        self.force = F::zero();
+        v
+    }
+
+    /// Consume the torque vector
+    pub fn consume_torque(&mut self) -> T {
+        let v = self.torque.clone();
+        self.torque = T::zero();
         v
     }
 }

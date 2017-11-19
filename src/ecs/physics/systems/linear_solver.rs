@@ -36,7 +36,7 @@ where
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
     I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Send + Sync + 'static,
+    A: Zero + Clone + Copy + Send + Sync + 'static,
 {
     type SystemData = (
         Fetch<'a, DeltaTime>,
@@ -47,7 +47,7 @@ where
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         WriteStorage<'a, BodyPose<P, R>>,
         WriteStorage<'a, NextFrame<BodyPose<P, R>>>,
-        WriteStorage<'a, ForceAccumulator<P::Diff>>,
+        WriteStorage<'a, ForceAccumulator<P::Diff, A>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -91,18 +91,18 @@ fn compute_next_frame<P, R, I, A>(
     next_velocities: &mut WriteStorage<NextFrame<Velocity<P::Diff, A>>>,
     next_poses: &mut WriteStorage<NextFrame<BodyPose<P, R>>>,
     masses: &ReadStorage<Mass<I>>,
-    forces: &mut WriteStorage<ForceAccumulator<P::Diff>>,
+    forces: &mut WriteStorage<ForceAccumulator<P::Diff, A>>,
     time: &DeltaTime,
 ) where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
     I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Send + Sync + 'static,
+    A: Zero + Clone + Copy + Send + Sync + 'static,
 {
     // Do force integration
     for (next_velocity, force, mass) in (&mut *next_velocities, forces, masses).join() {
-        let a = force.consume() * mass.inverse_mass();
+        let a = force.consume_force() * mass.inverse_mass();
         let new_velocity = *next_velocity.value.linear() + a * time.delta_seconds;
         next_velocity.value.set_linear(new_velocity);
     }

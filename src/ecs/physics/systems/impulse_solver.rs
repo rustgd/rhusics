@@ -9,8 +9,8 @@ use specs::{Entity, Fetch, Join, ReadStorage, System, WriteStorage};
 use {BodyPose, NextFrame, Real};
 use collide::ContactEvent;
 use ecs::physics::resources::DeltaTime;
-use physics::{resolve_contact, Cross, ForceAccumulator, Inertia, Mass, ResolveData, RigidBody,
-              Velocity};
+use physics::{resolve_contact, ApplyAngular, Cross, ForceAccumulator, Inertia, Mass, ResolveData,
+              RigidBody, Velocity};
 
 /// Impulse physics solver system.
 ///
@@ -42,11 +42,24 @@ where
         + 'static
         + Cross<P::Diff, Output = O>
         + Mul<I, Output = P::Diff>,
-    R: Rotation<P> + Send + Sync + 'static,
+    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
     O: Cross<P::Diff, Output = P::Diff>,
-    A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + Send + Sync + 'static,
+    A: Cross<P::Diff, Output = P::Diff>
+        + Mul<Real, Output = A>
+        + Clone
+        + Copy
+        + Zero
+        + Send
+        + Sync
+        + 'static,
     for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
-    I: Inertia<Orientation = R> + From<R> + Mul<O, Output = O> + Send + Sync + 'static,
+    I: Inertia<Orientation = R>
+        + Mul<A, Output = A>
+        + From<R>
+        + Mul<O, Output = O>
+        + Send
+        + Sync
+        + 'static,
 {
     type SystemData = (
         Fetch<'a, DeltaTime>,
@@ -57,7 +70,7 @@ where
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         WriteStorage<'a, BodyPose<P, R>>,
         WriteStorage<'a, NextFrame<BodyPose<P, R>>>,
-        WriteStorage<'a, ForceAccumulator<P::Diff>>,
+        WriteStorage<'a, ForceAccumulator<P::Diff, A>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -101,30 +114,30 @@ fn compute_next_frame<P, R, I, A>(
     next_velocities: &mut WriteStorage<NextFrame<Velocity<P::Diff, A>>>,
     next_poses: &mut WriteStorage<NextFrame<BodyPose<P, R>>>,
     masses: &ReadStorage<Mass<I>>,
-    forces: &mut WriteStorage<ForceAccumulator<P::Diff>>,
+    forces: &mut WriteStorage<ForceAccumulator<P::Diff, A>>,
     time: &DeltaTime,
 ) where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
-    R: Rotation<P> + Send + Sync + 'static,
-    I: Inertia + Send + Sync + 'static,
-    A: Zero + Clone + Send + Sync + 'static,
+    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
+    I: Inertia<Orientation = R> + Mul<A, Output = A> + From<R> + Send + Sync + 'static,
+    A: Mul<Real, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
 {
     // Do force integration
-    // TODO: angular movement
-    for (next_velocity, force, mass) in (&mut *next_velocities, forces, masses).join() {
-        let a = force.consume() * mass.inverse_mass();
+    for (next_velocity, next_pose, force, mass) in
+        (&mut *next_velocities, &*next_poses, forces, masses).join()
+    {
+        let a = force.consume_force() * mass.inverse_mass();
         let new_velocity = *next_velocity.value.linear() + a * time.delta_seconds;
         next_velocity.value.set_linear(new_velocity);
+        let a = mass.world_inverse_inertia(next_pose.value.rotation()) * force.consume_torque();
+        let new_velocity = *next_velocity.value.angular() + a * time.delta_seconds;
+        next_velocity.value.set_angular(new_velocity);
     }
 
     // Compute next frames position
-    // TODO: angular movement
     for (next_velocity, pose, next_pose) in (next_velocities, poses, next_poses).join() {
-        next_pose.value = BodyPose::new(
-            *pose.position() + *next_velocity.value.linear() * time.delta_seconds,
-            pose.rotation().clone(),
-        );
+        next_pose.value = next_velocity.value.apply(pose, time.delta_seconds)
     }
 }
 

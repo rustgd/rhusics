@@ -22,9 +22,10 @@ impl Component for RigidBody {
     type Storage = DenseVecStorage<Self>;
 }
 
-impl<V> Component for ForceAccumulator<V>
+impl<F, A> Component for ForceAccumulator<F, A>
 where
-    V: Send + Sync + 'static,
+    F: Send + Sync + 'static,
+    A: Send + Sync + 'static,
 {
     type Storage = DenseVecStorage<Self>;
 }

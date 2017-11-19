@@ -15,4 +15,4 @@ pub type Velocity3 = Velocity<Vector3<Real>, Vector3<Real>>;
 pub type Mass3 = Mass<Matrix3<Real>>;
 
 /// 3D force accumulator
-pub type ForceAccumulator3 = ForceAccumulator<Vector3<Real>>;
+pub type ForceAccumulator3 = ForceAccumulator<Vector3<Real>, Vector3<Real>>;
