@@ -54,12 +54,10 @@ where
         return (None, None, None, None);
     }
 
-    let k_slop : Real = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
-    let percent : Real = NumCast::from(POSITIONAL_CORRECTION_PERCENT).unwrap();
-    let correction_penetration_depth =
-        contact.contact.penetration_depth - k_slop;
-    let correction_magnitude =
-        correction_penetration_depth.max(0.) / total_inverse_mass * percent;
+    let k_slop: Real = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
+    let percent: Real = NumCast::from(POSITIONAL_CORRECTION_PERCENT).unwrap();
+    let correction_penetration_depth = contact.contact.penetration_depth - k_slop;
+    let correction_magnitude = correction_penetration_depth.max(0.) / total_inverse_mass * percent;
     let correction = contact.contact.normal * correction_magnitude;
     let a_position_new = a.position
         .map(|p| new_pose(p, correction * -a_inverse_mass));

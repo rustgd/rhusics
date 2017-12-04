@@ -14,12 +14,20 @@ use physics::{linear_resolve_contact, LinearResolveData, Mass, Velocity};
 ///
 /// Will do contact resolution, update positions and velocities and set up the next frames positions
 /// and velocities.
-pub struct LinearContactSolverSystem<P, R> {
+pub struct LinearContactSolverSystem<P, R>
+where
+    P: EuclideanSpace,
+    P::Diff: Debug,
+{
     contact_reader: ReaderId<ContactEvent<Entity, P>>,
     m: marker::PhantomData<(P, R)>,
 }
 
-impl<P, R> LinearContactSolverSystem<P, R> {
+impl<P, R> LinearContactSolverSystem<P, R>
+where
+    P: EuclideanSpace,
+    P::Diff: Debug,
+{
     /// Create a linear contact solver system.
     pub fn new(contact_reader: ReaderId<ContactEvent<Entity, P>>) -> Self {
         Self {

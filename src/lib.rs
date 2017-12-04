@@ -27,7 +27,7 @@
 //! See the `examples/` directory for examples.
 
 #![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
-       unused_qualifications)]
+        unused_qualifications)]
 
 extern crate cgmath;
 extern crate collision;
