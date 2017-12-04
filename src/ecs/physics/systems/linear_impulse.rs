@@ -15,13 +15,13 @@ use physics::{linear_resolve_contact, LinearResolveData, Mass, Velocity};
 /// Will do contact resolution, update positions and velocities and set up the next frames positions
 /// and velocities.
 pub struct LinearContactSolverSystem<P, R> {
-    contact_reader: ReaderId,
+    contact_reader: ReaderId<ContactEvent<Entity, P>>,
     m: marker::PhantomData<(P, R)>,
 }
 
 impl<P, R> LinearContactSolverSystem<P, R> {
     /// Create a linear contact solver system.
-    pub fn new(contact_reader: ReaderId) -> Self {
+    pub fn new(contact_reader: ReaderId<ContactEvent<Entity, P>>) -> Self {
         Self {
             contact_reader,
             m: marker::PhantomData,
@@ -55,44 +55,41 @@ where
             mut poses,
             mut next_poses,
         ) = data;
-        match contacts.lossy_read(&mut self.contact_reader) {
-            Ok(data) => for contact in data {
-                let (update_pose_0, update_pose_1, update_velocity_0, update_velocity_1) =
-                    linear_resolve_contact(
-                        contact,
-                        LinearResolveData {
-                            velocity: next_velocities.get(contact.bodies.0),
-                            position: next_poses.get(contact.bodies.0),
-                            mass: masses.get(contact.bodies.0),
-                        },
-                        LinearResolveData {
-                            velocity: next_velocities.get(contact.bodies.1),
-                            position: next_poses.get(contact.bodies.1),
-                            mass: masses.get(contact.bodies.1),
-                        },
-                    );
-                if let (Some(pose), Some(update_pose)) =
-                    (next_poses.get_mut(contact.bodies.0), update_pose_0)
-                {
-                    *pose = update_pose;
-                }
-                if let (Some(pose), Some(update_pose)) =
-                    (next_poses.get_mut(contact.bodies.1), update_pose_1)
-                {
-                    *pose = update_pose;
-                }
-                if let (Some(velocity), Some(update_velocity)) =
-                    (next_velocities.get_mut(contact.bodies.0), update_velocity_0)
-                {
-                    *velocity = update_velocity;
-                }
-                if let (Some(velocity), Some(update_velocity)) =
-                    (next_velocities.get_mut(contact.bodies.1), update_velocity_1)
-                {
-                    *velocity = update_velocity;
-                }
-            },
-            Err(err) => println!("Error in contacts read: {:?}", err),
+        for contact in contacts.lossy_read(&mut self.contact_reader) {
+            let (update_pose_0, update_pose_1, update_velocity_0, update_velocity_1) =
+                linear_resolve_contact(
+                    contact,
+                    LinearResolveData {
+                        velocity: next_velocities.get(contact.bodies.0),
+                        position: next_poses.get(contact.bodies.0),
+                        mass: masses.get(contact.bodies.0),
+                    },
+                    LinearResolveData {
+                        velocity: next_velocities.get(contact.bodies.1),
+                        position: next_poses.get(contact.bodies.1),
+                        mass: masses.get(contact.bodies.1),
+                    },
+                );
+            if let (Some(pose), Some(update_pose)) =
+                (next_poses.get_mut(contact.bodies.0), update_pose_0)
+            {
+                *pose = update_pose;
+            }
+            if let (Some(pose), Some(update_pose)) =
+                (next_poses.get_mut(contact.bodies.1), update_pose_1)
+            {
+                *pose = update_pose;
+            }
+            if let (Some(velocity), Some(update_velocity)) =
+                (next_velocities.get_mut(contact.bodies.0), update_velocity_0)
+            {
+                *velocity = update_velocity;
+            }
+            if let (Some(velocity), Some(update_velocity)) =
+                (next_velocities.get_mut(contact.bodies.1), update_velocity_1)
+            {
+                *velocity = update_velocity;
+            }
         }
 
         // Update current pose
