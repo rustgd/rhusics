@@ -30,13 +30,14 @@ pub trait GetEntity {
     fn entity(&self) -> Entity;
 }
 
-impl<P, T> Component for CollisionShape<P, T>
+impl<P, T, Y> Component for CollisionShape<P, T, Y>
 where
     T: Send + Sync + 'static,
+    Y: Send + Sync + 'static,
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Send + Sync + 'static,
 {
-    type Storage = DenseVecStorage<CollisionShape<P, T>>;
+    type Storage = DenseVecStorage<CollisionShape<P, T, Y>>;
 }
 
 /// Contacts storage for use in ECS.
@@ -89,14 +90,15 @@ where
     }
 }
 
-impl<'a, P, T> From<(Entity, &'a CollisionShape<P, T>)> for ContainerShapeWrapper<Entity, P>
+impl<'a, P, T, Y> From<(Entity, &'a CollisionShape<P, T, Y>)> for ContainerShapeWrapper<Entity, P>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug,
     T: Transform<P::Point>,
+    Y: Default,
 {
-    fn from((entity, ref shape): (Entity, &CollisionShape<P, T>)) -> Self {
+    fn from((entity, ref shape): (Entity, &CollisionShape<P, T, Y>)) -> Self {
         Self::new(entity, shape.bound())
     }
 }

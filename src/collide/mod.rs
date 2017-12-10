@@ -16,6 +16,18 @@ use collision::prelude::*;
 
 use Real;
 
+/// Used to check if two shapes should be checked for collisions
+pub trait Collider {
+    /// Should shapes generate contact events
+    fn should_generate_contacts(&self, other: &Self) -> bool;
+}
+
+impl<'a> Collider for () {
+    fn should_generate_contacts(&self, _: &Self) -> bool {
+        true
+    }
+}
+
 /// Control continuous mode for shapes
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
 pub enum CollisionMode {
@@ -75,7 +87,7 @@ where
 ///
 /// Also have details about what collision strategy to use for contact resolution with this shape.
 #[derive(Debug, Clone)]
-pub struct CollisionShape<P, T>
+pub struct CollisionShape<P, T, Y>
 where
     P: Primitive,
 {
@@ -86,13 +98,15 @@ where
     primitives: Vec<(P, T)>,
     strategy: CollisionStrategy,
     mode: CollisionMode,
+    ty: Y,
 }
 
-impl<P, T> CollisionShape<P, T>
+impl<P, T, Y> CollisionShape<P, T, Y>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real>,
     T: Transform<P::Point>,
+    Y: Default,
 {
     /// Create a new collision shape, with multiple collision primitives.
     ///
@@ -103,10 +117,12 @@ where
     ///
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitives`: List of all primitives that make up this shape.
+    /// - `ty`: The shape type, use () if not needed
     pub fn new_complex(
         strategy: CollisionStrategy,
         mode: CollisionMode,
         primitives: Vec<(P, T)>,
+        ty: Y,
     ) -> Self {
         let bound = get_bound(&primitives);
         Self {
@@ -116,6 +132,7 @@ where
             transformed_bound: bound,
             strategy,
             mode,
+            ty,
         }
     }
 
@@ -127,7 +144,28 @@ where
     /// - `strategy`: The collision strategy to use for this shape.
     /// - `primitive`: The collision primitive.
     pub fn new_simple(strategy: CollisionStrategy, mode: CollisionMode, primitive: P) -> Self {
-        Self::new_complex(strategy, mode, vec![(primitive, T::one())])
+        Self::new_complex(
+            strategy,
+            mode,
+            vec![(primitive, T::one())],
+            Default::default(),
+        )
+    }
+
+    /// Convenience function to create a simple collision shape with only a single given primitive,
+    /// and a shape type, with no local-to-model transform.
+    ///
+    /// # Parameters
+    ///
+    /// - `strategy`: The collision strategy to use for this shape.
+    /// - `primitive`: The collision primitive.
+    pub fn new_simple_with_type(
+        strategy: CollisionStrategy,
+        mode: CollisionMode,
+        primitive: P,
+        ty: Y,
+    ) -> Self {
+        Self::new_complex(strategy, mode, vec![(primitive, T::one())], ty)
     }
 
     /// Convenience function to create a simple collision shape with only a single given primitive,
@@ -144,7 +182,12 @@ where
         primitive: P,
         transform: T,
     ) -> Self {
-        Self::new_complex(strategy, mode, vec![(primitive, transform)])
+        Self::new_complex(
+            strategy,
+            mode,
+            vec![(primitive, transform)],
+            Default::default(),
+        )
     }
 
     /// Update the cached transformed bounding box in world space coordinates.
