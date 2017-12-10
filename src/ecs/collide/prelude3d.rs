@@ -27,26 +27,29 @@ pub type ContactEvent3 = ContactEvent<Entity, Point3<Real>>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
-pub type BasicCollisionSystem3<T> = BasicCollisionSystem<
+pub type BasicCollisionSystem3<T, Y> = BasicCollisionSystem<
     Primitive3<Real>,
     T,
+    Y,
     ContainerShapeWrapper<Entity, Primitive3<Real>>,
 >;
 
 /// Spatial sorting system for 3D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem3<T> = SpatialSortingSystem<
+pub type SpatialSortingSystem3<T, Y> = SpatialSortingSystem<
     Primitive3<Real>,
     T,
+    Y,
     ContainerShapeWrapper<Entity, Primitive3<Real>>,
 >;
 
 /// Spatial collision system for 3D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
-pub type SpatialCollisionSystem3<T> = SpatialCollisionSystem<
+pub type SpatialCollisionSystem3<T, Y> = SpatialCollisionSystem<
     Primitive3<Real>,
     T,
+    Y,
     (usize, ContainerShapeWrapper<Entity, Primitive3<Real>>),
 >;
 
@@ -67,13 +70,14 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
 ///
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
-pub fn world_register<'a, T>(world: &mut World)
+pub fn world_register<'a, T, Y>(world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
+    Y: Send + Sync + 'static,
 {
     world.register::<T>();
     world.register::<NextFrame<T>>();
-    world.register::<CollisionShape3<T>>();
+    world.register::<CollisionShape3<T, Y>>();
     world.add_resource(Contacts3::default());
 }
 
@@ -92,10 +96,11 @@ where
 ///
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
-pub fn world_register_with_spatial<T>(mut world: &mut World)
+pub fn world_register_with_spatial<T, Y>(mut world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,
+    Y: Send + Sync + 'static,
 {
-    world_register::<T>(&mut world);
+    world_register::<T, Y>(&mut world);
     world.add_resource(DynamicBoundingVolumeTree3::new());
 }

@@ -11,11 +11,11 @@ use rhusics::ecs::collide::prelude2d::{world_register, BasicCollisionSystem2, Bo
 
 pub fn main() {
     let mut world = World::new();
-    world_register::<BodyPose2>(&mut world);
+    world_register::<BodyPose2, ()>(&mut world);
 
     world
         .create_entity()
-        .with(CollisionShape2::<BodyPose2>::new_simple(
+        .with(CollisionShape2::<BodyPose2, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
@@ -24,7 +24,7 @@ pub fn main() {
 
     world
         .create_entity()
-        .with(CollisionShape2::<BodyPose2>::new_simple(
+        .with(CollisionShape2::<BodyPose2, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
@@ -34,7 +34,7 @@ pub fn main() {
             Rotation2::from_angle(Rad(0.)),
         ));
 
-    let mut system = BasicCollisionSystem2::<BodyPose2>::new()
+    let mut system = BasicCollisionSystem2::<BodyPose2, ()>::new()
         .with_broad_phase(BroadBruteForce2::default())
         .with_narrow_phase(GJK2::new());
     system.run_now(&world.res);

@@ -28,11 +28,11 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    world_register_with_spatial::<BodyPose3>(&mut world);
+    world_register_with_spatial::<BodyPose3, ()>(&mut world);
 
     world
         .create_entity()
-        .with(CollisionShape3::<BodyPose3>::new_simple(
+        .with(CollisionShape3::<BodyPose3, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
@@ -41,7 +41,7 @@ pub fn main() {
 
     world
         .create_entity()
-        .with(CollisionShape3::<BodyPose3>::new_simple(
+        .with(CollisionShape3::<BodyPose3, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
@@ -51,8 +51,9 @@ pub fn main() {
             Quaternion::from_angle_z(Rad(0.)),
         ));
 
-    let mut sort = SpatialSortingSystem3::<BodyPose3>::new();
-    let mut collide = SpatialCollisionSystem3::<BodyPose3>::new().with_narrow_phase(GJK3::new());
+    let mut sort = SpatialSortingSystem3::<BodyPose3, ()>::new();
+    let mut collide =
+        SpatialCollisionSystem3::<BodyPose3, ()>::new().with_narrow_phase(GJK3::new());
     let mut raycast = RayCastSystem;
     sort.run_now(&world.res);
     collide.run_now(&world.res);

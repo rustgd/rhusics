@@ -11,7 +11,7 @@ use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
 
 use Real;
-use collide::{CollisionMode, CollisionShape};
+use collide::{Collider, CollisionMode, CollisionShape};
 
 /// Base trait implemented by all narrow phase algorithms.
 ///
@@ -19,7 +19,7 @@ use collide::{CollisionMode, CollisionShape};
 ///
 /// - `P`: collision primitive type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<P, T>: Send
+pub trait NarrowPhase<P, T, Y>: Send
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug,
@@ -39,9 +39,9 @@ where
     /// Optionally returns the contact manifold for the contact with largest penetration depth
     fn collide(
         &self,
-        left: &CollisionShape<P, T>,
+        left: &CollisionShape<P, T, Y>,
         left_transform: &T,
-        right: &CollisionShape<P, T>,
+        right: &CollisionShape<P, T, Y>,
         right_transform: &T,
     ) -> Option<Contact<P::Point>>;
 
@@ -65,16 +65,16 @@ where
     /// Optionally returns the contact manifold for the contact with largest penetration depth
     fn collide_continuous(
         &self,
-        left: &CollisionShape<P, T>,
+        left: &CollisionShape<P, T, Y>,
         left_start_transform: &T,
         left_end_transform: Option<&T>,
-        right: &CollisionShape<P, T>,
+        right: &CollisionShape<P, T, Y>,
         right_start_transform: &T,
         right_end_transform: Option<&T>,
     ) -> Option<Contact<P::Point>>;
 }
 
-impl<P, T, S, E> NarrowPhase<P, T> for GJK<S, E>
+impl<P, T, Y, S, E> NarrowPhase<P, T, Y> for GJK<S, E>
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug
@@ -86,16 +86,18 @@ where
     T: Transform<P::Point>
         + Interpolate<<P::Point as EuclideanSpace>::Scalar>
         + TranslationInterpolate<<P::Point as EuclideanSpace>::Scalar>,
+    Y: Collider,
 {
     fn collide(
         &self,
-        left: &CollisionShape<P, T>,
+        left: &CollisionShape<P, T, Y>,
         left_transform: &T,
-        right: &CollisionShape<P, T>,
+        right: &CollisionShape<P, T, Y>,
         right_transform: &T,
     ) -> Option<Contact<P::Point>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty()
             || right.primitives.is_empty()
+            || !left.ty.should_generate_contacts(&right.ty)
         {
             return None;
         }
@@ -112,13 +114,17 @@ where
 
     fn collide_continuous(
         &self,
-        left: &CollisionShape<P, T>,
+        left: &CollisionShape<P, T, Y>,
         left_start_transform: &T,
         left_end_transform: Option<&T>,
-        right: &CollisionShape<P, T>,
+        right: &CollisionShape<P, T, Y>,
         right_start_transform: &T,
         right_end_transform: Option<&T>,
     ) -> Option<Contact<P::Point>> {
+        if !left.ty.should_generate_contacts(&right.ty) {
+            return None;
+        }
+
         // fallback to start transforms if end transforms are not available
         let left_end_transform = match left_end_transform {
             Some(t) => t,
@@ -178,7 +184,7 @@ mod tests {
 
     #[test]
     fn test_gjk_continuous_2d() {
-        let left = CollisionShape::new_simple(
+        let left = CollisionShape::<_, _, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Continuous,
             Rectangle::new(10., 10.),
