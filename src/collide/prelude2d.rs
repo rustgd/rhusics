@@ -1,6 +1,6 @@
 //! Type wrappers and convenience functions for 2D collision detection
 
-pub use collide::{CollisionMode, CollisionStrategy, Collider};
+pub use collide::{Collider, CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK2;
 pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 

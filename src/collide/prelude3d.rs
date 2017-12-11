@@ -1,6 +1,6 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
-pub use collide::{CollisionMode, CollisionStrategy, Collider};
+pub use collide::{Collider, CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 

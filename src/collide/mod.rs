@@ -86,6 +86,12 @@ where
 /// in world space coordinates.
 ///
 /// Also have details about what collision strategy to use for contact resolution with this shape.
+///
+/// ### Type parameters:
+///
+/// - `P`: Primitive type
+/// - `T`: Transform type
+/// - `Y`: Shape type (see `Collider`)
 #[derive(Debug, Clone)]
 pub struct CollisionShape<P, T, Y = ()>
 where
