@@ -13,7 +13,7 @@ use collide::*;
 
 /// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
-pub type CollisionShape2<T, Y> = CollisionShape<Primitive2<Real>, T, Y>;
+pub type CollisionShape2<T, Y = ()> = CollisionShape<Primitive2<Real>, T, Y>;
 
 /// Broad phase brute force algorithm for 2D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.

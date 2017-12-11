@@ -27,30 +27,30 @@ pub type ContactEvent3 = ContactEvent<Entity, Point3<Real>>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
-pub type BasicCollisionSystem3<T, Y> = BasicCollisionSystem<
+pub type BasicCollisionSystem3<T, Y = ()> = BasicCollisionSystem<
     Primitive3<Real>,
     T,
-    Y,
     ContainerShapeWrapper<Entity, Primitive3<Real>>,
+    Y,
 >;
 
 /// Spatial sorting system for 3D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem3<T, Y> = SpatialSortingSystem<
+pub type SpatialSortingSystem3<T, Y = ()> = SpatialSortingSystem<
     Primitive3<Real>,
     T,
-    Y,
     ContainerShapeWrapper<Entity, Primitive3<Real>>,
+    Y,
 >;
 
 /// Spatial collision system for 3D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
-pub type SpatialCollisionSystem3<T, Y> = SpatialCollisionSystem<
+pub type SpatialCollisionSystem3<T, Y = ()> = SpatialCollisionSystem<
     Primitive3<Real>,
     T,
-    Y,
     (usize, ContainerShapeWrapper<Entity, Primitive3<Real>>),
+    Y,
 >;
 
 /// Dynamic bounding volume tree for 3D

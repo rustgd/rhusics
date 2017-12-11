@@ -22,7 +22,7 @@ use ecs::collide::resources::{Contacts, GetEntity};
 /// storage is wrapped in a
 /// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
-pub struct BasicCollisionSystem<P, T, Y, D>
+pub struct BasicCollisionSystem<P, T, D, Y = ()>
 where
     P: Primitive,
     P::Aabb: Clone + Debug + Aabb<Scalar = Real>,
@@ -31,7 +31,7 @@ where
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, Y, D> BasicCollisionSystem<P, T, Y, D>
+impl<P, T, D, Y> BasicCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
@@ -60,7 +60,7 @@ where
     }
 }
 
-impl<'a, P, T, Y, D> System<'a> for BasicCollisionSystem<P, T, Y, D>
+impl<'a, P, T, Y, D> System<'a> for BasicCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,

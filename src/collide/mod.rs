@@ -87,7 +87,7 @@ where
 ///
 /// Also have details about what collision strategy to use for contact resolution with this shape.
 #[derive(Debug, Clone)]
-pub struct CollisionShape<P, T, Y>
+pub struct CollisionShape<P, T, Y = ()>
 where
     P: Primitive,
 {

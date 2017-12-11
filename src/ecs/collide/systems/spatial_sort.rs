@@ -29,12 +29,12 @@ use collide::{CollisionShape, Primitive};
 ///        `From<(Entity, CollisionShape)>`
 ///
 #[derive(Debug)]
-pub struct SpatialSortingSystem<P, T, Y, D> {
+pub struct SpatialSortingSystem<P, T, D, Y = ()> {
     entities: HashMap<Entity, usize>,
     marker: PhantomData<(P, T, Y, D)>,
 }
 
-impl<P, T, Y, D> SpatialSortingSystem<P, T, Y, D> {
+impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
     /// Create a new sorting system.
     pub fn new() -> Self {
         Self {
@@ -44,7 +44,7 @@ impl<P, T, Y, D> SpatialSortingSystem<P, T, Y, D> {
     }
 }
 
-impl<'a, P, T, Y, D> System<'a> for SpatialSortingSystem<P, T, Y, D>
+impl<'a, P, T, Y, D> System<'a> for SpatialSortingSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone

@@ -19,7 +19,7 @@ use collide::{Collider, CollisionMode, CollisionShape};
 ///
 /// - `P`: collision primitive type
 /// - `T`: model-to-world transform type
-pub trait NarrowPhase<P, T, Y>: Send
+pub trait NarrowPhase<P, T, Y = ()>: Send
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug,

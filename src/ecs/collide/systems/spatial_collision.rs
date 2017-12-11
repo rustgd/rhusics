@@ -27,7 +27,7 @@ use ecs::collide::resources::{Contacts, GetEntity};
 /// storage is wrapped in
 /// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
-pub struct SpatialCollisionSystem<P, T, Y, D>
+pub struct SpatialCollisionSystem<P, T, D, Y = ()>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug,
@@ -36,7 +36,7 @@ where
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, Y, D> SpatialCollisionSystem<P, T, Y, D>
+impl<P, T, D, Y> SpatialCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
@@ -84,7 +84,7 @@ where
     DiscreteVisitor::<P::Aabb, D>::new(bound)
 }
 
-impl<'a, P, T, Y, D> System<'a> for SpatialCollisionSystem<P, T, Y, (usize, D)>
+impl<'a, P, T, Y, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone

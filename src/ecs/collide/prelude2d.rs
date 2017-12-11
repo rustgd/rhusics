@@ -27,30 +27,30 @@ pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
-pub type BasicCollisionSystem2<T, Y> = BasicCollisionSystem<
+pub type BasicCollisionSystem2<T, Y = ()> = BasicCollisionSystem<
     Primitive2<Real>,
     T,
-    Y,
     ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    Y,
 >;
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem2<T, Y> = SpatialSortingSystem<
+pub type SpatialSortingSystem2<T, Y = ()> = SpatialSortingSystem<
     Primitive2<Real>,
     T,
-    Y,
     ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    Y,
 >;
 
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
-pub type SpatialCollisionSystem2<T, Y> = SpatialCollisionSystem<
+pub type SpatialCollisionSystem2<T, Y = ()> = SpatialCollisionSystem<
     Primitive2<Real>,
     T,
-    Y,
     (usize, ContainerShapeWrapper<Entity, Primitive2<Real>>),
+    Y,
 >;
 
 /// Dynamic bounding volume tree for 2D
