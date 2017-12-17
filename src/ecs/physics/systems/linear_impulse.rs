@@ -63,7 +63,7 @@ where
             mut poses,
             mut next_poses,
         ) = data;
-        for contact in contacts.lossy_read(&mut self.contact_reader) {
+        for contact in contacts.read(&mut self.contact_reader) {
             let (update_pose_0, update_pose_1, update_velocity_0, update_velocity_1) =
                 linear_resolve_contact(
                     contact,
