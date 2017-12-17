@@ -11,11 +11,11 @@ use rhusics::ecs::collide::prelude3d::{world_register, BasicCollisionSystem3, Bo
 
 pub fn main() {
     let mut world = World::new();
-    world_register::<BodyPose3>(&mut world);
+    world_register::<BodyPose3, ()>(&mut world);
 
     world
         .create_entity()
-        .with(CollisionShape3::<BodyPose3>::new_simple(
+        .with(CollisionShape3::<BodyPose3, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
@@ -24,7 +24,7 @@ pub fn main() {
 
     world
         .create_entity()
-        .with(CollisionShape3::<BodyPose3>::new_simple(
+        .with(CollisionShape3::<BodyPose3, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
@@ -34,7 +34,7 @@ pub fn main() {
             Quaternion::from_angle_z(Rad(0.)),
         ));
 
-    let mut system = BasicCollisionSystem3::<BodyPose3>::new()
+    let mut system = BasicCollisionSystem3::<BodyPose3, ()>::new()
         .with_broad_phase(BroadBruteForce3::default())
         .with_narrow_phase(GJK3::new());
     system.run_now(&world.res);

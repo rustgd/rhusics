@@ -22,16 +22,16 @@ use ecs::collide::resources::{Contacts, GetEntity};
 /// storage is wrapped in a
 /// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
-pub struct BasicCollisionSystem<P, T, D>
+pub struct BasicCollisionSystem<P, T, D, Y = ()>
 where
     P: Primitive,
     P::Aabb: Clone + Debug + Aabb<Scalar = Real>,
 {
-    narrow: Option<Box<NarrowPhase<P, T>>>,
+    narrow: Option<Box<NarrowPhase<P, T, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, D> BasicCollisionSystem<P, T, D>
+impl<P, T, D, Y> BasicCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
@@ -48,7 +48,7 @@ where
     }
 
     /// Specify what narrow phase algorithm to use
-    pub fn with_narrow_phase<N: NarrowPhase<P, T> + 'static>(mut self, narrow: N) -> Self {
+    pub fn with_narrow_phase<N: NarrowPhase<P, T, Y> + 'static>(mut self, narrow: N) -> Self {
         self.narrow = Some(Box::new(narrow));
         self
     }
@@ -60,20 +60,23 @@ where
     }
 }
 
-impl<'a, P, T, D> System<'a> for BasicCollisionSystem<P, T, D>
+impl<'a, P, T, Y, D> System<'a> for BasicCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
-    for<'b: 'a> D: HasBound<Bound = P::Aabb> + From<(Entity, &'b CollisionShape<P, T>)> + GetEntity,
+    Y: Default + Send + Sync + 'static,
+    for<'b: 'a> D: HasBound<Bound = P::Aabb>
+        + From<(Entity, &'b CollisionShape<P, T, Y>)>
+        + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        WriteStorage<'a, CollisionShape<P, T>>,
+        WriteStorage<'a, CollisionShape<P, T, Y>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
         Option<FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>>,
     );

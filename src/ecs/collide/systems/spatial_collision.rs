@@ -27,16 +27,16 @@ use ecs::collide::resources::{Contacts, GetEntity};
 /// storage is wrapped in
 /// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
-pub struct SpatialCollisionSystem<P, T, D>
+pub struct SpatialCollisionSystem<P, T, D, Y = ()>
 where
     P: Primitive,
     P::Aabb: Aabb<Scalar = Real> + Clone + Debug,
 {
-    narrow: Option<Box<NarrowPhase<P, T>>>,
+    narrow: Option<Box<NarrowPhase<P, T, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, D> SpatialCollisionSystem<P, T, D>
+impl<P, T, D, Y> SpatialCollisionSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
@@ -61,7 +61,7 @@ where
     }
 
     /// Specify what narrow phase algorithm to use
-    pub fn with_narrow_phase<N: NarrowPhase<P, T> + 'static>(mut self, narrow: N) -> Self {
+    pub fn with_narrow_phase<N: NarrowPhase<P, T, Y> + 'static>(mut self, narrow: N) -> Self {
         self.narrow = Some(Box::new(narrow));
         self
     }
@@ -84,7 +84,7 @@ where
     DiscreteVisitor::<P::Aabb, D>::new(bound)
 }
 
-impl<'a, P, T, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D)>
+impl<'a, P, T, Y, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -99,6 +99,7 @@ where
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
+    Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = P::Aabb> + HasBound<Bound = P::Aabb> + GetEntity,
 {
@@ -106,7 +107,7 @@ where
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        ReadStorage<'a, CollisionShape<P, T>>,
+        ReadStorage<'a, CollisionShape<P, T, Y>>,
         Option<FetchMut<'a, Contacts<P::Point>>>,
         Option<FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
