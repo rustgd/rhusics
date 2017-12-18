@@ -1,7 +1,7 @@
 //! 2D physics ECS
 
 pub use ecs::collide::prelude2d::*;
-pub use ecs::physics::DeltaTime;
+pub use ecs::physics::{DeltaTime, WithRigidBody};
 pub use physics::prelude2d::*;
 
 use cgmath::{Basis2, Point2};
@@ -9,10 +9,22 @@ use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
-use ecs::physics::LinearSolverSystem;
+use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupSystem};
 
-/// Linear contact resolve system for 2D
-pub type LinearSolverSystem2 = LinearSolverSystem<Point2<Real>, Basis2<Real>, Real, Real>;
+/// Current frame integrator system for 2D
+pub type ImpulseSolverSystem2 = ImpulseSolverSystem<Point2<Real>, Basis2<Real>, Real>;
+
+/// Resolution system for 2D
+pub type ContactResolutionSystem2 = ContactResolutionSystem<
+    Point2<Real>,
+    Basis2<Real>,
+    Real,
+    Real,
+    Real,
+>;
+
+/// Next frame setup system for 2D
+pub type NextFrameSetupSystem2 = NextFrameSetupSystem<Point2<Real>, Basis2<Real>, Real, Real>;
 
 /// Register required components and resources in world
 pub fn world_physics_register<Y>(world: &mut World)

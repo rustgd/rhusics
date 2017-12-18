@@ -90,12 +90,7 @@ pub fn resolve_contact<'a, ID, P, R, I, A, O>(
 where
     P: EuclideanSpace<Scalar = Real> + 'a,
     R: Rotation<P> + 'a,
-    P::Diff: Debug
-        + Zero
-        + Clone
-        + InnerSpace
-        + Cross<P::Diff, Output = O>
-        + Mul<I, Output = P::Diff>,
+    P::Diff: Debug + Zero + Clone + InnerSpace + Cross<P::Diff, Output = O>,
     O: Cross<P::Diff, Output = P::Diff>,
     A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,

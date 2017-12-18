@@ -72,7 +72,7 @@ where
     }
 
     /// Apply velocity to pose
-    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: Real) -> BodyPose<P, R>
+    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: Real, linear_only: bool) -> BodyPose<P, R>
     where
         P: EuclideanSpace<Scalar = Real, Diff = L>,
         L: VectorSpace<Scalar = Real>,
@@ -80,7 +80,11 @@ where
     {
         BodyPose::new(
             self.apply_linear(pose.position(), dt),
-            self.apply_angular(pose.rotation(), dt),
+            if linear_only {
+                pose.rotation.clone()
+            } else {
+                self.apply_angular(pose.rotation(), dt)
+            },
         )
     }
 

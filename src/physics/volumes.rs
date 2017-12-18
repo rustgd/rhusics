@@ -1,69 +1,217 @@
-use cgmath::Transform;
-use collision::{Aabb, HasAabb, Primitive};
-use collision::primitive::{Primitive2, Primitive3};
+use cgmath::{EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, Transform,
+             Vector3, Zero};
+use collision::{Aabb, Aabb2, Aabb3, HasAabb, Primitive};
+use collision::primitive::*;
 
-use super::{Mass, Material, Volume};
+use super::{Cross, Mass, Material, Volume};
 use Real;
 use collide::CollisionShape;
 
-// FIXME: inertia
+impl Volume<Real> for Circle<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Real> {
+        use std::f64::consts::PI;
+        let pi = PI as Real;
+        let mass = pi * self.radius * self.radius * material.density();
+        let inertia = mass * self.radius * self.radius / 2.;
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+impl Volume<Real> for Rectangle<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Real> {
+        let b = self.get_bound();
+        let mass = b.volume() * material.density();
+        let inertia = mass * (b.dim().x * b.dim().x + b.dim().y * b.dim().y) / 12.;
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+impl Volume<Real> for ConvexPolygon<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Real> {
+        let mut area = 0. as Real;
+        let mut denom = 0.;
+        for i in 0..self.vertices.len() {
+            let j = if i == self.vertices.len() - 1 {
+                0
+            } else {
+                i + 1
+            };
+            let p0 = self.vertices[i].to_vec();
+            let p1 = self.vertices[j].to_vec();
+            let a = p0.cross(&p1).abs();
+            let b = p0.dot(p0) + p0.dot(p1) + p1.dot(p1);
+            denom += a * b;
+            area += a;
+        }
+        let mass = area * 0.5 * material.density();
+        let inertia = mass / 6. * denom / area;
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+impl Volume<Matrix3<Real>> for Sphere<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        use std::f64::consts::PI;
+        let pi = PI as Real;
+        let mass = 4. / 3. * pi * self.radius * self.radius * self.radius * material.density();
+        let inertia = 2. / 5. * mass * self.radius * self.radius;
+        Mass::new_with_inertia(mass, Matrix3::from_value(inertia))
+    }
+}
+
+impl Volume<Matrix3<Real>> for Cuboid<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        let b = self.get_bound();
+        let mass = b.volume() * material.density();
+        let x2 = b.dim().x * b.dim().x;
+        let y2 = b.dim().y * b.dim().y;
+        let z2 = b.dim().z * b.dim().z;
+        let mnorm = mass / 12.;
+        let inertia = Matrix3::from_diagonal(Vector3::new(y2 + z2, x2 + z2, x2 + y2) * mnorm);
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+fn poly_sub_expr_calc(w0: Real, w1: Real, w2: Real) -> (Real, Real, Real, Real, Real, Real) {
+    let t0 = w0 + w1;
+    let t1 = w0 * w0;
+    let t2 = t1 + t0 * w1;
+    let f1 = t0 + w2;
+    let f2 = t2 + w2 * f1;
+    let f3 = w0 * t0 + w1 * t2 + w2 * f2;
+    (
+        f1,
+        f2,
+        f3,
+        f2 + w0 * (f1 + w0),
+        f2 + w1 * (f1 + w1),
+        f2 + w2 * (f1 + w2),
+    )
+}
+
+const ONE_6: Real = 1. / 6.;
+const ONE_24: Real = 1. / 24.;
+const ONE_60: Real = 1. / 60.;
+const ONE_120: Real = 1. / 120.;
+const POLY_SCALE: [Real; 10] = [
+    ONE_6, ONE_24, ONE_24, ONE_24, ONE_60, ONE_60, ONE_60, ONE_120, ONE_120, ONE_120
+];
+
+impl Volume<Matrix3<Real>> for ConvexPolyhedron<Real> {
+    // Volume of tetrahedron is 1/6 * a.cross(b).dot(c) where a = B - C, b = A - C, c = Origin - C
+    // Sum for all faces
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        let mut intg: [Real; 10] = [0.; 10];
+        for (p0, p1, p2) in self.faces_iter() {
+            let v1 = p1 - p0; // a1, b1, c1
+            let v2 = p2 - p0; // a2, b2, c2
+            let d = v1.cross(v2); // d0, d1, d2
+            let (f1x, f2x, f3x, g0x, g1x, g2x) = poly_sub_expr_calc(p0.x, p1.x, p2.x);
+            let (_, f2y, f3y, g0y, g1y, g2y) = poly_sub_expr_calc(p0.y, p1.y, p2.y);
+            let (_, f2z, f3z, g0z, g1z, g2z) = poly_sub_expr_calc(p0.z, p1.z, p2.z);
+            intg[0] += d.x * f1x;
+            intg[1] += d.x * f2x;
+            intg[2] += d.y * f2y;
+            intg[3] += d.z * f2z;
+            intg[4] += d.x * f3x;
+            intg[5] += d.y * f3y;
+            intg[6] += d.z * f3z;
+            intg[7] += d.x * (p0.y * g0x + p1.y * g1x + p2.y * g2x);
+            intg[8] += d.y * (p0.z * g0y + p1.z * g1y + p2.z * g2y);
+            intg[9] += d.z * (p0.x * g0z + p1.x * g1z + p2.x * g2z);
+        }
+        for i in 0..10 {
+            intg[i] *= POLY_SCALE[i];
+        }
+        let cm = Point3::new(intg[1] / intg[0], intg[2] / intg[0], intg[3] / intg[0]);
+        let mut inertia = Matrix3::zero();
+        inertia.x.x = intg[5] + intg[6] - intg[0] * (cm.y * cm.y + cm.z * cm.z);
+        inertia.y.y = intg[4] + intg[6] - intg[0] * (cm.x * cm.x + cm.z * cm.z);
+        inertia.z.z = intg[4] + intg[5] - intg[0] * (cm.x * cm.x + cm.y * cm.y);
+        inertia.x.y = -(intg[7] - intg[0] * cm.x * cm.y);
+        inertia.y.z = -(intg[8] - intg[0] * cm.y * cm.z);
+        inertia.x.z = -(intg[9] - intg[0] * cm.x * cm.z);
+        Mass::new_with_inertia(intg[0] * material.density(), inertia * material.density())
+    }
+}
+
 impl Volume<Real> for Primitive2<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
         use collision::primitive::Primitive2::*;
         match *self {
             Particle(_) => Mass::new(material.density()),
-            Circle(ref circle) => {
-                use std::f64::consts::PI;
-                let pi = PI as Real;
-                Mass::new(pi * circle.radius * circle.radius * material.density())
-            }
-            Rectangle(ref rectangle) => {
-                Mass::new(rectangle.get_bound().volume() * material.density())
-            }
-            // FIXME: use actual polygon data
-            ConvexPolygon(ref polygon) => {
-                Mass::new(polygon.get_bound().volume() * material.density())
-            }
+            Circle(ref circle) => circle.get_mass(material),
+            Rectangle(ref rectangle) => rectangle.get_mass(material),
+            ConvexPolygon(ref polygon) => polygon.get_mass(material),
         }
     }
 }
 
-// FIXME: inertia
-impl Volume<Real> for Primitive3<Real> {
-    fn get_mass(&self, material: &Material) -> Mass<Real> {
+impl Volume<Matrix3<Real>> for Primitive3<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
         use collision::primitive::Primitive3::*;
         match *self {
             Particle(_) => Mass::new(material.density()),
-            Sphere(ref sphere) => {
-                use std::f64::consts::PI;
-                let pi = PI as Real;
-                Mass::new(
-                    4. / 3. * pi * sphere.radius * sphere.radius * sphere.radius
-                        * material.density(),
-                )
-            }
-            Cuboid(ref cuboid) => Mass::new(cuboid.get_bound().volume() * material.density()),
-            // FIXME: use actual mesh data
-            ConvexPolyhedron(ref polyhedra) => {
-                Mass::new(polyhedra.get_bound().volume() * material.density())
-            }
+            Sphere(ref sphere) => sphere.get_mass(material),
+            Cuboid(ref cuboid) => cuboid.get_mass(material),
+            ConvexPolyhedron(ref polyhedra) => polyhedra.get_mass(material),
         }
     }
 }
 
-// FIXME: inertia
+// Composite inertia : sum(I_i + M_i * d_i^2)
+// I_i : Inertia of primitive with index i
+// M_i : Mass of primitive with index i
+// d_i : Offset from composite center of mass to primitive center of mass
 impl<P, T> Volume<Real> for CollisionShape<P, T>
 where
-    P: Volume<Real> + Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
-    T: Transform<P::Point>,
+    P: Volume<Real> + Primitive<Aabb = Aabb2<Real>>,
+    T: Transform<Point2<Real>>,
 {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
-        Mass::new(
-            self.primitives()
-                .iter()
-                .map(|p| p.0.get_mass(material))
-                .fold(0., |a, m| a + m.mass),
-        )
+        let (mass, inertia) = self.primitives()
+            .iter()
+            .map(|p| (p.0.get_mass(material), &p.1))
+            .fold((0., 0.), |(a_m, a_i), (m, t)| {
+                (a_m + m.mass, a_i + m.inertia + m.mass * d2(t))
+            });
+        Mass::new_with_inertia(mass, inertia)
     }
+}
+
+fn d2<T>(t: &T) -> Real
+where
+    T: Transform<Point2<Real>>,
+{
+    let p = t.transform_point(Point2::origin()).to_vec();
+    p.dot(p)
+}
+
+impl<P, T> Volume<Matrix3<Real>> for CollisionShape<P, T>
+where
+    P: Volume<Matrix3<Real>> + Primitive<Aabb = Aabb3<Real>>,
+    T: Transform<Point3<Real>>,
+{
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        let (mass, inertia) = self.primitives()
+            .iter()
+            .map(|p| (p.0.get_mass(material), &p.1))
+            .fold((0., Matrix3::zero()), |(a_m, a_i), (m, t)| {
+                (a_m + m.mass, a_i + m.inertia + d3(t) * m.mass)
+            });
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+fn d3<T>(t: &T) -> Matrix3<Real>
+where
+    T: Transform<Point3<Real>>,
+{
+    let o = t.transform_point(Point3::origin()).to_vec();
+    let d2 = o.magnitude2();
+    let mut j = Matrix3::from_value(d2);
+    j.x += o * -o.x;
+    j.y += o * -o.y;
+    j.z += o * -o.z;
+    j
 }
