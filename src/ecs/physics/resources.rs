@@ -77,7 +77,7 @@ pub trait WithRigidBody {
         I: Send + Sync + 'static;
 }
 
-/// Adds rigid body builder functions to `EntityBuilder`
+/// Adds rigid body builder functions to `LazyUpdate`
 pub trait WithLazyRigidBody {
     /// Add dynamic rigid body components to entity
     fn with_dynamic_rigid_body<P, Y, R, V, A, I>(
