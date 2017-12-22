@@ -90,12 +90,7 @@ pub fn resolve_contact<'a, ID, P, R, I, A, O>(
 where
     P: EuclideanSpace<Scalar = Real> + 'a,
     R: Rotation<P> + 'a,
-    P::Diff: Debug
-        + Zero
-        + Clone
-        + InnerSpace
-        + Cross<P::Diff, Output = O>
-        + Mul<I, Output = P::Diff>,
+    P::Diff: Debug + Zero + Clone + InnerSpace + Cross<P::Diff, Output = O>,
     O: Cross<P::Diff, Output = P::Diff>,
     A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,
@@ -158,22 +153,18 @@ where
     let j = numerator / (a_inverse_mass + b_inverse_mass + term3 + term4);
     let impulse = contact.contact.normal * j;
 
-    let a_velocity_new = a.velocity.map(|v| {
-        NextFrame {
-            value: Velocity::new(
-                *v.value.linear() - impulse * a_inverse_mass,
-                v.value.angular() - a_tensor * r_a.cross(&impulse),
-            ),
-        }
+    let a_velocity_new = a.velocity.map(|v| NextFrame {
+        value: Velocity::new(
+            *v.value.linear() - impulse * a_inverse_mass,
+            v.value.angular() - a_tensor * r_a.cross(&impulse),
+        ),
     });
 
-    let b_velocity_new = b.velocity.map(|v| {
-        NextFrame {
-            value: Velocity::new(
-                *v.value.linear() + impulse * b_inverse_mass,
-                v.value.angular() + b_tensor * r_b.cross(&impulse),
-            ),
-        }
+    let b_velocity_new = b.velocity.map(|v| NextFrame {
+        value: Velocity::new(
+            *v.value.linear() + impulse * b_inverse_mass,
+            v.value.angular() + b_tensor * r_b.cross(&impulse),
+        ),
     });
 
     a_set.add_velocity(a_velocity_new);

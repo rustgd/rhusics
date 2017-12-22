@@ -29,12 +29,12 @@ use collide::{CollisionShape, Primitive};
 ///        `From<(Entity, CollisionShape)>`
 ///
 #[derive(Debug)]
-pub struct SpatialSortingSystem<P, T, D> {
+pub struct SpatialSortingSystem<P, T, D, Y = ()> {
     entities: HashMap<Entity, usize>,
-    marker: PhantomData<(P, T, D)>,
+    marker: PhantomData<(P, T, Y, D)>,
 }
 
-impl<P, T, D> SpatialSortingSystem<P, T, D> {
+impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
     /// Create a new sorting system.
     pub fn new() -> Self {
         Self {
@@ -44,7 +44,7 @@ impl<P, T, D> SpatialSortingSystem<P, T, D> {
     }
 }
 
-impl<'a, P, T, D> System<'a> for SpatialSortingSystem<P, T, D>
+impl<'a, P, T, Y, D> System<'a> for SpatialSortingSystem<P, T, D, Y>
 where
     P: Primitive + Send + Sync + 'static,
     P::Aabb: Clone
@@ -57,15 +57,16 @@ where
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
+    Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = P::Aabb>,
-    for<'c: 'a> D: From<(Entity, &'c CollisionShape<P, T>)>,
+    for<'c: 'a> D: From<(Entity, &'c CollisionShape<P, T, Y>)>,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        WriteStorage<'a, CollisionShape<P, T>>,
+        WriteStorage<'a, CollisionShape<P, T, Y>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 

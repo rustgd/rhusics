@@ -1,6 +1,6 @@
 //! Type wrappers and convenience functions for 3D collision detection
 
-pub use collide::{CollisionMode, CollisionStrategy};
+pub use collide::{Collider, CollisionMode, CollisionStrategy};
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
@@ -13,7 +13,7 @@ use collide::*;
 
 /// Collision shape for 3D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
-pub type CollisionShape3<T> = CollisionShape<Primitive3<Real>, T>;
+pub type CollisionShape3<T, Y = ()> = CollisionShape<Primitive3<Real>, T, Y>;
 
 /// Broad phase brute force algorithm for 3D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.

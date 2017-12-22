@@ -69,3 +69,7 @@ pub fn main() {
 # TODO:
 
 * Impulse solver
+* Integrator implementations (Euler, RK4, etc.) 
+* Inertial moments for bodies at rest
+* Parallel solver implementation
+* Generic bounding volumes
