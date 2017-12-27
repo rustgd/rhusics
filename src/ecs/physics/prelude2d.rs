@@ -1,7 +1,7 @@
 //! 2D physics ECS
 
 pub use ecs::collide::prelude2d::*;
-pub use ecs::physics::{DeltaTime, WithRigidBody, WithLazyRigidBody};
+pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude2d::*;
 
 use cgmath::{Basis2, Point2};

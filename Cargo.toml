@@ -37,3 +37,7 @@ required-features = ["ecs"]
 [[example]]
 name = "spatial3d"
 required-features = ["ecs"]
+
+[[example]]
+name = "spatial2d"
+required-features = ["ecs"]

@@ -94,7 +94,7 @@ where
     O: Cross<P::Diff, Output = P::Diff>,
     A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,
-    I: Inertia<Orientation = R> + From<R> + Mul<O, Output = O>,
+    I: Inertia<Orientation = R> + Mul<O, Output = O>,
 {
     let a_velocity = a.velocity
         .map(|v| v.value.clone())

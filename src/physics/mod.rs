@@ -8,8 +8,8 @@ pub mod prelude3d;
 
 use std::ops::Mul;
 
-use cgmath::{EuclideanSpace, Euler, Matrix, Matrix3, Quaternion, Rad, Rotation, SquareMatrix,
-             Transform, Vector3, VectorSpace, Zero};
+use cgmath::{Basis2, EuclideanSpace, Euler, Matrix, Matrix2, Matrix3, Quaternion, Rad, Rotation,
+             Rotation2, SquareMatrix, Transform, Vector3, VectorSpace, Zero};
 
 use {BodyPose, Real};
 
@@ -118,6 +118,13 @@ impl ApplyAngular<Real> for Real {
     }
 }
 
+impl ApplyAngular<Real> for Basis2<Real> {
+    fn apply(&self, velocity: &Real, dt: Real) -> Self {
+        let m = Matrix2::from(*self);
+        Rotation2::from_angle(Rad(m.x.x.acos() + velocity * dt))
+    }
+}
+
 impl ApplyAngular<Vector3<Real>> for Quaternion<Real> {
     fn apply(&self, velocity: &Vector3<Real>, dt: Real) -> Self {
         self * Quaternion::from(Euler {
@@ -141,7 +148,7 @@ pub struct Mass<I> {
 /// Used by mass for inertia, needs
 pub trait Inertia: Mul<Self, Output = Self> + Zero + Copy {
     /// Orientation type for rotating the inertia to create a world space inertia tensor
-    type Orientation: Into<Self>;
+    type Orientation;
     /// Compute the inverse of the inertia
     fn invert(&self) -> Self;
     /// Compute the inertia tensor
@@ -149,7 +156,7 @@ pub trait Inertia: Mul<Self, Output = Self> + Zero + Copy {
 }
 
 impl Inertia for Real {
-    type Orientation = Real;
+    type Orientation = Basis2<Real>;
 
     fn invert(&self) -> Self {
         if *self == 0. {
@@ -159,7 +166,7 @@ impl Inertia for Real {
         }
     }
 
-    fn tensor(&self, _: &Real) -> Self {
+    fn tensor(&self, _: &Basis2<Real>) -> Self {
         *self
     }
 }

@@ -19,7 +19,13 @@ pub struct ImpulseSolverSystem<P, R, A> {
     m: marker::PhantomData<(P, R, A)>,
 }
 
-impl<P, R, A> ImpulseSolverSystem<P, R, A> {
+impl<P, R, A> ImpulseSolverSystem<P, R, A>
+where
+    P: EuclideanSpace<Scalar = Real>,
+    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug,
+    R: Rotation<P>,
+    A: Clone + Zero,
+{
     /// Create system.
     pub fn new() -> Self {
         Self {
@@ -30,7 +36,7 @@ impl<P, R, A> ImpulseSolverSystem<P, R, A> {
 
 impl<'a, P, R, A> System<'a> for ImpulseSolverSystem<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'a + 'static,
+    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
     A: Clone + Zero + Send + Sync + 'static,
@@ -70,8 +76,13 @@ where
 
 impl<P, R, I, A, O> ContactResolutionSystem<P, R, I, A, O>
 where
-    P: EuclideanSpace,
-    P::Diff: Debug,
+    P: EuclideanSpace<Scalar = Real>,
+    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Cross<P::Diff, Output = O>,
+    R: Rotation<P> + ApplyAngular<A>,
+    O: Cross<P::Diff, Output = P::Diff>,
+    A: Cross<P::Diff, Output = P::Diff> + Clone + Zero,
+    for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
+    I: Inertia<Orientation = R> + Mul<O, Output = O>,
 {
     /// Create system.
     pub fn new(contact_reader: ReaderId<ContactEvent<Entity, P>>) -> Self {
@@ -102,7 +113,7 @@ where
     O: Cross<P::Diff, Output = P::Diff>,
     A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + Send + Sync + 'static,
     for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
-    I: Inertia<Orientation = R> + From<R> + Mul<O, Output = O> + Send + Sync + 'static,
+    I: Inertia<Orientation = R> + Mul<O, Output = O> + Send + Sync + 'static,
 {
     type SystemData = (
         Fetch<'a, EventChannel<ContactEvent<Entity, P>>>,
@@ -163,7 +174,14 @@ pub struct NextFrameSetupSystem<P, R, I, A> {
     linear_only: bool,
 }
 
-impl<P, R, I, A> NextFrameSetupSystem<P, R, I, A> {
+impl<P, R, I, A> NextFrameSetupSystem<P, R, I, A>
+where
+    P: EuclideanSpace<Scalar = Real>,
+    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug,
+    R: Rotation<P> + ApplyAngular<A>,
+    I: Inertia<Orientation = R> + Mul<A, Output = A>,
+    A: Mul<Real, Output = A> + Zero + Clone + Copy,
+{
     /// Create system.
     pub fn new() -> Self {
         Self {
@@ -183,7 +201,7 @@ where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
     R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
-    I: Inertia<Orientation = R> + Mul<A, Output = A> + From<R> + Send + Sync + 'static,
+    I: Inertia<Orientation = R> + Mul<A, Output = A> + Send + Sync + 'static,
     A: Mul<Real, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
 {
     type SystemData = (

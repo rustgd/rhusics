@@ -1,7 +1,7 @@
 //! 3D physics ECS
 
 pub use ecs::collide::prelude3d::*;
-pub use ecs::physics::{DeltaTime, WithRigidBody, WithLazyRigidBody};
+pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude3d::*;
 
 use cgmath::{Matrix3, Point3, Quaternion, Vector3};
