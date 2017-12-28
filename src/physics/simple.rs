@@ -7,7 +7,24 @@ use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use super::{ApplyAngular, ForceAccumulator, Inertia, Mass, Velocity};
 use {BodyPose, NextFrame, Real};
 
-/// Do force integration for next frame
+/// Do force integration for next frame.
+///
+/// ### Parameters:
+///
+/// - `data`: Iterator over tuple with:
+///     - Velocity for the next frame, will be updated
+///     - Pose for the next frame, used to compute the inertia tensor for the body in the next frame
+///     - Force accumulator, will be consumed and added to the velocity
+///     - Mass, used by integration
+/// - `dt`: Time step
+///
+/// ### Type parameters:
+///
+/// - `D`: Iterator type
+/// - `P`: Point, usually `Point2` or `Point3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `I`: Inertia, usually `Scalar` or `Matrix3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 pub fn next_frame_integration<'a, D, P, A, I, R>(data: D, dt: Real)
 where
     D: Iterator<
@@ -36,6 +53,21 @@ where
 }
 
 /// Compute next frame pose
+///
+/// ### Parameters:
+///
+/// - `data`: Iterator over tuple with:
+///     - Velocity for the next frame, used to compute next frame pose
+///     - Pose for the current frame, will be updated
+///     - Pose for the next frame, will be updated
+/// - `dt`: Time step
+///
+/// ### Type parameters:
+///
+/// - `D`: Iterator type
+/// - `P`: Point, usually `Point2` or `Point3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 pub fn next_frame_pose<'a, D, P, A, R>(data: D, dt: Real)
 where
     D: Iterator<

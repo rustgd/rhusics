@@ -3,7 +3,14 @@ use cgmath::{EuclideanSpace, Rotation, Transform, VectorSpace, Zero};
 use super::Cross;
 use {BodyPose, Real};
 
-/// Force accumulator for a rigid body
+/// Force accumulator for a rigid body.
+///
+/// Will be consumed when doing force integration for the next frame.
+///
+/// ### Type parameters:
+///
+/// - `F`: Force type, usually `Vector2` or `Vector3`
+/// - `T`: Torque force, usually `Scalar` or `Vector3`
 pub struct ForceAccumulator<F, T> {
     force: F,
     torque: T,
@@ -33,6 +40,18 @@ where
     }
 
     /// Add a force on a given point on the body
+    ///
+    /// If the force vector does not pass directly through the origin of the body, as expressed by
+    /// the pose, torque will occur.
+    /// Note that no validation is made on the given position to make sure it's actually contained
+    /// in the shape of the body.
+    ///
+    /// ### Parameters:
+    ///
+    /// - `force`: Force to apply
+    /// - `position`: Position on the body to apply the force at.
+    /// - `pose`: Current pose of the body, used to compute the world coordinates of the body center
+    ///           of mass
     pub fn add_force_at_point<P, R>(&mut self, force: F, position: P, pose: &BodyPose<P, R>)
     where
         P: EuclideanSpace<Scalar = Real, Diff = F>,
@@ -45,14 +64,18 @@ where
         self.add_torque(r.cross(&force));
     }
 
-    /// Consume the force vector
+    /// Consume the accumulated force
+    ///
+    /// Returns he current accumulated force. The force in the accumulator is reset.
     pub fn consume_force(&mut self) -> F {
         let v = self.force.clone();
         self.force = F::zero();
         v
     }
 
-    /// Consume the torque vector
+    /// Consume the torque
+    ///
+    /// Returns the current accumulated torque. The torque in the accumulator is reset.
     pub fn consume_torque(&mut self) -> T {
         let v = self.torque.clone();
         self.torque = T::zero();

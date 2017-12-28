@@ -12,15 +12,12 @@ use cgmath::{Point2, Transform};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive2;
 use specs::{Component, Entity, World};
+use shrev::EventChannel;
 
 use {NextFrame, Real};
 use collide::ContactEvent;
 use collide::util::ContainerShapeWrapper;
-use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
-
-/// Contacts resource for 2D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
-/// information.
-pub type Contacts2 = Contacts<Point2<Real>>;
+use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
 pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
@@ -71,6 +68,7 @@ pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
 ///
 /// - `T`: Transform type that implements
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// - `Y`: Shape type, see `Collider`
 pub fn world_register<T, Y>(world: &mut World)
 where
     T: Transform<Point2<Real>> + Component + Send + Sync + 'static,
@@ -79,7 +77,7 @@ where
     world.register::<T>();
     world.register::<NextFrame<T>>();
     world.register::<CollisionShape2<T, Y>>();
-    world.add_resource(Contacts2::default());
+    world.add_resource(EventChannel::<ContactEvent2>::new());
 }
 
 /// Utility method for registering 2D components and resources with
@@ -97,6 +95,7 @@ where
 ///
 /// - `T`: Transform type that implements
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// - `Y`: Shape type, see `Collider`
 pub fn world_register_with_spatial<T, Y>(mut world: &mut World)
 where
     T: Transform<Point2<Real>> + Component + Clone + Debug + Send + Sync + 'static,

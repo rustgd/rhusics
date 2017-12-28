@@ -4,6 +4,11 @@ use cgmath::{Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2
 use {BodyPose, Real};
 
 /// Velocity
+///
+/// ### Type parameters:
+///
+/// - `L`: Linear velocity, usually `Vector2` or `Vector3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 #[derive(Debug, Clone, PartialEq)]
 pub struct Velocity<L, A> {
     linear: L,
@@ -25,10 +30,11 @@ where
     L: Zero,
     A: Clone + Zero,
 {
-    /// Create new velocity object
+    /// Create new velocity object, with both linear and angular velocity
     pub fn new(linear: L, angular: A) -> Self {
         Self { linear, angular }
     }
+
     /// Create new velocity object with only linear velocity
     pub fn from_linear(linear: L) -> Self {
         Self::new(linear, A::zero())
@@ -54,7 +60,17 @@ where
         &self.angular
     }
 
-    /// Apply velocity to pose
+    /// Apply velocity to pose.
+    ///
+    /// ### Parameters:
+    ///
+    /// - `pose`: Pose to apply the velocity to
+    /// - `dt`: Time step
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Positional quantity, usually `Point2` or `Point3`
+    /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
     pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: Real) -> BodyPose<P, R>
     where
         P: EuclideanSpace<Scalar = Real, Diff = L>,
@@ -67,7 +83,16 @@ where
         )
     }
 
-    /// Apply linear velocity to a linear quantity
+    /// Apply linear velocity to a positional quantity
+    ///
+    /// ### Parameters:
+    ///
+    /// - `linear`: Positional value
+    /// - `dt`: Time step
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Positional quantity, usually `Point2` or `Point3`
     pub fn apply_linear<P>(&self, linear: &P, dt: Real) -> P
     where
         P: EuclideanSpace<Scalar = Real, Diff = L>,
@@ -76,7 +101,16 @@ where
         *linear + self.linear * dt
     }
 
-    /// Apply angular velocity to a rotational quantitiy
+    /// Apply angular velocity to a rotational quantity
+    ///
+    /// ### Parameters:
+    ///
+    /// - `rotation`: Rotational value
+    /// - `dt`: Time step
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
     pub fn apply_angular<R>(&self, rotation: &R, dt: Real) -> R
     where
         R: ApplyAngular<A>,
@@ -86,8 +120,12 @@ where
 }
 
 /// Apply an angular velocity to a rotational quantity
+///
+/// ### Type parameters:
+///
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 pub trait ApplyAngular<A> {
-    /// Apply
+    /// Apply given velocity
     fn apply(&self, velocity: &A, dt: Real) -> Self;
 }
 

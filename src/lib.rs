@@ -41,9 +41,9 @@ extern crate specs;
 extern crate approx;
 
 pub mod collide;
+pub mod physics;
 #[cfg(feature = "ecs")]
 pub mod ecs;
-pub mod physics;
 
 use cgmath::prelude::*;
 use collision::prelude::*;
@@ -61,8 +61,7 @@ pub struct NextFrame<T> {
     pub value: T,
 }
 
-/// Transform that implements [`Pose`](trait.Pose.html), and can be used as the transform
-/// component throughout the library.
+/// Transform component used throughout the library
 #[derive(Clone, Debug, PartialEq)]
 pub struct BodyPose<P, R>
 where

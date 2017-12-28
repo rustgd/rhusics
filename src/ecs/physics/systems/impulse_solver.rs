@@ -16,6 +16,12 @@ use physics::simple::*;
 /// Impulse physics solver system.
 ///
 /// Will update positions and velocities for the current frame
+///
+/// ### Type parameters:
+///
+/// - `P`: Positional quantity, usually `Point2` or `Point3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 pub struct ImpulseSolverSystem<P, R, A> {
     m: marker::PhantomData<(P, R, A)>,
 }
@@ -64,7 +70,16 @@ where
     }
 }
 
-/// Does contact resolution
+/// Do contact resolution
+///
+/// ### Type parameters:
+///
+/// - `P`: Positional quantity, usually `Point2` or `Point3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
+/// - `I`: Inertia, usually `Scalar` or `Matrix3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `O`: Internal type used for abstracting over cross products in 2D/3D,
+///        usually `Scalar` or `Vector3`
 pub struct ContactResolutionSystem<P, R, I, A, O>
 where
     P: EuclideanSpace,
@@ -121,9 +136,11 @@ where
     fn run(&mut self, data: Self::SystemData) {
         let (contacts, masses, bodies, mut next_velocities, poses, mut next_poses) = data;
 
+        // Process contacts since last run
         for contact in contacts.read(&mut self.contact_reader) {
+            // Resolve contact
             let change_set = resolve_contact(
-                contact,
+                &contact.contact,
                 ResolveData {
                     velocity: next_velocities.get(contact.bodies.0),
                     pose: next_poses
@@ -143,6 +160,7 @@ where
                     material: bodies.get(contact.bodies.1).map(|b| b.material()).unwrap(),
                 },
             );
+            // Apply computed change sets
             change_set.0.apply(
                 next_poses.get_mut(contact.bodies.0),
                 next_velocities.get_mut(contact.bodies.0),
@@ -156,6 +174,13 @@ where
 }
 
 /// Setup the next frames positions and velocities.
+///
+/// ### Type parameters:
+///
+/// - `P`: Positional quantity, usually `Point2` or `Point3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
+/// - `I`: Inertia, usually `Scalar` or `Matrix3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 pub struct NextFrameSetupSystem<P, R, I, A> {
     m: marker::PhantomData<(P, R, I, A)>,
 }

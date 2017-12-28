@@ -12,15 +12,12 @@ use cgmath::{Point3, Transform};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
 use specs::{Component, Entity, World};
+use shrev::EventChannel;
 
 use {NextFrame, Real};
 use collide::ContactEvent;
 use collide::util::ContainerShapeWrapper;
-use ecs::collide::{BasicCollisionSystem, Contacts, SpatialCollisionSystem, SpatialSortingSystem};
-
-/// Contacts resource for 3D, see [Contacts](../collide/ecs/struct.Contacts.html) for more
-/// information.
-pub type Contacts3 = Contacts<Point3<Real>>;
+use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
 pub type ContactEvent3 = ContactEvent<Entity, Point3<Real>>;
@@ -70,6 +67,7 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
 ///
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// - `Y`: Shape type, see `Collider`
 pub fn world_register<'a, T, Y>(world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
@@ -78,7 +76,7 @@ where
     world.register::<T>();
     world.register::<NextFrame<T>>();
     world.register::<CollisionShape3<T, Y>>();
-    world.add_resource(Contacts3::default());
+    world.add_resource(EventChannel::<ContactEvent3>::new());
 }
 
 /// Utility method for registering 3D components and resources with
@@ -96,6 +94,7 @@ where
 ///
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
+/// - `Y`: Shape type, see `Collider`
 pub fn world_register_with_spatial<T, Y>(mut world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,

@@ -8,6 +8,10 @@ use Real;
 use collide::CollisionShape;
 
 /// Describe a shape with volume
+///
+/// ### Type parameters:
+///
+/// - `I`: Inertia type, see `Inertia` for more information
 pub trait Volume<I> {
     /// Compute the mass of the shape based on its material
     fn get_mass(&self, material: &Material) -> Mass<I>;

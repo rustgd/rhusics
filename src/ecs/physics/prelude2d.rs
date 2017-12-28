@@ -5,7 +5,6 @@ pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude2d::*;
 
 use cgmath::{Basis2, Point2};
-use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
@@ -37,7 +36,6 @@ where
     world.register::<NextFrame<Velocity2>>();
     world.register::<RigidBody>();
     world.register::<ForceAccumulator2>();
-    world.add_resource(EventChannel::<ContactEvent2>::new());
     world_register::<BodyPose2, Y>(world);
 }
 
@@ -52,6 +50,5 @@ where
     world.register::<RigidBody>();
     world.register::<ForceAccumulator2>();
     world.register::<NextFrame<Velocity2>>();
-    world.add_resource(EventChannel::<ContactEvent2>::new());
     world_register_with_spatial::<BodyPose2, Y>(world);
 }

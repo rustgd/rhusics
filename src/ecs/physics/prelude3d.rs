@@ -5,7 +5,6 @@ pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude3d::*;
 
 use cgmath::{Matrix3, Point3, Quaternion, Vector3};
-use shrev::EventChannel;
 use specs::World;
 
 use {NextFrame, Real};
@@ -42,7 +41,6 @@ where
     world.register::<NextFrame<Velocity3>>();
     world.register::<RigidBody>();
     world.register::<ForceAccumulator3>();
-    world.add_resource(EventChannel::<ContactEvent3>::new());
     world_register::<BodyPose3, Y>(world);
 }
 
@@ -57,6 +55,5 @@ where
     world.register::<NextFrame<Velocity3>>();
     world.register::<RigidBody>();
     world.register::<ForceAccumulator3>();
-    world.add_resource(EventChannel::<ContactEvent3>::new());
     world_register_with_spatial::<BodyPose3, Y>(world);
 }

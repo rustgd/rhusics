@@ -22,6 +22,11 @@ mod force;
 mod util;
 
 /// Physics material
+///
+/// Used to describe physical properties of rigid bodies, such as density and restitution.
+///
+/// The default material has density 1, such that only the volume affects its mass, and restitution
+/// 1, such that all energy is preserved in collisions.
 pub struct Material {
     density: Real,
     restitution: Real,

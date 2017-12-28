@@ -33,7 +33,7 @@ where
     type Storage = DenseVecStorage<Self>;
 }
 
-/// Used for computations
+/// Time step
 pub struct DeltaTime {
     /// Delta time since last frame
     pub delta_seconds: Real,

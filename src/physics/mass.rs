@@ -7,6 +7,14 @@ use super::{Material, Volume};
 use Real;
 
 /// Mass
+///
+/// Mass properties for a body. Inertia is the moment of inertia in the base pose. For retrieving
+/// the inertia tensor for the body in its current orientation, see `world_inertia` and
+/// `world_inverse_inertia`.
+///
+/// ### Type parameters:
+///
+/// - `I`: Inertia type, usually `Scalar` or `Matrix3`, see `Inertia` for more information.
 #[derive(Debug)]
 pub struct Mass<I> {
     mass: Real,
@@ -16,13 +24,15 @@ pub struct Mass<I> {
     inverse_inertia: I,
 }
 
-/// Used by mass for inertia, needs
-pub trait Inertia: Mul<Self, Output = Self> + Zero + Copy {
+/// Moment of inertia, used for abstracting over 2D/3D inertia tensors
+pub trait Inertia: Mul<Self, Output = Self> + Copy {
     /// Orientation type for rotating the inertia to create a world space inertia tensor
     type Orientation;
+    /// Return the infinite inertia
+    fn infinite() -> Self;
     /// Compute the inverse of the inertia
     fn invert(&self) -> Self;
-    /// Compute the inertia tensor
+    /// Compute the inertia tensor in the bodies given orientation
     fn tensor(&self, orientation: &Self::Orientation) -> Self;
 }
 
@@ -30,7 +40,7 @@ impl Inertia for Real {
     type Orientation = Basis2<Real>;
 
     fn invert(&self) -> Self {
-        if *self == 0. {
+        if *self == 0. || self.is_infinite() {
             0.
         } else {
             1. / *self
@@ -40,18 +50,30 @@ impl Inertia for Real {
     fn tensor(&self, _: &Basis2<Real>) -> Self {
         *self
     }
+
+    fn infinite() -> Self {
+        std::f64::INFINITY as Real
+    }
 }
 
 impl Inertia for Matrix3<Real> {
     type Orientation = Quaternion<Real>;
 
     fn invert(&self) -> Self {
-        SquareMatrix::invert(self).unwrap_or(Matrix3::zero())
+        if self.x.x.is_infinite() {
+            Matrix3::zero()
+        } else {
+            SquareMatrix::invert(self).unwrap_or(Matrix3::zero())
+        }
     }
 
     fn tensor(&self, orientation: &Quaternion<Real>) -> Self {
         let mat3 = Matrix3::from(*orientation);
         mat3 * (*self * mat3.transpose())
+    }
+
+    fn infinite() -> Self {
+        Matrix3::from_value(std::f64::INFINITY as Real)
     }
 }
 
@@ -61,15 +83,15 @@ where
 {
     /// Create new mass object
     pub fn new(mass: Real) -> Self {
-        Self::new_with_inertia(mass, I::zero())
+        Self::new_with_inertia(mass, I::infinite())
     }
 
     /// Create new infinite mass object
     pub fn infinite() -> Self {
-        Self::new_with_inertia(std::f64::INFINITY as Real, I::zero())
+        Self::new_with_inertia(std::f64::INFINITY as Real, I::infinite())
     }
 
-    /// Create new mass object with inertia
+    /// Create new mass object with given inertia
     pub fn new_with_inertia(mass: Real, inertia: I) -> Self {
         let inverse_mass = if mass.is_infinite() { 0. } else { 1. / mass };
         let inverse_inertia = inertia.invert();
@@ -105,6 +127,10 @@ where
     }
 
     /// Get inertia tensor in world space
+    ///
+    /// ### Parameters:
+    ///
+    /// - `orientation`: The current orientation of the body
     pub fn world_inertia(&self, orientation: &I::Orientation) -> I {
         self.inertia.tensor(orientation)
     }
@@ -114,7 +140,11 @@ where
         self.inverse_inertia
     }
 
-    /// Get inverse inertia in local space
+    /// Get inverse inertia tensor in world space
+    ///
+    /// ### Parameters:
+    ///
+    /// - `orientation`: The current orientation of the body
     pub fn world_inverse_inertia(&self, orientation: &I::Orientation) -> I {
         self.inverse_inertia.tensor(orientation)
     }

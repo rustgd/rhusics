@@ -27,7 +27,7 @@ use collide::{CollisionShape, Primitive};
 /// - `T`: Transform type, needs to implement `Transform` and have `FlaggedStorage`.
 /// - `D`: Type of values stored in the DBVT, needs to implement `TreeValue` and
 ///        `From<(Entity, CollisionShape)>`
-///
+/// - `Y`: Shape type, see `Collider`
 #[derive(Debug)]
 pub struct SpatialSortingSystem<P, T, D, Y = ()> {
     entities: HashMap<Entity, usize>,
