@@ -5,7 +5,7 @@ use cgmath::{EuclideanSpace, InnerSpace, Rotation, Transform, Zero};
 use cgmath::num_traits::NumCast;
 use collision::Contact;
 
-use super::{Cross, Inertia, Mass, Material, Velocity};
+use super::{Inertia, Mass, Material, PartialCrossProduct, Velocity};
 use {BodyPose, NextFrame, Real};
 
 const POSITIONAL_CORRECTION_PERCENT: f32 = 0.2;
@@ -128,9 +128,9 @@ pub fn resolve_contact<'a, P, R, I, A, O>(
 where
     P: EuclideanSpace<Scalar = Real> + 'a,
     R: Rotation<P> + 'a,
-    P::Diff: Debug + Zero + Clone + InnerSpace + Cross<P::Diff, Output = O>,
-    O: Cross<P::Diff, Output = P::Diff>,
-    A: Cross<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
+    P::Diff: Debug + Zero + Clone + InnerSpace + PartialCrossProduct<P::Diff, Output = O>,
+    O: PartialCrossProduct<P::Diff, Output = P::Diff>,
+    A: PartialCrossProduct<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,
     I: Inertia<Orientation = R> + Mul<O, Output = O>,
 {

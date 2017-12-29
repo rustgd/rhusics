@@ -25,8 +25,18 @@ pub type ContactResolutionSystem2 = ContactResolutionSystem<
 /// Next frame setup system for 2D
 pub type NextFrameSetupSystem2 = NextFrameSetupSystem<Point2<Real>, Basis2<Real>, Real, Real>;
 
-/// Register required components and resources in world
-pub fn world_physics_register<Y>(world: &mut World)
+/// Utility method for registering 2D physics and collision components and resources with
+/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
+///
+/// # Parameters
+///
+/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
+/// to register components/resources in.
+///
+/// # Type parameters
+///
+/// - `Y`: Collision shape type, see `Collider`
+pub fn register_physics<Y>(world: &mut World)
 where
     Y: Default + Send + Sync + 'static,
 {
@@ -36,19 +46,5 @@ where
     world.register::<NextFrame<Velocity2>>();
     world.register::<RigidBody>();
     world.register::<ForceAccumulator2>();
-    world_register::<BodyPose2, Y>(world);
-}
-
-/// Register required components and resources in world
-pub fn world_physics_register_with_spatial<Y>(world: &mut World)
-where
-    Y: Default + Send + Sync + 'static,
-{
-    world.add_resource(DeltaTime { delta_seconds: 0. });
-    world.register::<Mass2>();
-    world.register::<Velocity2>();
-    world.register::<RigidBody>();
-    world.register::<ForceAccumulator2>();
-    world.register::<NextFrame<Velocity2>>();
-    world_register_with_spatial::<BodyPose2, Y>(world);
+    register_collision::<BodyPose2, Y>(world);
 }

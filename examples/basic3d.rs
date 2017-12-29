@@ -1,19 +1,19 @@
 extern crate cgmath;
 extern crate rhusics;
-extern crate specs;
 extern crate shrev;
+extern crate specs;
 
 use cgmath::{Point3, Quaternion, Rad, Rotation3, Transform};
-use specs::{RunNow, World};
 use shrev::EventChannel;
+use specs::{RunNow, World};
 
-use rhusics::ecs::collide::prelude3d::{world_register, BasicCollisionSystem3, BodyPose3,
+use rhusics::ecs::collide::prelude3d::{register_collision, BasicCollisionSystem3, BodyPose3,
                                        BroadBruteForce3, CollisionMode, CollisionShape3,
                                        CollisionStrategy, ContactEvent3, Cuboid, GJK3};
 
 pub fn main() {
     let mut world = World::new();
-    world_register::<BodyPose3, ()>(&mut world);
+    register_collision::<BodyPose3, ()>(&mut world);
 
     let mut reader_1 = world
         .write_resource::<EventChannel<ContactEvent3>>()

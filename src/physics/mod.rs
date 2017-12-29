@@ -4,7 +4,7 @@
 pub use self::force::ForceAccumulator;
 pub use self::mass::{Inertia, Mass};
 pub use self::resolution::{resolve_contact, ResolveData};
-pub use self::util::Cross;
+pub use self::util::PartialCrossProduct;
 pub use self::velocity::{ApplyAngular, Velocity};
 pub use self::volumes::Volume;
 

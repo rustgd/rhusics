@@ -3,7 +3,7 @@ use cgmath::{EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, 
 use collision::{Aabb, Aabb2, Aabb3, HasAabb, Primitive};
 use collision::primitive::*;
 
-use super::{Cross, Mass, Material};
+use super::{Mass, Material, PartialCrossProduct};
 use Real;
 use collide::CollisionShape;
 

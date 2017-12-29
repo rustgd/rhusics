@@ -10,9 +10,9 @@ use collision::dbvt::query_ray_closest;
 use shrev::EventChannel;
 use specs::{Fetch, RunNow, System, World};
 
-use rhusics::ecs::physics::prelude3d::{world_physics_register_with_spatial, BodyPose3,
-                                       CollisionMode, CollisionShape3, CollisionStrategy,
-                                       ContactEvent3, ContactResolutionSystem3, Cuboid,
+use rhusics::ecs::physics::prelude3d::{register_physics, BodyPose3, CollisionMode,
+                                       CollisionShape3, CollisionStrategy, ContactEvent3,
+                                       ContactResolutionSystem3, Cuboid,
                                        DynamicBoundingVolumeTree3, GJK3, ImpulseSolverSystem3,
                                        Mass3, NextFrameSetupSystem3, RigidBody,
                                        SpatialCollisionSystem3, SpatialSortingSystem3,
@@ -33,7 +33,7 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    world_physics_register_with_spatial::<()>(&mut world);
+    register_physics::<()>(&mut world);
 
     world
         .create_entity()

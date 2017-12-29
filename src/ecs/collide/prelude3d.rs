@@ -6,13 +6,11 @@ pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 pub use collide::{CollisionMode, CollisionStrategy};
 pub use collide::prelude3d::*;
 
-use std::fmt::Debug;
-
 use cgmath::{Point3, Transform};
 use collision::dbvt::DynamicBoundingVolumeTree;
 use collision::primitive::Primitive3;
-use specs::{Component, Entity, World};
 use shrev::EventChannel;
+use specs::{Component, Entity, World};
 
 use {NextFrame, Real};
 use collide::ContactEvent;
@@ -55,7 +53,7 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
     ContainerShapeWrapper<Entity, Primitive3<Real>>,
 >;
 
-/// Utility method for registering 3D components and resources with
+/// Utility method for registering 3D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
 ///
 /// # Parameters
@@ -68,7 +66,7 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 /// - `Y`: Shape type, see `Collider`
-pub fn world_register<'a, T, Y>(world: &mut World)
+pub fn register_collision<'a, T, Y>(world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
     Y: Send + Sync + 'static,
@@ -77,29 +75,5 @@ where
     world.register::<NextFrame<T>>();
     world.register::<CollisionShape3<T, Y>>();
     world.add_resource(EventChannel::<ContactEvent3>::new());
-}
-
-/// Utility method for registering 3D components and resources with
-/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
-///
-/// Will include components and resources needed for spatial sorting/collision detection.
-/// Will call [`world_register`](fn.world_register.html).
-///
-/// # Parameters
-///
-/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
-/// to register components/resources in.
-///
-/// # Type parameters
-///
-/// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
-///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
-/// - `Y`: Shape type, see `Collider`
-pub fn world_register_with_spatial<T, Y>(mut world: &mut World)
-where
-    T: Transform<Point3<Real>> + Component + Clone + Debug + Send + Sync + 'static,
-    Y: Send + Sync + 'static,
-{
-    world_register::<T, Y>(&mut world);
     world.add_resource(DynamicBoundingVolumeTree3::new());
 }

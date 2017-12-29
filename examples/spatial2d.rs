@@ -10,13 +10,12 @@ use collision::dbvt::query_ray_closest;
 use shrev::EventChannel;
 use specs::{Fetch, RunNow, System, World};
 
-use rhusics::ecs::physics::prelude2d::{world_physics_register_with_spatial, BodyPose2,
-                                       CollisionMode, CollisionShape2, CollisionStrategy,
-                                       ContactEvent2, ContactResolutionSystem2,
-                                       DynamicBoundingVolumeTree2, GJK2, ImpulseSolverSystem2,
-                                       Mass2, NextFrameSetupSystem2, Rectangle, RigidBody,
-                                       SpatialCollisionSystem2, SpatialSortingSystem2,
-                                       WithRigidBody};
+use rhusics::ecs::physics::prelude2d::{register_physics, BodyPose2, CollisionMode,
+                                       CollisionShape2, CollisionStrategy, ContactEvent2,
+                                       ContactResolutionSystem2, DynamicBoundingVolumeTree2, GJK2,
+                                       ImpulseSolverSystem2, Mass2, NextFrameSetupSystem2,
+                                       Rectangle, RigidBody, SpatialCollisionSystem2,
+                                       SpatialSortingSystem2, WithRigidBody};
 
 struct RayCastSystem;
 
@@ -33,7 +32,7 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    world_physics_register_with_spatial::<()>(&mut world);
+    register_physics::<()>(&mut world);
 
     world
         .create_entity()

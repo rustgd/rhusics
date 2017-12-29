@@ -30,8 +30,18 @@ pub type NextFrameSetupSystem3 = NextFrameSetupSystem<
     Vector3<Real>,
 >;
 
-/// Register required components and resources in world
-pub fn world_physics_register<Y>(world: &mut World)
+/// Utility method for registering 3D physics and collision components and resources with
+/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
+///
+/// # Parameters
+///
+/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
+/// to register components/resources in.
+///
+/// # Type parameters
+///
+/// - `Y`: Collision shape type, see `Collider`
+pub fn register_physics<Y>(world: &mut World)
 where
     Y: Send + Sync + 'static,
 {
@@ -41,19 +51,5 @@ where
     world.register::<NextFrame<Velocity3>>();
     world.register::<RigidBody>();
     world.register::<ForceAccumulator3>();
-    world_register::<BodyPose3, Y>(world);
-}
-
-/// Register required components and resources in world
-pub fn world_physics_register_with_spatial<Y>(world: &mut World)
-where
-    Y: Send + Sync + 'static,
-{
-    world.add_resource(DeltaTime { delta_seconds: 0. });
-    world.register::<Mass3>();
-    world.register::<Velocity3>();
-    world.register::<NextFrame<Velocity3>>();
-    world.register::<RigidBody>();
-    world.register::<ForceAccumulator3>();
-    world_register_with_spatial::<BodyPose3, Y>(world);
+    register_collision::<BodyPose3, Y>(world);
 }

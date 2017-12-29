@@ -1,6 +1,6 @@
 use cgmath::{EuclideanSpace, Rotation, Transform, VectorSpace, Zero};
 
-use super::Cross;
+use super::PartialCrossProduct;
 use {BodyPose, Real};
 
 /// Force accumulator for a rigid body.
@@ -56,7 +56,7 @@ where
     where
         P: EuclideanSpace<Scalar = Real, Diff = F>,
         R: Rotation<P>,
-        F: Cross<F, Output = T>,
+        F: PartialCrossProduct<F, Output = T>,
     {
         let current_pos = pose.transform_point(P::origin());
         let r = position - current_pos;
