@@ -1,12 +1,11 @@
 use std::fmt::Debug;
-use std::ops::{Deref, DerefMut};
 
 use cgmath::prelude::*;
 use collision::{Aabb, Primitive};
 use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
 
 use {BodyPose, NextFrame, Real};
-use collide::{CollisionShape, ContactEvent};
+use collide::CollisionShape;
 use collide::util::ContainerShapeWrapper;
 
 impl<P, R> Component for BodyPose<P, R>
@@ -38,56 +37,6 @@ where
     P::Aabb: Send + Sync + 'static,
 {
     type Storage = DenseVecStorage<CollisionShape<P, T, Y>>;
-}
-
-/// Contacts storage for use in ECS.
-///
-/// Will typically contain the contacts found in the last collision detection run.
-///
-/// # Type parameters:
-///
-/// - `P`: cgmath point type
-#[derive(Debug)]
-pub struct Contacts<P>
-where
-    P: EuclideanSpace,
-    P::Diff: Debug,
-{
-    contacts: Vec<ContactEvent<Entity, P>>,
-}
-
-impl<P> Default for Contacts<P>
-where
-    P: EuclideanSpace,
-    P::Diff: Debug,
-{
-    fn default() -> Self {
-        Self {
-            contacts: Vec::default(),
-        }
-    }
-}
-
-impl<P> Deref for Contacts<P>
-where
-    P: EuclideanSpace,
-    P::Diff: Debug,
-{
-    type Target = Vec<ContactEvent<Entity, P>>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.contacts
-    }
-}
-
-impl<P> DerefMut for Contacts<P>
-where
-    P: EuclideanSpace,
-    P::Diff: Debug,
-{
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.contacts
-    }
 }
 
 impl<'a, P, T, Y> From<(Entity, &'a CollisionShape<P, T, Y>)> for ContainerShapeWrapper<Entity, P>

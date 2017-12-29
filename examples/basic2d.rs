@@ -1,17 +1,23 @@
 extern crate cgmath;
 extern crate rhusics;
+extern crate shrev;
 extern crate specs;
 
 use cgmath::{Point2, Rad, Rotation2, Transform};
+use shrev::EventChannel;
 use specs::{RunNow, World};
 
-use rhusics::ecs::collide::prelude2d::{world_register, BasicCollisionSystem2, BodyPose2,
+use rhusics::ecs::collide::prelude2d::{register_collision, BasicCollisionSystem2, BodyPose2,
                                        BroadBruteForce2, CollisionMode, CollisionShape2,
-                                       CollisionStrategy, Contacts2, GJK2, Rectangle};
+                                       CollisionStrategy, ContactEvent2, GJK2, Rectangle};
 
 pub fn main() {
     let mut world = World::new();
-    world_register::<BodyPose2, ()>(&mut world);
+    register_collision::<BodyPose2, ()>(&mut world);
+
+    let mut reader_1 = world
+        .write_resource::<EventChannel<ContactEvent2>>()
+        .register_reader();
 
     world
         .create_entity()
@@ -38,5 +44,11 @@ pub fn main() {
         .with_broad_phase(BroadBruteForce2::default())
         .with_narrow_phase(GJK2::new());
     system.run_now(&world.res);
-    println!("Contacts: {:?}", *world.read_resource::<Contacts2>());
+    println!(
+        "Contacts: {:?}",
+        world
+            .read_resource::<EventChannel<ContactEvent2>>()
+            .read(&mut reader_1)
+            .collect::<Vec<_>>()
+    );
 }

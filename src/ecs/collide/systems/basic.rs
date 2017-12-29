@@ -9,7 +9,7 @@ use {NextFrame, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::{BroadPhase, HasBound};
 use collide::narrow::NarrowPhase;
-use ecs::collide::resources::{Contacts, GetEntity};
+use ecs::collide::resources::GetEntity;
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
@@ -22,6 +22,12 @@ use ecs::collide::resources::{Contacts, GetEntity};
 /// storage is wrapped in a
 /// [`FlaggedStorage`](https://docs.rs/specs/0.9.5/specs/struct.FlaggedStorage.html).
 ///
+/// ### Type parameters:
+///
+/// - `P`: Shape primitive
+/// - `T`: Transform
+/// - `D`: Data accepted by broad phase
+/// - `Y`: Shape type, see `Collider`
 pub struct BasicCollisionSystem<P, T, D, Y = ()>
 where
     P: Primitive,
@@ -77,17 +83,11 @@ where
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T, Y>>,
-        Option<FetchMut<'a, Contacts<P::Point>>>,
-        Option<FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>>,
+        FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
     );
 
     fn run(&mut self, system_data: Self::SystemData) {
-        let (entities, poses, next_poses, mut shapes, mut contacts, mut event_channel) =
-            system_data;
-
-        if let Some(ref mut c) = contacts {
-            c.clear();
-        }
+        let (entities, poses, next_poses, mut shapes, mut event_channel) = system_data;
 
         if let Some(ref mut broad) = self.broad {
             let mut info = Vec::default();
@@ -109,15 +109,10 @@ where
                     let right_pose = poses.get(right_entity).unwrap();
                     match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
                         Some(contact) => {
-                            let event = ContactEvent::new(
+                            event_channel.single_write(ContactEvent::new(
                                 (left_entity.clone(), right_entity.clone()),
                                 contact,
-                            );
-                            if let Some(ref mut events) = event_channel {
-                                events.single_write(event);
-                            } else if let Some(ref mut c) = contacts {
-                                c.push(event);
-                            }
+                            ));
                         }
                         None => (),
                     };
@@ -127,15 +122,10 @@ where
                     // intersections
                     // right now, we only report the collision, no normal/depth calculation
                     for (left_entity, right_entity) in potentials {
-                        let event = ContactEvent::new_single(
+                        event_channel.single_write(ContactEvent::new_single(
                             CollisionStrategy::CollisionOnly,
                             (left_entity, right_entity),
-                        );
-                        if let Some(ref mut events) = event_channel {
-                            events.single_write(event);
-                        } else if let Some(ref mut c) = contacts {
-                            c.push(event);
-                        }
+                        ));
                     }
                 }
             }

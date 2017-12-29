@@ -5,6 +5,10 @@ pub use collision::algorithm::broad_phase::*;
 use collision::prelude::*;
 
 /// Broad phase
+///
+/// ### Type parameters:
+///
+/// - `A`: Shape type, must be able to return its bounding volume
 pub trait BroadPhase<A>: Send
 where
     A: HasBound,

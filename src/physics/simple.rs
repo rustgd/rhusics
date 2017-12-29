@@ -1,112 +1,88 @@
-use std::fmt::Debug;
+//! Simple force integration and impulse solver
+
+use std::ops::Mul;
 
 use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use cgmath::num_traits::NumCast;
 
-use super::{Mass, Velocity};
+use super::{ApplyAngular, ForceAccumulator, Inertia, Mass, Velocity};
 use {BodyPose, NextFrame, Real};
-use collide::ContactEvent;
 
-const POSITIONAL_CORRECTION_PERCENT: f32 = 0.2;
-const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
-
-/// Data used for linear contact resolution
-pub struct LinearResolveData<'a, P, R>
+/// Do force integration for next frame.
+///
+/// ### Parameters:
+///
+/// - `data`: Iterator over tuple with:
+///     - Velocity for the next frame, will be updated
+///     - Pose for the next frame, used to compute the inertia tensor for the body in the next frame
+///     - Force accumulator, will be consumed and added to the velocity
+///     - Mass, used by integration
+/// - `dt`: Time step
+///
+/// ### Type parameters:
+///
+/// - `D`: Iterator type
+/// - `P`: Point, usually `Point2` or `Point3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `I`: Inertia, usually `Scalar` or `Matrix3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
+pub fn next_frame_integration<'a, D, P, A, I, R>(data: D, dt: Real)
 where
+    D: Iterator<
+        Item = (
+            &'a mut NextFrame<Velocity<P::Diff, A>>,
+            &'a NextFrame<BodyPose<P, R>>,
+            &'a mut ForceAccumulator<P::Diff, A>,
+            &'a Mass<I>,
+        ),
+    >,
     P: EuclideanSpace<Scalar = Real> + 'a,
-    R: Rotation<P> + 'a,
+    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + 'a,
+    I: Inertia<Orientation = R> + Mul<A, Output = A> + 'a,
+    A: Mul<Real, Output = A> + Clone + Copy + Zero + 'a,
+    R: Rotation<P> + ApplyAngular<A> + 'a,
 {
-    /// Velocity for next frame
-    pub velocity: Option<&'a NextFrame<Velocity<P::Diff>>>,
-    /// Position for next frame
-    pub position: Option<&'a NextFrame<BodyPose<P, R>>>,
-    /// Mass
-    pub mass: Option<&'a Mass>,
+    // Do force integration
+    for (next_velocity, next_pose, force, mass) in data {
+        let a = force.consume_force() * mass.inverse_mass();
+        let new_velocity = *next_velocity.value.linear() + a * dt;
+        next_velocity.value.set_linear(new_velocity);
+        let a = mass.world_inverse_inertia(next_pose.value.rotation()) * force.consume_torque();
+        let new_velocity = *next_velocity.value.angular() + a * dt;
+        next_velocity.value.set_angular(new_velocity);
+    }
 }
 
-/// Linear contact resolution
-pub fn linear_resolve_contact<'a, ID, P, R>(
-    contact: &ContactEvent<ID, P>,
-    a: LinearResolveData<'a, P, R>,
-    b: LinearResolveData<'a, P, R>,
-) -> (
-    Option<NextFrame<BodyPose<P, R>>>,
-    Option<NextFrame<BodyPose<P, R>>>,
-    Option<NextFrame<Velocity<P::Diff>>>,
-    Option<NextFrame<Velocity<P::Diff>>>,
-)
+/// Compute next frame pose
+///
+/// ### Parameters:
+///
+/// - `data`: Iterator over tuple with:
+///     - Velocity for the next frame, used to compute next frame pose
+///     - Pose for the current frame, will be updated
+///     - Pose for the next frame, will be updated
+/// - `dt`: Time step
+///
+/// ### Type parameters:
+///
+/// - `D`: Iterator type
+/// - `P`: Point, usually `Point2` or `Point3`
+/// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
+pub fn next_frame_pose<'a, D, P, A, R>(data: D, dt: Real)
 where
+    D: Iterator<
+        Item = (
+            &'a NextFrame<Velocity<P::Diff, A>>,
+            &'a BodyPose<P, R>,
+            &'a mut NextFrame<BodyPose<P, R>>,
+        ),
+    >,
     P: EuclideanSpace<Scalar = Real> + 'a,
-    R: Rotation<P> + 'a,
-    P::Diff: Debug + Zero + Clone + InnerSpace,
+    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + 'a,
+    A: Mul<Real, Output = A> + Clone + Copy + Zero + 'a,
+    R: Rotation<P> + ApplyAngular<A> + 'a,
 {
-    let a_velocity = a.velocity
-        .map(|v| v.value.linear.clone())
-        .unwrap_or(P::Diff::zero());
-    let b_velocity = b.velocity
-        .map(|v| v.value.linear.clone())
-        .unwrap_or(P::Diff::zero());
-    let a_inverse_mass = a.mass.map(|m| m.inverse_mass).unwrap_or(0.);
-    let b_inverse_mass = b.mass.map(|m| m.inverse_mass).unwrap_or(0.);
-    let total_inverse_mass = a_inverse_mass + b_inverse_mass;
-    // This only happens when we have 2 infinite masses colliding. Such a collision is undefined
-    if total_inverse_mass == 0. {
-        return (None, None, None, None);
-    }
-
-    let k_slop: Real = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
-    let percent: Real = NumCast::from(POSITIONAL_CORRECTION_PERCENT).unwrap();
-    let correction_penetration_depth = contact.contact.penetration_depth - k_slop;
-    let correction_magnitude = correction_penetration_depth.max(0.) / total_inverse_mass * percent;
-    let correction = contact.contact.normal * correction_magnitude;
-    let a_position_new = a.position
-        .map(|p| new_pose(p, correction * -a_inverse_mass));
-    let b_position_new = b.position.map(|p| new_pose(p, correction * b_inverse_mass));
-
-    let rv = b_velocity - a_velocity;
-    let velocity_along_normal = rv.dot(contact.contact.normal);
-    // Bodies are already separating, don't to impulse resolution
-    if velocity_along_normal > 0. {
-        return (a_position_new, b_position_new, None, None);
-    }
-    let e = 1.0; // TODO: restitution
-    let j = -(1. + e) * velocity_along_normal / total_inverse_mass;
-
-    let impulse = contact.contact.normal * j;
-    let a_velocity_new = a.velocity
-        .map(|v| new_velocity(v, impulse * -a_inverse_mass));
-    let b_velocity_new = b.velocity
-        .map(|v| new_velocity(v, impulse * b_inverse_mass));
-    (
-        a_position_new,
-        b_position_new,
-        a_velocity_new,
-        b_velocity_new,
-    )
-}
-
-fn new_pose<P, R>(
-    next_frame: &NextFrame<BodyPose<P, R>>,
-    correction: P::Diff,
-) -> NextFrame<BodyPose<P, R>>
-where
-    P: EuclideanSpace<Scalar = Real>,
-    R: Rotation<P>,
-    P::Diff: Clone,
-{
-    let new_position = *next_frame.value.position() + correction;
-    NextFrame {
-        value: BodyPose::new(new_position, next_frame.value.rotation().clone()),
-    }
-}
-
-fn new_velocity<V>(velocity: &NextFrame<Velocity<V>>, impulse: V) -> NextFrame<Velocity<V>>
-where
-    V: VectorSpace<Scalar = Real>,
-{
-    NextFrame {
-        value: Velocity {
-            linear: velocity.value.linear + impulse,
-        },
+    for (next_velocity, pose, next_pose) in data {
+        next_pose.value = next_velocity.value.apply(pose, dt)
     }
 }

@@ -225,6 +225,11 @@ where
     pub fn bound(&self) -> &P::Aabb {
         &self.transformed_bound
     }
+
+    /// Borrow the primitives of the shape
+    pub fn primitives(&self) -> &Vec<(P, T)> {
+        &self.primitives
+    }
 }
 
 fn get_bound<P, T>(primitives: &Vec<(P, T)>) -> P::Aabb
