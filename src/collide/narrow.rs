@@ -10,8 +10,8 @@ use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
 use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
 
-use Real;
 use collide::{Collider, CollisionMode, CollisionShape};
+use Real;
 
 /// Base trait implemented by all narrow phase algorithms.
 ///
@@ -78,10 +78,11 @@ where
 impl<P, T, Y, S, E> NarrowPhase<P, T, Y> for GJK<S, E>
 where
     P: Primitive,
+    P::Point: EuclideanSpace<Scalar=Real>,
     <P::Point as EuclideanSpace>::Diff: Debug
         + InnerSpace
+        + Array<Element=Real>
         + Neg<Output = <P::Point as EuclideanSpace>::Diff>,
-    P::Aabb: Discrete<P::Aabb> + Aabb<Scalar = Real>,
     S: SimplexProcessor<Point = P::Point> + Send,
     E: EPA<Point = P::Point> + Send,
     T: Transform<P::Point>

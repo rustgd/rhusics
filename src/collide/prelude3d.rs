@@ -7,6 +7,7 @@ pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 use cgmath::{Point3, Quaternion};
 use collision::algorithm::broad_phase::BruteForce;
 use collision::primitive::Primitive3;
+use collision::Aabb3;
 
 use {BodyPose, Real};
 use collide::*;
@@ -20,7 +21,7 @@ pub type CollisionShape3<T, Y = ()> = CollisionShape<Primitive3<Real>, T, Y>;
 pub type BroadBruteForce3 = BruteForce;
 
 /// Broad phase sweep and prune algorithm
-pub type SweepAndPrune3 = ::collision::algorithm::broad_phase::SweepAndPrune3<Real>;
+pub type SweepAndPrune3 = ::collision::algorithm::broad_phase::SweepAndPrune3<Real, Aabb3<Real>>;
 
 /// Body pose transform for 3D, see [BodyPose](../struct.BodyPose.html) for more information.
 pub type BodyPose3 = BodyPose<Point3<Real>, Quaternion<Real>>;

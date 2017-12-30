@@ -2,6 +2,7 @@ use std::fmt::Debug;
 
 use cgmath::prelude::*;
 use collision::{Aabb, Primitive};
+use collision::dbvt::TreeValueWrapped;
 use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
 
 use {BodyPose, NextFrame, Real};

@@ -1,6 +1,6 @@
 use cgmath::{EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, Transform,
              Vector3, Zero};
-use collision::{Aabb, Aabb2, Aabb3, HasAabb, Primitive};
+use collision::{Aabb, Aabb2, Aabb3, Primitive, BoundingVolume, Union};
 use collision::primitive::*;
 
 use super::{Mass, Material, PartialCrossProduct};
@@ -29,7 +29,7 @@ impl Volume<Real> for Circle<Real> {
 
 impl Volume<Real> for Rectangle<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
-        let b = self.get_bound();
+        let b = Aabb2::from(self);
         let mass = b.volume() * material.density();
         let inertia = mass * (b.dim().x * b.dim().x + b.dim().y * b.dim().y) / 12.;
         Mass::new_with_inertia(mass, inertia)
@@ -71,7 +71,7 @@ impl Volume<Matrix3<Real>> for Sphere<Real> {
 
 impl Volume<Matrix3<Real>> for Cuboid<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
-        let b = self.get_bound();
+        let b = Aabb3::from(self);
         let mass = b.volume() * material.density();
         let x2 = b.dim().x * b.dim().x;
         let y2 = b.dim().y * b.dim().y;
@@ -207,10 +207,13 @@ impl Volume<Matrix3<Real>> for Primitive3<Real> {
 // I_i : Inertia of primitive with index i
 // M_i : Mass of primitive with index i
 // d_i : Offset from composite center of mass to primitive center of mass
-impl<P, T> Volume<Real> for CollisionShape<P, T>
+impl<P, T, B, Y> Volume<Real> for CollisionShape<P, T, B, Y>
 where
-    P: Volume<Real> + Primitive<Aabb = Aabb2<Real>>,
+    P: Volume<Real> + Primitive<Point = Point2<Real>>,
+    for <'a> B: From<&'a P>,
+    B: BoundingVolume<Point = Point2<Real>> + Clone + Union<B, Output=B>,
     T: Transform<Point2<Real>>,
+    Y: Default,
 {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
         let (mass, inertia) = self.primitives()
@@ -231,10 +234,13 @@ where
     p.dot(p)
 }
 
-impl<P, T> Volume<Matrix3<Real>> for CollisionShape<P, T>
+impl<P, T, B, Y> Volume<Matrix3<Real>> for CollisionShape<P, T, B, Y>
 where
-    P: Volume<Matrix3<Real>> + Primitive<Aabb = Aabb3<Real>>,
+    P: Volume<Matrix3<Real>> + Primitive<Point = Point3<Real>>,
+    for <'a> B: From<&'a P>,
+    B: BoundingVolume<Point = Point3<Real>> + Clone + Union<B, Output=B>,
     T: Transform<Point3<Real>>,
+    Y: Default,
 {
     fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
         let (mass, inertia) = self.primitives()

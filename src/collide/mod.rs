@@ -5,7 +5,6 @@ pub use collision::prelude::Primitive;
 
 pub mod narrow;
 pub mod broad;
-pub mod util;
 pub mod prelude2d;
 pub mod prelude3d;
 
@@ -13,8 +12,6 @@ use std::fmt::Debug;
 
 use cgmath::prelude::*;
 use collision::prelude::*;
-
-use Real;
 
 /// Used to check if two shapes should be checked for collisions
 pub trait Collider {
@@ -91,26 +88,28 @@ where
 ///
 /// - `P`: Primitive type
 /// - `T`: Transform type
+/// - `B`: Bounding volume type
 /// - `Y`: Shape type (see `Collider`)
 #[derive(Debug, Clone)]
-pub struct CollisionShape<P, T, Y = ()>
+pub struct CollisionShape<P, T, B, Y = ()>
 where
     P: Primitive,
 {
     /// Enable/Disable collision detection for this shape
     pub enabled: bool,
-    base_bound: P::Aabb,
-    transformed_bound: P::Aabb,
+    base_bound: B,
+    transformed_bound: B,
     primitives: Vec<(P, T)>,
     strategy: CollisionStrategy,
     mode: CollisionMode,
     ty: Y,
 }
 
-impl<P, T, Y> CollisionShape<P, T, Y>
+impl<P, T, B, Y> CollisionShape<P, T, B, Y>
 where
     P: Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
+    B: BoundingVolume<Point=P::Point> + Union<B, Output=B> + Clone,
+    for <'a> B: From<&'a P>,
     T: Transform<P::Point>,
     Y: Default,
 {
@@ -130,7 +129,7 @@ where
         primitives: Vec<(P, T)>,
         ty: Y,
     ) -> Self {
-        let bound = get_bound(&primitives);
+        let bound : B = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
             primitives,
@@ -208,11 +207,11 @@ where
     /// - `end`: Optional model-to-world transform of the shaped at the end of the frame.
     pub fn update(&mut self, start: &T, end: Option<&T>) {
         self.transformed_bound = match end {
-            None => self.base_bound.transform(start),
+            None => self.base_bound.transform_volume(start),
             Some(end_t) => {
-                let base = self.base_bound.transform(end_t);
+                let base = self.base_bound.transform_volume(end_t);
                 if self.mode == CollisionMode::Continuous {
-                    base.union(&self.base_bound.transform(start))
+                    base.union(&self.base_bound.transform_volume(start))
                 } else {
                     base
                 }
@@ -222,7 +221,7 @@ where
 
     /// Return the current transformed bound for the shape
     ///
-    pub fn bound(&self) -> &P::Aabb {
+    pub fn bound(&self) -> &B {
         &self.transformed_bound
     }
 
@@ -232,14 +231,15 @@ where
     }
 }
 
-fn get_bound<P, T>(primitives: &Vec<(P, T)>) -> P::Aabb
+fn get_bound<P, T, B>(primitives: &Vec<(P, T)>) -> B
 where
     P: Primitive,
-    P::Aabb: Aabb<Scalar = Real>,
+    B: BoundingVolume<Point=P::Point> + Union<B, Output=B>,
+    for <'a> B: From<&'a P>,
     T: Transform<P::Point>,
 {
     primitives
         .iter()
-        .map(|&(ref p, ref t)| p.get_bound().transform(t))
-        .fold(P::Aabb::zero(), |bound, b| bound.union(&b))
+        .map(|&(ref p, ref t)| B::from(p).transform_volume(t))
+        .fold(B::empty(), |bound, b| bound.union(&b))
 }

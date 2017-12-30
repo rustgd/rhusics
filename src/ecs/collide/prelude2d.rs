@@ -7,7 +7,7 @@ pub use collide::{CollisionMode, CollisionStrategy};
 pub use collide::prelude2d::*;
 
 use cgmath::{Point2, Transform};
-use collision::dbvt::DynamicBoundingVolumeTree;
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
 use shrev::EventChannel;
 use specs::{Component, Entity, World};
