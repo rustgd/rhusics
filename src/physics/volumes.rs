@@ -157,6 +157,38 @@ impl Volume<Real> for Primitive2<Real> {
     }
 }
 
+impl Volume<Matrix3<Real>> for Capsule<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        use std::f64::consts::PI;
+        let pi = PI as Real;
+        let rsq = self.radius() * self.radius();
+        let hsq = self.height() * self.height();
+        let c_m = pi * rsq * self.height() * material.density();
+        let h_m = pi * 2. / 3. * rsq * self.radius() * material.density();
+        let mass = c_m + 2. * h_m;
+        let c_i_xz = hsq / 12. + rsq / 4.;
+        let h_i_xz = rsq * 2. / 5. + hsq / 2. + self.height() * self.radius() * 3. / 8.;
+        let i_xz = c_m * c_i_xz + h_m * h_i_xz * 2.;
+        let i_y = c_m * rsq / 2. + h_m * rsq * 4. / 5.;
+        let inertia = Matrix3::from_diagonal(Vector3::new(i_xz, i_y, i_xz));
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+impl Volume<Matrix3<Real>> for Cylinder<Real> {
+    fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
+        use std::f64::consts::PI;
+        let pi = PI as Real;
+        let rsq = self.radius() * self.radius();
+        let volume = pi * rsq * self.height();
+        let mass = volume * material.density();
+        let i_y = mass * rsq / 2.;
+        let i_xz = mass / 12. * (3. * rsq + self.height() * self.height());
+        let inertia = Matrix3::from_diagonal(Vector3::new(i_xz, i_y, i_xz));
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
 impl Volume<Matrix3<Real>> for Primitive3<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
         use collision::primitive::Primitive3::*;
@@ -164,6 +196,8 @@ impl Volume<Matrix3<Real>> for Primitive3<Real> {
             Particle(_) => Mass::new(material.density()),
             Sphere(ref sphere) => sphere.get_mass(material),
             Cuboid(ref cuboid) => cuboid.get_mass(material),
+            Capsule(ref capsule) => capsule.get_mass(material),
+            Cylinder(ref cylinder) => cylinder.get_mass(material),
             ConvexPolyhedron(ref polyhedra) => polyhedra.get_mass(material),
         }
     }
