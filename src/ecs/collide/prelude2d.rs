@@ -10,11 +10,11 @@ use cgmath::{Point2, Transform};
 use collision::Aabb2;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
-use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
-use {NextFrame, Real};
+use Real;
 use collide::ContactEvent;
+use ecs::WithRhusics;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
@@ -73,11 +73,13 @@ pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
 pub fn register_collision<T, Y>(world: &mut World)
 where
     T: Transform<Point2<Real>> + Component + Send + Sync + 'static,
-    Y: Send + Sync + 'static,
+    Y: Collider + Send + Sync + 'static,
 {
-    world.register::<T>();
-    world.register::<NextFrame<T>>();
-    world.register::<CollisionShape2<T, Y>>();
-    world.add_resource(EventChannel::<ContactEvent2>::new());
-    world.add_resource(DynamicBoundingVolumeTree2::new());
+    world.register_collision::<
+        Primitive2<Real>,
+        Aabb2<Real>,
+        T,
+        TreeValueWrapped<Entity, Aabb2<Real>>,
+        Y
+    >();
 }
