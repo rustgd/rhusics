@@ -1,6 +1,6 @@
 use cgmath::{EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, Transform,
              Vector3, Zero};
-use collision::{Aabb, Aabb2, Aabb3, Primitive, BoundingVolume, Union};
+use collision::{Aabb, Aabb2, Aabb3, BoundingVolume, Primitive, Union};
 use collision::primitive::*;
 
 use super::{Mass, Material, PartialCrossProduct};
@@ -210,8 +210,8 @@ impl Volume<Matrix3<Real>> for Primitive3<Real> {
 impl<P, T, B, Y> Volume<Real> for CollisionShape<P, T, B, Y>
 where
     P: Volume<Real> + Primitive<Point = Point2<Real>>,
-    for <'a> B: From<&'a P>,
-    B: BoundingVolume<Point = Point2<Real>> + Clone + Union<B, Output=B>,
+    for<'a> B: From<&'a P>,
+    B: BoundingVolume<Point = Point2<Real>> + Clone + Union<B, Output = B>,
     T: Transform<Point2<Real>>,
     Y: Default,
 {
@@ -237,8 +237,8 @@ where
 impl<P, T, B, Y> Volume<Matrix3<Real>> for CollisionShape<P, T, B, Y>
 where
     P: Volume<Matrix3<Real>> + Primitive<Point = Point3<Real>>,
-    for <'a> B: From<&'a P>,
-    B: BoundingVolume<Point = Point3<Real>> + Clone + Union<B, Output=B>,
+    for<'a> B: From<&'a P>,
+    B: BoundingVolume<Point = Point3<Real>> + Clone + Union<B, Output = B>,
     T: Transform<Point3<Real>>,
     Y: Default,
 {

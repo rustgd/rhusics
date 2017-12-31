@@ -27,14 +27,15 @@ use collide::{CollisionShape, Primitive};
 /// - `T`: Transform type, needs to implement `Transform` and have `FlaggedStorage`.
 /// - `D`: Type of values stored in the DBVT, needs to implement `TreeValue` and
 ///        `From<(Entity, CollisionShape)>`
+/// - `B`: Bounding volume
 /// - `Y`: Shape type, see `Collider`
 #[derive(Debug)]
-pub struct SpatialSortingSystem<P, T, D, Y = ()> {
+pub struct SpatialSortingSystem<P, T, D, B, Y = ()> {
     entities: HashMap<Entity, usize>,
-    marker: PhantomData<(P, T, Y, D)>,
+    marker: PhantomData<(P, T, Y, B, D)>,
 }
 
-impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
+impl<P, T, D, B, Y> SpatialSortingSystem<P, T, D, B, Y> {
     /// Create a new sorting system.
     pub fn new() -> Self {
         Self {
@@ -44,29 +45,34 @@ impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
     }
 }
 
-impl<'a, P, T, Y, D> System<'a> for SpatialSortingSystem<P, T, D, Y>
+impl<'a, P, T, Y, D, B> System<'a> for SpatialSortingSystem<P, T, D, B, Y>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone
+    B: Clone
         + Debug
         + Send
         + Sync
-        + Aabb<Scalar = Real>
-        + Contains<P::Aabb>
-        + SurfaceArea<Scalar = Real>,
+        + Union<B, Output = B>
+        + BoundingVolume<Point = P::Point>
+        + Contains<B>
+        + SurfaceArea<Scalar = Real>
+        + Send
+        + Sync
+        + 'static,
+    for<'b> B: From<&'b P>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
     Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
-    D: Send + Sync + 'static + TreeValue<Bound = P::Aabb>,
-    for<'c: 'a> D: From<(Entity, &'c CollisionShape<P, T, Y>)>,
+    D: Send + Sync + 'static + TreeValue<Bound = B>,
+    for<'b: 'a> D: From<(Entity, &'b CollisionShape<P, T, B, Y>)>,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        WriteStorage<'a, CollisionShape<P, T, Y>>,
+        WriteStorage<'a, CollisionShape<P, T, B, Y>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 

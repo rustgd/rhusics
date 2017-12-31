@@ -108,8 +108,8 @@ where
 impl<P, T, B, Y> CollisionShape<P, T, B, Y>
 where
     P: Primitive,
-    B: BoundingVolume<Point=P::Point> + Union<B, Output=B> + Clone,
-    for <'a> B: From<&'a P>,
+    B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
+    for<'a> B: From<&'a P>,
     T: Transform<P::Point>,
     Y: Default,
 {
@@ -129,7 +129,7 @@ where
         primitives: Vec<(P, T)>,
         ty: Y,
     ) -> Self {
-        let bound : B = get_bound(&primitives);
+        let bound: B = get_bound(&primitives);
         Self {
             base_bound: bound.clone(),
             primitives,
@@ -231,11 +231,26 @@ where
     }
 }
 
+impl<P, T, B, Y> HasBound for CollisionShape<P, T, B, Y>
+where
+    P: Primitive,
+    B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
+    for<'a> B: From<&'a P>,
+    T: Transform<P::Point>,
+    Y: Default,
+{
+    type Bound = B;
+
+    fn get_bound(&self) -> &Self::Bound {
+        self.bound()
+    }
+}
+
 fn get_bound<P, T, B>(primitives: &Vec<(P, T)>) -> B
 where
     P: Primitive,
-    B: BoundingVolume<Point=P::Point> + Union<B, Output=B>,
-    for <'a> B: From<&'a P>,
+    B: BoundingVolume<Point = P::Point> + Union<B, Output = B>,
+    for<'a> B: From<&'a P>,
     T: Transform<P::Point>,
 {
     primitives

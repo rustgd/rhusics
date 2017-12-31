@@ -25,7 +25,7 @@ impl<'a> System<'a> for RayCastSystem {
     fn run(&mut self, (tree,): Self::SystemData) {
         let ray = Ray2::new(Point2::new(-4., 10.), Vector2::new(0., -1.));
         if let Some((v, p)) = query_ray_closest(&*tree, ray) {
-            println!("hit bounding volume of {:?} at point {:?}", v.id, p);
+            println!("hit bounding volume of {:?} at point {:?}", v.value, p);
         }
     }
 }

@@ -5,16 +5,16 @@ pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
 use cgmath::{Point3, Quaternion};
+use collision::Aabb3;
 use collision::algorithm::broad_phase::BruteForce;
 use collision::primitive::Primitive3;
-use collision::Aabb3;
 
 use {BodyPose, Real};
 use collide::*;
 
 /// Collision shape for 3D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
 /// information
-pub type CollisionShape3<T, Y = ()> = CollisionShape<Primitive3<Real>, T, Y>;
+pub type CollisionShape3<T, Y = ()> = CollisionShape<Primitive3<Real>, T, Aabb3<Real>, Y>;
 
 /// Broad phase brute force algorithm for 3D, see
 /// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.

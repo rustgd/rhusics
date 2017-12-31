@@ -7,6 +7,7 @@ pub use collide::{CollisionMode, CollisionStrategy};
 pub use collide::prelude2d::*;
 
 use cgmath::{Point2, Transform};
+use collision::Aabb2;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
 use shrev::EventChannel;
@@ -14,7 +15,6 @@ use specs::{Component, Entity, World};
 
 use {NextFrame, Real};
 use collide::ContactEvent;
-use collide::util::ContainerShapeWrapper;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
@@ -25,7 +25,8 @@ pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
 pub type BasicCollisionSystem2<T, Y = ()> = BasicCollisionSystem<
     Primitive2<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    TreeValueWrapped<Entity, Aabb2<Real>>,
+    Aabb2<Real>,
     Y,
 >;
 
@@ -34,7 +35,8 @@ pub type BasicCollisionSystem2<T, Y = ()> = BasicCollisionSystem<
 pub type SpatialSortingSystem2<T, Y = ()> = SpatialSortingSystem<
     Primitive2<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    TreeValueWrapped<Entity, Aabb2<Real>>,
+    Aabb2<Real>,
     Y,
 >;
 
@@ -44,14 +46,15 @@ pub type SpatialSortingSystem2<T, Y = ()> = SpatialSortingSystem<
 pub type SpatialCollisionSystem2<T, Y = ()> = SpatialCollisionSystem<
     Primitive2<Real>,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive2<Real>>),
+    (usize, TreeValueWrapped<Entity, Aabb2<Real>>),
+    Aabb2<Real>,
     Y,
 >;
 
 /// Dynamic bounding volume tree for 2D
 
 pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    TreeValueWrapped<Entity, Aabb2<Real>>,
 >;
 
 /// Utility method for registering 2D collision components and resources with
