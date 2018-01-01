@@ -241,8 +241,8 @@ where
 {
     type Bound = B;
 
-    fn get_bound(&self) -> &Self::Bound {
-        self.bound()
+    fn bound(&self) -> &Self::Bound {
+        &self.transformed_bound
     }
 }
 
