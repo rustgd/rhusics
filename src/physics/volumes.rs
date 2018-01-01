@@ -1,6 +1,6 @@
 use cgmath::{EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, Transform,
              Vector3, Zero};
-use collision::{Aabb, Aabb2, Aabb3, BoundingVolume, Primitive, Union};
+use collision::{Aabb, Aabb2, Aabb3, Bound, ComputeBound, Primitive, Union};
 use collision::primitive::*;
 
 use super::{Mass, Material, PartialCrossProduct};
@@ -29,7 +29,7 @@ impl Volume<Real> for Circle<Real> {
 
 impl Volume<Real> for Rectangle<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Real> {
-        let b = Aabb2::from(self);
+        let b: Aabb2<Real> = self.compute_bound();
         let mass = b.volume() * material.density();
         let inertia = mass * (b.dim().x * b.dim().x + b.dim().y * b.dim().y) / 12.;
         Mass::new_with_inertia(mass, inertia)
@@ -71,7 +71,7 @@ impl Volume<Matrix3<Real>> for Sphere<Real> {
 
 impl Volume<Matrix3<Real>> for Cuboid<Real> {
     fn get_mass(&self, material: &Material) -> Mass<Matrix3<Real>> {
-        let b = Aabb3::from(self);
+        let b: Aabb3<Real> = self.compute_bound();
         let mass = b.volume() * material.density();
         let x2 = b.dim().x * b.dim().x;
         let y2 = b.dim().y * b.dim().y;
@@ -209,9 +209,8 @@ impl Volume<Matrix3<Real>> for Primitive3<Real> {
 // d_i : Offset from composite center of mass to primitive center of mass
 impl<P, T, B, Y> Volume<Real> for CollisionShape<P, T, B, Y>
 where
-    P: Volume<Real> + Primitive<Point = Point2<Real>>,
-    for<'a> B: From<&'a P>,
-    B: BoundingVolume<Point = Point2<Real>> + Clone + Union<B, Output = B>,
+    P: Volume<Real> + Primitive<Point = Point2<Real>> + ComputeBound<B>,
+    B: Bound<Point = Point2<Real>> + Clone + Union<B, Output = B>,
     T: Transform<Point2<Real>>,
     Y: Default,
 {
@@ -236,9 +235,8 @@ where
 
 impl<P, T, B, Y> Volume<Matrix3<Real>> for CollisionShape<P, T, B, Y>
 where
-    P: Volume<Matrix3<Real>> + Primitive<Point = Point3<Real>>,
-    for<'a> B: From<&'a P>,
-    B: BoundingVolume<Point = Point3<Real>> + Clone + Union<B, Output = B>,
+    P: Volume<Matrix3<Real>> + Primitive<Point = Point3<Real>> + ComputeBound<B>,
+    B: Bound<Point = Point3<Real>> + Clone + Union<B, Output = B>,
     T: Transform<Point3<Real>>,
     Y: Default,
 {

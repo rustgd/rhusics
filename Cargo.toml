@@ -19,9 +19,9 @@ ecs = ["specs", "shrev"]
 
 [dependencies]
 cgmath = "0.15"
-collision = { git = "https://github.com/Rhuagh/collision-rs/", branch = "feature/generic-bounds" }
-specs = { version = "0.10", optional = true}
-shrev = { version = "0.8", optional = true}
+collision = { git = "https://github.com/kvark/collision-rs/" }
+specs = { version = "0.10", optional = true }
+shrev = { version = "0.8", optional = true }
 
 [dev-dependencies]
 approx = "0.1"

@@ -21,6 +21,11 @@ use physics::{resolve_contact, ApplyAngular, Inertia, Mass, PartialCrossProduct,
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `O`: Internal type used for abstracting over cross products in 2D/3D,
 ///        usually `Scalar` or `Vector3`
+///
+/// ### System function
+///
+/// `fn(EventChannel<ContactEvent>, Mass, RigidBody, BodyPose, NextFrame<Velocity>, NextFrame<BodyPose>) -> (NextFrame<Velocity>, NextFrame<BodyPose>)`
+///
 pub struct ContactResolutionSystem<P, R, I, A, O>
 where
     P: EuclideanSpace,

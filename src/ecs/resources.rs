@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use cgmath::{EuclideanSpace, Rotation, Transform};
-use collision::{BoundingVolume, Contains, Primitive, SurfaceArea, Union};
+use collision::{Bound, Contains, Primitive, SurfaceArea, Union};
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use shrev::EventChannel;
 use specs::{Component, Entity, World};
@@ -21,7 +21,7 @@ pub trait WithRhusics {
         P::Point: Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Scalar: Debug + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point>
+        B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
             + Contains<B>
@@ -41,7 +41,7 @@ pub trait WithRhusics {
         P: Primitive + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point>
+        B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
             + Contains<B>
@@ -64,7 +64,7 @@ impl WithRhusics for World {
         P::Point: Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Scalar: Debug + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point>
+        B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
             + Contains<B>
@@ -88,7 +88,7 @@ impl WithRhusics for World {
         P: Primitive + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point>
+        B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
             + Contains<B>

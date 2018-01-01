@@ -33,10 +33,14 @@ use ecs::collide::resources::GetEntity;
 /// - `T`: Transform
 /// - `D`: Data accepted by broad phase
 /// - `Y`: Shape type, see `Collider`
+///
+/// ### System Function:
+///
+/// `fn(Entities, T, NextFrame<T>, CollisionShape, DynamicBoundingVolumeTree<D>) -> (DynamicBoundingVolumeTree<D>, EventChannel<ContactEvent>)`
 pub struct SpatialCollisionSystem<P, T, D, B, Y = ()>
 where
     P: Primitive,
-    B: BoundingVolume,
+    B: Bound,
 {
     narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
@@ -51,7 +55,7 @@ where
         + Send
         + Sync
         + 'static
-        + BoundingVolume<Point = P::Point>
+        + Bound<Point = P::Point>
         + Union<B, Output = B>
         + Contains<B>
         + SurfaceArea<Scalar = Real>,
@@ -82,7 +86,7 @@ where
 fn discrete_visitor<P, D, B>(bound: &B) -> DiscreteVisitor<B, D>
 where
     P: Primitive,
-    B: BoundingVolume<Point = P::Point> + Debug + Discrete<B>,
+    B: Bound<Point = P::Point> + Debug + Discrete<B>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug,
     D: TreeValue<Bound = B>,
@@ -92,19 +96,18 @@ where
 
 impl<'a, P, T, Y, B, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: EuclideanSpace<Scalar = Real>,
     B: Clone
         + Debug
         + Send
         + Sync
         + 'static
-        + BoundingVolume<Point = P::Point>
+        + Bound<Point = P::Point>
         + Union<B, Output = B>
         + Discrete<B>
         + Contains<B>
         + SurfaceArea<Scalar = Real>,
-    for<'b> B: From<&'b P>,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,

@@ -52,9 +52,8 @@ pub type SpatialCollisionSystem3<T, Y = ()> = SpatialCollisionSystem<
 >;
 
 /// Dynamic bounding volume tree for 3D
-pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
-    TreeValueWrapped<Entity, Aabb3<Real>>,
->;
+pub type DynamicBoundingVolumeTree3 =
+    DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb3<Real>>>;
 
 /// Utility method for registering 3D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).

@@ -29,10 +29,14 @@ use ecs::collide::resources::GetEntity;
 /// - `D`: Data accepted by broad phase
 /// - `B`: Bounding volume
 /// - `Y`: Shape type, see `Collider`
+///
+/// ### System Function:
+///
+/// `fn(Entities, T, NextFrame<T>, CollisionShape) -> (CollisionShape, EventChannel<ContactEvent>)`
 pub struct BasicCollisionSystem<P, T, D, B, Y = ()>
 where
     P: Primitive,
-    B: BoundingVolume,
+    B: Bound,
 {
     narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
@@ -44,7 +48,7 @@ where
     <P::Point as EuclideanSpace>::Diff: Debug,
     T: Transform<P::Point> + Component,
     D: HasBound<Bound = B>,
-    B: BoundingVolume<Point = P::Point>,
+    B: Bound<Point = P::Point>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -69,15 +73,14 @@ where
 
 impl<'a, P, T, Y, D, B> System<'a> for BasicCollisionSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
-    B: BoundingVolume<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
-    for<'b> B: From<&'b P>,
-    for<'b: 'a> D: HasBound<Bound = B> + From<(Entity, &'b CollisionShape<P, T, B, Y>)> + GetEntity,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+    D: HasBound<Bound = B> + From<(Entity, B)> + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
@@ -94,7 +97,7 @@ where
             let mut info = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose, next_poses.get(entity).map(|p| &p.value));
-                info.push((entity, &*shape).into());
+                info.push((entity, shape.bound().clone()).into());
             }
             let potentials = broad
                 .find_potentials(&mut info)

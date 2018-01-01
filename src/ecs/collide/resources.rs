@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use cgmath::prelude::*;
-use collision::{BoundingVolume, Primitive};
+use collision::{Bound, Primitive};
 use collision::dbvt::TreeValueWrapped;
 use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
 
@@ -34,14 +34,14 @@ where
     T: Send + Sync + 'static,
     Y: Send + Sync + 'static,
     P: Primitive + Send + Sync + 'static,
-    B: BoundingVolume + Send + Sync + 'static,
+    B: Bound + Send + Sync + 'static,
 {
     type Storage = DenseVecStorage<CollisionShape<P, T, B, Y>>;
 }
 
 impl<B> GetEntity for TreeValueWrapped<Entity, B>
 where
-    B: BoundingVolume,
+    B: Bound,
     <B::Point as EuclideanSpace>::Diff: Debug,
 {
     fn entity(&self) -> Entity {

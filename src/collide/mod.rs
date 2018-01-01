@@ -1,6 +1,6 @@
 //! Generic data structures and algorithms for collision detection
 
-pub use collision::{CollisionStrategy, Contact};
+pub use collision::{CollisionStrategy, ComputeBound, Contact};
 pub use collision::prelude::Primitive;
 
 pub mod narrow;
@@ -107,9 +107,8 @@ where
 
 impl<P, T, B, Y> CollisionShape<P, T, B, Y>
 where
-    P: Primitive,
-    B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
-    for<'a> B: From<&'a P>,
+    P: Primitive + ComputeBound<B>,
+    B: Bound<Point = P::Point> + Union<B, Output = B> + Clone,
     T: Transform<P::Point>,
     Y: Default,
 {
@@ -233,28 +232,26 @@ where
 
 impl<P, T, B, Y> HasBound for CollisionShape<P, T, B, Y>
 where
-    P: Primitive,
-    B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
-    for<'a> B: From<&'a P>,
+    P: Primitive + ComputeBound<B>,
+    B: Bound<Point = P::Point> + Union<B, Output = B> + Clone,
     T: Transform<P::Point>,
     Y: Default,
 {
     type Bound = B;
 
-    fn get_bound(&self) -> &Self::Bound {
-        self.bound()
+    fn bound(&self) -> &Self::Bound {
+        &self.transformed_bound
     }
 }
 
 fn get_bound<P, T, B>(primitives: &Vec<(P, T)>) -> B
 where
-    P: Primitive,
-    B: BoundingVolume<Point = P::Point> + Union<B, Output = B>,
-    for<'a> B: From<&'a P>,
+    P: Primitive + ComputeBound<B>,
+    B: Bound<Point = P::Point> + Union<B, Output = B>,
     T: Transform<P::Point>,
 {
     primitives
         .iter()
-        .map(|&(ref p, ref t)| B::from(p).transform_volume(t))
+        .map(|&(ref p, ref t)| p.compute_bound().transform_volume(t))
         .fold(B::empty(), |bound, b| bound.union(&b))
 }

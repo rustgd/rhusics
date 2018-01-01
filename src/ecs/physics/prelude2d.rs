@@ -18,13 +18,8 @@ use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupS
 pub type ImpulseSolverSystem2 = ImpulseSolverSystem<Point2<Real>, Basis2<Real>, Real>;
 
 /// Resolution system for 2D
-pub type ContactResolutionSystem2 = ContactResolutionSystem<
-    Point2<Real>,
-    Basis2<Real>,
-    Real,
-    Real,
-    Real,
->;
+pub type ContactResolutionSystem2 =
+    ContactResolutionSystem<Point2<Real>, Basis2<Real>, Real, Real, Real>;
 
 /// Next frame setup system for 2D
 pub type NextFrameSetupSystem2 = NextFrameSetupSystem<Point2<Real>, Basis2<Real>, Real, Real>;

@@ -65,11 +65,10 @@ pub fn main() {
 * Has support for doing spatial sort/collision detection using the collision-rs DBVT.
 * Support for doing broad phase using the collision-rs DBVT.
 * Continuous collision detection, using GJK
+* Simple rigid body implementation with single contact forward resolution
 
 # TODO:
 
 * Impulse solver
 * Integrator implementations (Euler, RK4, etc.) 
-* Inertial moments for bodies at rest
 * Parallel solver implementation
-* Generic bounding volumes

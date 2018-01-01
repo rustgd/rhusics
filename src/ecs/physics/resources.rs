@@ -1,5 +1,5 @@
 use cgmath::{EuclideanSpace, Rotation, VectorSpace, Zero};
-use collision::BoundingVolume;
+use collision::Bound;
 use specs::{Component, DenseVecStorage, Entity, EntityBuilder, LazyUpdate};
 
 use {BodyPose, NextFrame, Real};
@@ -52,7 +52,7 @@ pub trait WithRigidBody {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
@@ -70,7 +70,7 @@ pub trait WithRigidBody {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
@@ -90,7 +90,7 @@ pub trait WithLazyRigidBody {
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
@@ -108,7 +108,7 @@ pub trait WithLazyRigidBody {
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
@@ -126,7 +126,7 @@ impl WithLazyRigidBody for LazyUpdate {
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
@@ -154,7 +154,7 @@ impl WithLazyRigidBody for LazyUpdate {
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
@@ -179,7 +179,7 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
@@ -202,7 +202,7 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        B: BoundingVolume<Point = P::Point> + Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,

@@ -11,8 +11,8 @@ use collision::primitive::Primitive3;
 use specs::{Entity, World};
 
 use Real;
-use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupSystem};
 use ecs::WithRhusics;
+use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
 pub type ImpulseSolverSystem3 = ImpulseSolverSystem<Point3<Real>, Quaternion<Real>, Vector3<Real>>;
@@ -27,12 +27,8 @@ pub type ContactResolutionSystem3 = ContactResolutionSystem<
 >;
 
 /// Next frame setup system for 2D
-pub type NextFrameSetupSystem3 = NextFrameSetupSystem<
-    Point3<Real>,
-    Quaternion<Real>,
-    Matrix3<Real>,
-    Vector3<Real>,
->;
+pub type NextFrameSetupSystem3 =
+    NextFrameSetupSystem<Point3<Real>, Quaternion<Real>, Matrix3<Real>, Vector3<Real>>;
 
 /// Utility method for registering 3D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).

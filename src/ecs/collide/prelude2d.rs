@@ -53,9 +53,8 @@ pub type SpatialCollisionSystem2<T, Y = ()> = SpatialCollisionSystem<
 
 /// Dynamic bounding volume tree for 2D
 
-pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    TreeValueWrapped<Entity, Aabb2<Real>>,
->;
+pub type DynamicBoundingVolumeTree2 =
+    DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb2<Real>>>;
 
 /// Utility method for registering 2D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
