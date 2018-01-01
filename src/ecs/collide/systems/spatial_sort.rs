@@ -47,7 +47,7 @@ impl<P, T, D, B, Y> SpatialSortingSystem<P, T, D, B, Y> {
 
 impl<'a, P, T, Y, D, B> System<'a> for SpatialSortingSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     B: Clone
         + Debug
         + Send
@@ -59,7 +59,6 @@ where
         + Send
         + Sync
         + 'static,
-    for<'b> B: From<&'b P>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,

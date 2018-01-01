@@ -1,6 +1,6 @@
 //! Generic data structures and algorithms for collision detection
 
-pub use collision::{CollisionStrategy, Contact};
+pub use collision::{CollisionStrategy, Contact, ComputeBound};
 pub use collision::prelude::Primitive;
 
 pub mod narrow;
@@ -107,9 +107,8 @@ where
 
 impl<P, T, B, Y> CollisionShape<P, T, B, Y>
 where
-    P: Primitive,
+    P: Primitive + ComputeBound<B>,
     B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
-    for<'a> B: From<&'a P>,
     T: Transform<P::Point>,
     Y: Default,
 {
@@ -233,9 +232,8 @@ where
 
 impl<P, T, B, Y> HasBound for CollisionShape<P, T, B, Y>
 where
-    P: Primitive,
+    P: Primitive + ComputeBound<B>,
     B: BoundingVolume<Point = P::Point> + Union<B, Output = B> + Clone,
-    for<'a> B: From<&'a P>,
     T: Transform<P::Point>,
     Y: Default,
 {
@@ -248,13 +246,12 @@ where
 
 fn get_bound<P, T, B>(primitives: &Vec<(P, T)>) -> B
 where
-    P: Primitive,
+    P: Primitive + ComputeBound<B>,
     B: BoundingVolume<Point = P::Point> + Union<B, Output = B>,
-    for<'a> B: From<&'a P>,
     T: Transform<P::Point>,
 {
     primitives
         .iter()
-        .map(|&(ref p, ref t)| B::from(p).transform_volume(t))
+        .map(|&(ref p, ref t)| p.compute_bound().transform_volume(t))
         .fold(B::empty(), |bound, b| bound.union(&b))
 }

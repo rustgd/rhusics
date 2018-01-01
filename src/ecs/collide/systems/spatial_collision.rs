@@ -92,7 +92,7 @@ where
 
 impl<'a, P, T, Y, B, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: EuclideanSpace<Scalar = Real>,
     B: Clone
         + Debug
@@ -104,7 +104,6 @@ where
         + Discrete<B>
         + Contains<B>
         + SurfaceArea<Scalar = Real>,
-    for<'b> B: From<&'b P>,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,

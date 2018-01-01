@@ -69,14 +69,13 @@ where
 
 impl<'a, P, T, Y, D, B> System<'a> for BasicCollisionSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
     B: BoundingVolume<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
-    for<'b> B: From<&'b P>,
     for<'b: 'a> D: HasBound<Bound = B> + From<(Entity, &'b CollisionShape<P, T, B, Y>)> + GetEntity,
 {
     type SystemData = (
