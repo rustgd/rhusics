@@ -6,11 +6,11 @@ use std::fmt::Debug;
 use std::ops::Neg;
 
 use cgmath::prelude::*;
+use cgmath::BaseFloat;
 use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
 use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
 
-use Real;
 use collide::{Collider, CollisionMode, CollisionShape};
 
 /// Base trait implemented by all narrow phase algorithms.
@@ -79,10 +79,11 @@ where
 impl<P, T, Y, S, E, B> NarrowPhase<P, T, B, Y> for GJK<S, E>
 where
     P: Primitive,
-    P::Point: EuclideanSpace<Scalar = Real>,
+    P::Point: EuclideanSpace,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat,
     <P::Point as EuclideanSpace>::Diff: Debug
         + InnerSpace
-        + Array<Element = Real>
+        + Array<Element = <P::Point as EuclideanSpace>::Scalar>
         + Neg<Output = <P::Point as EuclideanSpace>::Diff>,
     S: SimplexProcessor<Point = P::Point> + Send,
     E: EPA<Point = P::Point> + Send,
@@ -166,13 +167,13 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
     }
 }
 
-/*
 #[cfg(test)]
 mod tests {
 
     use cgmath::{Basis2, Decomposed, Rad, Rotation2, Vector2};
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
+    use collision::Aabb2;
 
     use Real;
     use collide::*;
@@ -188,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_gjk_continuous_2d() {
-        let left = CollisionShape::<_, _, ()>::new_simple(
+        let left = CollisionShape::<_, _, Aabb2<_>, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Continuous,
             Rectangle::new(10., 10.),
@@ -226,4 +227,3 @@ mod tests {
         println!("{:?}", contact);
     }
 }
-*/
