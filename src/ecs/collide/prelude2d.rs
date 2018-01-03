@@ -21,23 +21,13 @@ pub type ContactEvent2<S> = ContactEvent<Entity, Point2<S>>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
-pub type BasicCollisionSystem2<S, T, Y = ()> = BasicCollisionSystem<
-    Primitive2<S>,
-    T,
-    TreeValueWrapped<Entity, Aabb2<S>>,
-    Aabb2<S>,
-    Y,
->;
+pub type BasicCollisionSystem2<S, T, Y = ()> =
+    BasicCollisionSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
-pub type SpatialSortingSystem2<S, T, Y = ()> = SpatialSortingSystem<
-    Primitive2<S>,
-    T,
-    TreeValueWrapped<Entity, Aabb2<S>>,
-    Aabb2<S>,
-    Y,
->;
+pub type SpatialSortingSystem2<S, T, Y = ()> =
+    SpatialSortingSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
@@ -52,9 +42,8 @@ pub type SpatialCollisionSystem2<S, T, Y = ()> = SpatialCollisionSystem<
 
 /// Dynamic bounding volume tree for 2D
 
-pub type DynamicBoundingVolumeTree2<S> = DynamicBoundingVolumeTree<
-    TreeValueWrapped<Entity, Aabb2<S>>,
->;
+pub type DynamicBoundingVolumeTree2<S> =
+    DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb2<S>>>;
 
 /// Utility method for registering 2D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).

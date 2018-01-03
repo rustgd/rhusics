@@ -13,8 +13,8 @@ use specs::{Fetch, RunNow, System, World};
 use rhusics::ecs::physics::prelude3d::{register_physics, BodyPose3, CollisionMode,
                                        CollisionShape3, CollisionStrategy, ContactEvent3,
                                        ContactResolutionSystem3, Cuboid,
-                                       DynamicBoundingVolumeTree3, GJK3, CurrentFrameUpdateSystem3,
-                                       Mass3, NextFrameSetupSystem3, RigidBody,
+                                       CurrentFrameUpdateSystem3, DynamicBoundingVolumeTree3,
+                                       GJK3, Mass3, NextFrameSetupSystem3, RigidBody,
                                        SpatialCollisionSystem3, SpatialSortingSystem3,
                                        WithRigidBody};
 

@@ -12,10 +12,11 @@ use specs::{Fetch, RunNow, System, World};
 
 use rhusics::ecs::physics::prelude2d::{register_physics, BodyPose2, CollisionMode,
                                        CollisionShape2, CollisionStrategy, ContactEvent2,
-                                       ContactResolutionSystem2, DynamicBoundingVolumeTree2, GJK2,
-                                       CurrentFrameUpdateSystem2, Mass2, NextFrameSetupSystem2,
-                                       Rectangle, RigidBody, SpatialCollisionSystem2,
-                                       SpatialSortingSystem2, WithRigidBody};
+                                       ContactResolutionSystem2, CurrentFrameUpdateSystem2,
+                                       DynamicBoundingVolumeTree2, GJK2, Mass2,
+                                       NextFrameSetupSystem2, Rectangle, RigidBody,
+                                       SpatialCollisionSystem2, SpatialSortingSystem2,
+                                       WithRigidBody};
 
 struct RayCastSystem;
 

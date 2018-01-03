@@ -14,24 +14,16 @@ use ecs::WithRhusics;
 use ecs::physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
-pub type CurrentFrameUpdateSystem3<S> = CurrentFrameUpdateSystem<Point3<S>, Quaternion<S>, Vector3<S>>;
+pub type CurrentFrameUpdateSystem3<S> =
+    CurrentFrameUpdateSystem<Point3<S>, Quaternion<S>, Vector3<S>>;
 
 /// Resolution system for 2D
-pub type ContactResolutionSystem3<S> = ContactResolutionSystem<
-    Point3<S>,
-    Quaternion<S>,
-    Matrix3<S>,
-    Vector3<S>,
-    Vector3<S>,
->;
+pub type ContactResolutionSystem3<S> =
+    ContactResolutionSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, Vector3<S>>;
 
 /// Next frame setup system for 2D
-pub type NextFrameSetupSystem3<S> = NextFrameSetupSystem<
-    Point3<S>,
-    Quaternion<S>,
-    Matrix3<S>,
-    Vector3<S>,
->;
+pub type NextFrameSetupSystem3<S> =
+    NextFrameSetupSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>>;
 
 /// Utility method for registering 3D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
