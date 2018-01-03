@@ -229,7 +229,7 @@ mod tests_f32 {
 
     #[test]
     fn test_apply_angular_real() {
-        let orientation : f32 = 0.;
+        let orientation: f32 = 0.;
         let velocity = 0.5;
         let orientation = orientation.apply(&velocity, 0.1);
         let orientation = orientation.apply(&velocity, 0.1);
@@ -317,7 +317,7 @@ mod tests_f64 {
 
     #[test]
     fn test_apply_angular_real() {
-        let orientation : f64 = 0.;
+        let orientation: f64 = 0.;
         let velocity = 0.5;
         let orientation = orientation.apply(&velocity, 0.1);
         let orientation = orientation.apply(&velocity, 0.1);

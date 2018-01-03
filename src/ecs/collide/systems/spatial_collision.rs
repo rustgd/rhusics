@@ -213,7 +213,7 @@ where
                 // intersections
                 // right now, we only report the collision, no normal/depth calculation
                 for (left_entity, right_entity) in potentials {
-                    event_channel.single_write(ContactEvent::new_single(
+                    event_channel.single_write(ContactEvent::new_simple(
                         CollisionStrategy::CollisionOnly,
                         (left_entity, right_entity),
                     ));

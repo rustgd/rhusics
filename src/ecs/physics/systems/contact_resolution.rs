@@ -11,7 +11,7 @@ use collide::ContactEvent;
 use physics::{resolve_contact, ApplyAngular, Inertia, Mass, PartialCrossProduct, ResolveData,
               RigidBody, Velocity};
 
-/// Do contact resolution
+/// Do single contact, forward resolution.
 ///
 /// ### Type parameters:
 ///

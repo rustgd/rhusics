@@ -181,7 +181,6 @@ mod tests_f32 {
     }
 }
 
-
 #[cfg(test)]
 mod tests_f64 {
     use cgmath::{Point2, Point3, Transform, Vector2, Vector3, Zero};
