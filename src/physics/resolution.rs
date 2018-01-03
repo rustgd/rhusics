@@ -286,11 +286,67 @@ mod tests {
     use collide::ContactEvent;
 
     #[test]
-    fn test_resolve_2d() {
-        let mass = Mass::new_with_inertia(0.5, 0.);
+    fn test_resolve_2d_f32() {
+        let mass = Mass::<f32, f32>::new_with_inertia(0.5, 0.);
         let material = Material::default();
         let left_velocity = NextFrame {
-            value: Velocity::new(Vector2::new(1., 0.), 0.),
+            value: Velocity::new(Vector2::<f32>::new(1., 0.), 0.),
+        };
+        let left_pose = BodyPose::new(Point2::origin(), Basis2::one());
+        let right_velocity = NextFrame {
+            value: Velocity::new(Vector2::new(-2., 0.), 0.),
+        };
+        let right_pose = BodyPose::new(Point2::new(1., 0.), Basis2::one());
+        let contact = ContactEvent::new(
+            (1, 2),
+            Contact::new_impl(CollisionStrategy::FullResolution, Vector2::new(1., 0.), 0.5),
+        );
+        let set = resolve_contact(
+            &contact.contact,
+            ResolveData {
+                velocity: Some(&left_velocity),
+                pose: &left_pose,
+                mass: &mass,
+                material: &material,
+            },
+            ResolveData {
+                velocity: Some(&right_velocity),
+                pose: &right_pose,
+                mass: &mass,
+                material: &material,
+            },
+        );
+        assert_eq!(
+            (
+                SingleChangeSet {
+                    pose: Some(BodyPose::new(
+                        Point2::new(-0.04900000075250864, 0.),
+                        Basis2::one()
+                    )),
+                    velocity: Some(NextFrame {
+                        value: Velocity::new(Vector2::new(-2., 0.), 0.),
+                    }),
+                },
+                SingleChangeSet {
+                    pose: Some(BodyPose::new(
+                        Point2::new(1.0490000007525087, 0.),
+                        Basis2::one()
+                    )),
+                    velocity: Some(NextFrame {
+                        value: Velocity::new(Vector2::new(1., 0.), 0.),
+                    }),
+                }
+            ),
+            set
+        );
+    }
+
+    #[test]
+    fn test_resolve_2d_f64() {
+        let mass = Mass::<f64, f64>::new_with_inertia(0.5, 0.);
+        let material = Material::default();
+        let left_velocity = NextFrame {
+            value: Velocity::new(Vector2::<f64>::new(1., 0.), 0.),
         };
         let left_pose = BodyPose::new(Point2::origin(), Basis2::one());
         let right_velocity = NextFrame {

@@ -170,7 +170,7 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
 #[cfg(test)]
 mod tests {
 
-    use cgmath::{Basis2, Decomposed, Rad, Rotation2, Vector2};
+    use cgmath::{Basis2, Decomposed, Rad, Rotation2, Vector2, BaseFloat};
     use collision::Aabb2;
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
@@ -178,22 +178,22 @@ mod tests {
     use collide::*;
     use collide::narrow::NarrowPhase;
 
-    fn transform(x: f32, y: f32, angle: f32) -> Decomposed<Vector2<f32>, Basis2<f32>> {
+    fn transform<S>(x: S, y: S, angle: S) -> Decomposed<Vector2<S>, Basis2<S>> where S: BaseFloat {
         Decomposed {
             disp: Vector2::new(x, y),
             rot: Rotation2::from_angle(Rad(angle)),
-            scale: 1.,
+            scale: S::one(),
         }
     }
 
     #[test]
-    fn test_gjk_continuous_2d() {
+    fn test_gjk_continuous_2d_f32() {
         let left = CollisionShape::<_, _, Aabb2<_>, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Continuous,
             Rectangle::new(10., 10.),
         );
-        let left_start_transform = transform(0., 0., 0.);
+        let left_start_transform = transform::<f32>(0., 0., 0.);
         let left_end_transform = transform(30., 0., 0.);
         let right = CollisionShape::new_simple(
             CollisionStrategy::FullResolution,
@@ -202,6 +202,46 @@ mod tests {
         );
         let right_transform = transform(15., 0., 0.);
         let gjk = GJK2::<f32>::new();
+
+        assert!(gjk.collide_continuous(
+            &left,
+            &left_start_transform,
+            Some(&left_start_transform),
+            &right,
+            &right_transform,
+            Some(&right_transform)
+        ).is_none());
+
+        let contact = gjk.collide_continuous(
+            &left,
+            &left_start_transform,
+            Some(&left_end_transform),
+            &right,
+            &right_transform,
+            Some(&right_transform),
+        ).unwrap();
+
+        assert_ulps_eq!(0.16666666666666666, contact.time_of_impact);
+
+        println!("{:?}", contact);
+    }
+
+    #[test]
+    fn test_gjk_continuous_2d_f64() {
+        let left = CollisionShape::<_, _, Aabb2<_>, ()>::new_simple(
+            CollisionStrategy::FullResolution,
+            CollisionMode::Continuous,
+            Rectangle::new(10., 10.),
+        );
+        let left_start_transform = transform::<f64>(0., 0., 0.);
+        let left_end_transform = transform(30., 0., 0.);
+        let right = CollisionShape::new_simple(
+            CollisionStrategy::FullResolution,
+            CollisionMode::Discrete,
+            Rectangle::new(10., 10.),
+        );
+        let right_transform = transform(15., 0., 0.);
+        let gjk = GJK2::<f64>::new();
 
         assert!(gjk.collide_continuous(
             &left,

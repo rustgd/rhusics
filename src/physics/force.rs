@@ -85,7 +85,7 @@ where
 }
 
 #[cfg(test)]
-mod tests {
+mod tests_f32 {
     use cgmath::{Point2, Point3, Transform, Vector2, Vector3, Zero};
 
     use super::ForceAccumulator;
@@ -154,6 +154,104 @@ mod tests {
     #[test]
     fn test_add_force_at_point_3d() {
         let mut forces = ForceAccumulator::<Vector3<f32>, Vector3<f32>>::new();
+        // add at origin -> no torque
+        forces.add_force_at_point(
+            Vector3::new(1., 1., 1.),
+            Point3::new(0., 0., 0.),
+            &BodyPose3::one(),
+        );
+        assert_eq!(Vector3::new(1., 1., 1.), forces.consume_force());
+        assert_eq!(Vector3::zero(), forces.consume_torque());
+        // add pointed at origin -> no torque
+        forces.add_force_at_point(
+            Vector3::new(1., 1., 1.),
+            Point3::new(-1., -1., -1.),
+            &BodyPose3::one(),
+        );
+        assert_eq!(Vector3::new(1., 1., 1.), forces.consume_force());
+        assert_eq!(Vector3::zero(), forces.consume_torque());
+        // add outside with offset -> torque
+        forces.add_force_at_point(
+            Vector3::new(1., 1., 1.),
+            Point3::new(-1., 0., 0.),
+            &BodyPose3::one(),
+        );
+        assert_eq!(Vector3::new(1., 1., 1.), forces.consume_force());
+        assert_eq!(Vector3::new(0., 1., -1.), forces.consume_torque());
+    }
+}
+
+
+#[cfg(test)]
+mod tests_f64 {
+    use cgmath::{Point2, Point3, Transform, Vector2, Vector3, Zero};
+
+    use super::ForceAccumulator;
+    use physics::prelude2d::BodyPose2;
+    use physics::prelude3d::BodyPose3;
+
+    #[test]
+    fn test_add_force() {
+        let mut forces = ForceAccumulator::<Vector2<f64>, f64>::new();
+        forces.add_force(Vector2::new(0., 2.));
+        forces.add_force(Vector2::new(1.4, 2.));
+        assert_eq!(Vector2::new(1.4, 4.), forces.consume_force());
+        assert_eq!(Vector2::zero(), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+
+        let mut forces = ForceAccumulator::<Vector3<f64>, f64>::new();
+        forces.add_force(Vector3::new(0., 2., -1.));
+        forces.add_force(Vector3::new(1.4, 2., -1.));
+        assert_eq!(Vector3::new(1.4, 4., -2.), forces.consume_force());
+        assert_eq!(Vector3::zero(), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+    }
+
+    #[test]
+    fn test_add_torque() {
+        let mut forces = ForceAccumulator::<Vector2<f64>, f64>::new();
+        forces.add_torque(0.2);
+        forces.add_torque(1.4);
+        assert_ulps_eq!(1.6, forces.consume_torque());
+        assert_eq!(Vector2::zero(), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+
+        let mut forces = ForceAccumulator::<Vector3<f64>, f64>::new();
+        forces.add_torque(0.2);
+        forces.add_torque(1.4);
+        assert_ulps_eq!(1.6, forces.consume_torque());
+        assert_eq!(Vector3::zero(), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+    }
+
+    #[test]
+    fn test_add_force_at_point_2d() {
+        let mut forces = ForceAccumulator::<Vector2<f64>, f64>::new();
+        // add at origin -> no torque
+        forces.add_force_at_point(Vector2::new(1., 1.), Point2::new(0., 0.), &BodyPose2::one());
+        assert_eq!(Vector2::new(1., 1.), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+        // add pointed at origin -> no torque
+        forces.add_force_at_point(
+            Vector2::new(1., 1.),
+            Point2::new(-1., -1.),
+            &BodyPose2::one(),
+        );
+        assert_eq!(Vector2::new(1., 1.), forces.consume_force());
+        assert_eq!(0., forces.consume_torque());
+        // add outside with offset -> torque
+        forces.add_force_at_point(
+            Vector2::new(1., 1.),
+            Point2::new(-1., 0.),
+            &BodyPose2::one(),
+        );
+        assert_eq!(Vector2::new(1., 1.), forces.consume_force());
+        assert_eq!(-1., forces.consume_torque());
+    }
+
+    #[test]
+    fn test_add_force_at_point_3d() {
+        let mut forces = ForceAccumulator::<Vector3<f64>, Vector3<f64>>::new();
         // add at origin -> no torque
         forces.add_force_at_point(
             Vector3::new(1., 1., 1.),
