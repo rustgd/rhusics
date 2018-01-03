@@ -5,12 +5,12 @@
 use std::fmt::Debug;
 use std::ops::Neg;
 
+use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
 use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
 
-use Real;
 use collide::{Collider, CollisionMode, CollisionShape};
 
 /// Base trait implemented by all narrow phase algorithms.
@@ -19,8 +19,9 @@ use collide::{Collider, CollisionMode, CollisionShape};
 ///
 /// - `P`: collision primitive type
 /// - `T`: model-to-world transform type
+/// - `B`: Bounding volume
 /// - `Y`: Shape type (see `Collider`)
-pub trait NarrowPhase<P, T, Y = ()>: Send
+pub trait NarrowPhase<P, T, B, Y = ()>: Send
 where
     P: Primitive,
     <P::Point as EuclideanSpace>::Diff: Debug,
@@ -40,9 +41,9 @@ where
     /// Optionally returns the contact manifold for the contact with largest penetration depth
     fn collide(
         &self,
-        left: &CollisionShape<P, T, Y>,
+        left: &CollisionShape<P, T, B, Y>,
         left_transform: &T,
-        right: &CollisionShape<P, T, Y>,
+        right: &CollisionShape<P, T, B, Y>,
         right_transform: &T,
     ) -> Option<Contact<P::Point>>;
 
@@ -66,22 +67,24 @@ where
     /// Optionally returns the contact manifold for the contact with largest penetration depth
     fn collide_continuous(
         &self,
-        left: &CollisionShape<P, T, Y>,
+        left: &CollisionShape<P, T, B, Y>,
         left_start_transform: &T,
         left_end_transform: Option<&T>,
-        right: &CollisionShape<P, T, Y>,
+        right: &CollisionShape<P, T, B, Y>,
         right_start_transform: &T,
         right_end_transform: Option<&T>,
     ) -> Option<Contact<P::Point>>;
 }
 
-impl<P, T, Y, S, E> NarrowPhase<P, T, Y> for GJK<S, E>
+impl<P, T, Y, S, E, B> NarrowPhase<P, T, B, Y> for GJK<S, E>
 where
     P: Primitive,
+    P::Point: EuclideanSpace,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat,
     <P::Point as EuclideanSpace>::Diff: Debug
         + InnerSpace
+        + Array<Element = <P::Point as EuclideanSpace>::Scalar>
         + Neg<Output = <P::Point as EuclideanSpace>::Diff>,
-    P::Aabb: Discrete<P::Aabb> + Aabb<Scalar = Real>,
     S: SimplexProcessor<Point = P::Point> + Send,
     E: EPA<Point = P::Point> + Send,
     T: Transform<P::Point>
@@ -91,9 +94,9 @@ where
 {
     fn collide(
         &self,
-        left: &CollisionShape<P, T, Y>,
+        left: &CollisionShape<P, T, B, Y>,
         left_transform: &T,
-        right: &CollisionShape<P, T, Y>,
+        right: &CollisionShape<P, T, B, Y>,
         right_transform: &T,
     ) -> Option<Contact<P::Point>> {
         if !left.enabled || !right.enabled || left.primitives.is_empty()
@@ -115,10 +118,10 @@ where
 
     fn collide_continuous(
         &self,
-        left: &CollisionShape<P, T, Y>,
+        left: &CollisionShape<P, T, B, Y>,
         left_start_transform: &T,
         left_end_transform: Option<&T>,
-        right: &CollisionShape<P, T, Y>,
+        right: &CollisionShape<P, T, B, Y>,
         right_start_transform: &T,
         right_end_transform: Option<&T>,
     ) -> Option<Contact<P::Point>> {
@@ -168,6 +171,7 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
 mod tests {
 
     use cgmath::{Basis2, Decomposed, Rad, Rotation2, Vector2};
+    use collision::Aabb2;
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
 
@@ -185,7 +189,7 @@ mod tests {
 
     #[test]
     fn test_gjk_continuous_2d() {
-        let left = CollisionShape::<_, _, ()>::new_simple(
+        let left = CollisionShape::<_, _, Aabb2<_>, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Continuous,
             Rectangle::new(10., 10.),

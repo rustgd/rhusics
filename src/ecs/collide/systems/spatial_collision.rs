@@ -8,7 +8,7 @@ use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
 use {NextFrame, Real};
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
-use collide::broad::{BroadPhase, HasBound};
+use collide::broad::BroadPhase;
 use collide::narrow::NarrowPhase;
 use ecs::collide::resources::GetEntity;
 
@@ -33,30 +33,34 @@ use ecs::collide::resources::GetEntity;
 /// - `T`: Transform
 /// - `D`: Data accepted by broad phase
 /// - `Y`: Shape type, see `Collider`
-pub struct SpatialCollisionSystem<P, T, D, Y = ()>
+///
+/// ### System Function:
+///
+/// `fn(Entities, T, NextFrame<T>, CollisionShape, DynamicBoundingVolumeTree<D>) -> (DynamicBoundingVolumeTree<D>, EventChannel<ContactEvent>)`
+pub struct SpatialCollisionSystem<P, T, D, B, Y = ()>
 where
     P: Primitive,
-    P::Aabb: Aabb<Scalar = Real> + Clone + Debug,
+    B: Bound,
 {
-    narrow: Option<Box<NarrowPhase<P, T, Y>>>,
+    narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, D, Y> SpatialCollisionSystem<P, T, D, Y>
+impl<P, T, D, B, Y> SpatialCollisionSystem<P, T, D, B, Y>
 where
     P: Primitive + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
-    P::Aabb: Clone
+    B: Clone
         + Debug
         + Send
         + Sync
         + 'static
-        + Aabb<Scalar = Real>
-        + Union<P::Aabb, Output = P::Aabb>
-        + Contains<P::Aabb>
+        + Bound<Point = P::Point>
+        + Union<B, Output = B>
+        + Contains<B>
         + SurfaceArea<Scalar = Real>,
     T: Transform<P::Point> + Component,
-    D: HasBound<Bound = P::Aabb>,
+    D: HasBound<Bound = B>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -67,53 +71,55 @@ where
     }
 
     /// Specify what narrow phase algorithm to use
-    pub fn with_narrow_phase<N: NarrowPhase<P, T, Y> + 'static>(mut self, narrow: N) -> Self {
+    pub fn with_narrow_phase<N: NarrowPhase<P, T, B, Y> + 'static>(mut self, narrow: N) -> Self {
         self.narrow = Some(Box::new(narrow));
         self
     }
 
     /// Specify what broad phase algorithm to use
-    pub fn with_broad_phase<B: BroadPhase<D> + 'static>(mut self, broad: B) -> Self {
+    pub fn with_broad_phase<V: BroadPhase<D> + 'static>(mut self, broad: V) -> Self {
         self.broad = Some(Box::new(broad));
         self
     }
 }
 
-fn discrete_visitor<P, D>(bound: &P::Aabb) -> DiscreteVisitor<P::Aabb, D>
+fn discrete_visitor<P, D, B>(bound: &B) -> DiscreteVisitor<B, D>
 where
     P: Primitive,
-    P::Aabb: Aabb<Scalar = Real> + Debug + Discrete<P::Aabb>,
+    B: Bound<Point = P::Point> + Debug + Discrete<B>,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug,
-    D: TreeValue<Bound = P::Aabb>,
+    D: TreeValue<Bound = B>,
 {
-    DiscreteVisitor::<P::Aabb, D>::new(bound)
+    DiscreteVisitor::<B, D>::new(bound)
 }
 
-impl<'a, P, T, Y, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), Y>
+impl<'a, P, T, Y, B, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: EuclideanSpace<Scalar = Real>,
+    B: Clone
         + Debug
         + Send
         + Sync
         + 'static
-        + Aabb<Scalar = Real>
-        + Discrete<P::Aabb>
-        + Contains<P::Aabb>
+        + Bound<Point = P::Point>
+        + Union<B, Output = B>
+        + Discrete<B>
+        + Contains<B>
         + SurfaceArea<Scalar = Real>,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
     Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
-    D: Send + Sync + 'static + TreeValue<Bound = P::Aabb> + HasBound<Bound = P::Aabb> + GetEntity,
+    D: Send + Sync + 'static + TreeValue<Bound = B> + HasBound<Bound = B> + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        ReadStorage<'a, CollisionShape<P, T, Y>>,
+        ReadStorage<'a, CollisionShape<P, T, B, Y>>,
         FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
@@ -140,7 +146,7 @@ where
             // find changed values, do intersection tests against tree for each
             // uses FlaggedStorage
             for (entity, _, shape) in (&*entities, (&poses).open().1, &shapes).join() {
-                for (v, _) in tree.query(&mut discrete_visitor::<P, D>(shape.bound())) {
+                for (v, _) in tree.query(&mut discrete_visitor::<P, D, B>(shape.bound())) {
                     let e = v.entity();
                     if entity != e {
                         let n = if entity < e {
@@ -157,7 +163,7 @@ where
             // find changed next frame values, do intersection tests against tree for each
             // uses FlaggedStorage
             for (entity, _, shape) in (&*entities, (&next_poses).open().1, &shapes).join() {
-                for (v, _) in tree.query(&mut discrete_visitor::<P, D>(shape.bound())) {
+                for (v, _) in tree.query(&mut discrete_visitor::<P, D, B>(shape.bound())) {
                     let e = v.entity();
                     if entity != e {
                         let n = if entity < e {

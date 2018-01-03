@@ -5,9 +5,9 @@ use collision::prelude::*;
 use shrev::EventChannel;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use {NextFrame, Real};
+use NextFrame;
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
-use collide::broad::{BroadPhase, HasBound};
+use collide::broad::BroadPhase;
 use collide::narrow::NarrowPhase;
 use ecs::collide::resources::GetEntity;
 
@@ -27,23 +27,28 @@ use ecs::collide::resources::GetEntity;
 /// - `P`: Shape primitive
 /// - `T`: Transform
 /// - `D`: Data accepted by broad phase
+/// - `B`: Bounding volume
 /// - `Y`: Shape type, see `Collider`
-pub struct BasicCollisionSystem<P, T, D, Y = ()>
+///
+/// ### System Function:
+///
+/// `fn(Entities, T, NextFrame<T>, CollisionShape) -> (CollisionShape, EventChannel<ContactEvent>)`
+pub struct BasicCollisionSystem<P, T, D, B, Y = ()>
 where
     P: Primitive,
-    P::Aabb: Clone + Debug + Aabb<Scalar = Real>,
+    B: Bound,
 {
-    narrow: Option<Box<NarrowPhase<P, T, Y>>>,
+    narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
 }
 
-impl<P, T, D, Y> BasicCollisionSystem<P, T, D, Y>
+impl<P, T, D, B, Y> BasicCollisionSystem<P, T, D, B, Y>
 where
     P: Primitive + Send + Sync + 'static,
-    P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
     T: Transform<P::Point> + Component,
-    D: HasBound<Bound = P::Aabb>,
+    D: HasBound<Bound = B>,
+    B: Bound<Point = P::Point>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -54,35 +59,34 @@ where
     }
 
     /// Specify what narrow phase algorithm to use
-    pub fn with_narrow_phase<N: NarrowPhase<P, T, Y> + 'static>(mut self, narrow: N) -> Self {
+    pub fn with_narrow_phase<N: NarrowPhase<P, T, B, Y> + 'static>(mut self, narrow: N) -> Self {
         self.narrow = Some(Box::new(narrow));
         self
     }
 
     /// Specify what broad phase algorithm to use
-    pub fn with_broad_phase<B: BroadPhase<D> + 'static>(mut self, broad: B) -> Self {
+    pub fn with_broad_phase<V: BroadPhase<D> + 'static>(mut self, broad: V) -> Self {
         self.broad = Some(Box::new(broad));
         self
     }
 }
 
-impl<'a, P, T, Y, D> System<'a> for BasicCollisionSystem<P, T, D, Y>
+impl<'a, P, T, Y, D, B> System<'a> for BasicCollisionSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
-    P::Aabb: Aabb<Scalar = Real> + Clone + Debug + Send + Sync + 'static,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
-    for<'b: 'a> D: HasBound<Bound = P::Aabb>
-        + From<(Entity, &'b CollisionShape<P, T, Y>)>
-        + GetEntity,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+    D: HasBound<Bound = B> + From<(Entity, B)> + GetEntity,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        WriteStorage<'a, CollisionShape<P, T, Y>>,
+        WriteStorage<'a, CollisionShape<P, T, B, Y>>,
         FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
     );
 
@@ -93,7 +97,7 @@ where
             let mut info = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose, next_poses.get(entity).map(|p| &p.value));
-                info.push((entity, &*shape).into());
+                info.push((entity, shape.bound().clone()).into());
             }
             let potentials = broad
                 .find_potentials(&mut info)

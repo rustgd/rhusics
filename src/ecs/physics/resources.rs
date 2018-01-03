@@ -1,5 +1,5 @@
-use cgmath::{Rotation, VectorSpace, Zero};
-use collision::Aabb;
+use cgmath::{EuclideanSpace, Rotation, VectorSpace, Zero};
+use collision::Bound;
 use specs::{Component, DenseVecStorage, Entity, EntityBuilder, LazyUpdate};
 
 use {BodyPose, NextFrame, Real};
@@ -42,9 +42,9 @@ pub struct DeltaTime {
 /// Adds rigid body builder functions to `EntityBuilder`
 pub trait WithRigidBody {
     /// Add dynamic rigid body components to entity
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         velocity: Velocity<V, A>,
         body: RigidBody,
@@ -52,8 +52,8 @@ pub trait WithRigidBody {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
         A: Copy + Zero + Clone + Send + Sync + 'static,
@@ -61,17 +61,17 @@ pub trait WithRigidBody {
         I: Send + Sync + 'static;
 
     /// Add static rigid body components to entity
-    fn with_static_rigid_body<P, Y, R, I>(
+    fn with_static_rigid_body<P, Y, R, I, B>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         body: RigidBody,
         mass: Mass<I>,
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static;
@@ -80,18 +80,18 @@ pub trait WithRigidBody {
 /// Adds rigid body builder functions to `LazyUpdate`
 pub trait WithLazyRigidBody {
     /// Add dynamic rigid body components to entity
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         velocity: Velocity<V, A>,
         body: RigidBody,
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
         A: Copy + Zero + Clone + Send + Sync + 'static,
@@ -99,35 +99,35 @@ pub trait WithLazyRigidBody {
         I: Send + Sync + 'static;
 
     /// Add static rigid body components to entity
-    fn with_static_rigid_body<P, Y, R, I>(
+    fn with_static_rigid_body<P, Y, R, I, B>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         body: RigidBody,
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static;
 }
 
 impl WithLazyRigidBody for LazyUpdate {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         velocity: Velocity<V, A>,
         body: RigidBody,
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
         A: Copy + Zero + Clone + Send + Sync + 'static,
@@ -145,17 +145,17 @@ impl WithLazyRigidBody for LazyUpdate {
         self.insert(entity, ForceAccumulator::<V, A>::new());
     }
 
-    fn with_static_rigid_body<P, Y, R, I>(
+    fn with_static_rigid_body<P, Y, R, I, B>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         body: RigidBody,
         mass: Mass<I>,
     ) where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
@@ -169,9 +169,9 @@ impl WithLazyRigidBody for LazyUpdate {
 }
 
 impl<'a> WithRigidBody for EntityBuilder<'a> {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         velocity: Velocity<V, A>,
         body: RigidBody,
@@ -179,8 +179,8 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         V: VectorSpace<Scalar = Real> + Zero + Clone + Send + Sync + 'static,
         A: Copy + Clone + Zero + Send + Sync + 'static,
@@ -193,17 +193,17 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
             .with(ForceAccumulator::<V, A>::new())
     }
 
-    fn with_static_rigid_body<P, Y, R, I>(
+    fn with_static_rigid_body<P, Y, R, I, B>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, Y>,
+        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
         pose: BodyPose<P::Point, R>,
         body: RigidBody,
         mass: Mass<I>,
     ) -> Self
     where
         P: Primitive + Send + Sync + 'static,
-        P::Aabb: Aabb<Scalar = Real> + Send + Sync + 'static,
-        P::Point: Send + Sync + 'static,
+        B: Bound<Point = P::Point> + Send + Sync + 'static,
+        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,

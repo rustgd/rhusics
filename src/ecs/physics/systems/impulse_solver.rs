@@ -16,6 +16,10 @@ use physics::Velocity;
 /// - `P`: Positional quantity, usually `Point2` or `Point3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+///
+/// ### System function:
+///
+/// `fn(NextFrame<Velocity>, NextFrame<BodyPose>) -> (Velocity, BodyPose)`
 pub struct ImpulseSolverSystem<P, R, A> {
     m: marker::PhantomData<(P, R, A)>,
 }

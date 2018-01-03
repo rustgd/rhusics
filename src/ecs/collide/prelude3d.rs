@@ -7,14 +7,14 @@ pub use collide::{CollisionMode, CollisionStrategy};
 pub use collide::prelude3d::*;
 
 use cgmath::{Point3, Transform};
-use collision::dbvt::DynamicBoundingVolumeTree;
+use collision::Aabb3;
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive3;
-use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
-use {NextFrame, Real};
+use Real;
 use collide::ContactEvent;
-use collide::util::ContainerShapeWrapper;
+use ecs::WithRhusics;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
@@ -25,7 +25,8 @@ pub type ContactEvent3 = ContactEvent<Entity, Point3<Real>>;
 pub type BasicCollisionSystem3<T, Y = ()> = BasicCollisionSystem<
     Primitive3<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive3<Real>>,
+    TreeValueWrapped<Entity, Aabb3<Real>>,
+    Aabb3<Real>,
     Y,
 >;
 
@@ -34,7 +35,8 @@ pub type BasicCollisionSystem3<T, Y = ()> = BasicCollisionSystem<
 pub type SpatialSortingSystem3<T, Y = ()> = SpatialSortingSystem<
     Primitive3<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive3<Real>>,
+    TreeValueWrapped<Entity, Aabb3<Real>>,
+    Aabb3<Real>,
     Y,
 >;
 
@@ -44,14 +46,14 @@ pub type SpatialSortingSystem3<T, Y = ()> = SpatialSortingSystem<
 pub type SpatialCollisionSystem3<T, Y = ()> = SpatialCollisionSystem<
     Primitive3<Real>,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive3<Real>>),
+    (usize, TreeValueWrapped<Entity, Aabb3<Real>>),
+    Aabb3<Real>,
     Y,
 >;
 
 /// Dynamic bounding volume tree for 3D
-pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive3<Real>>,
->;
+pub type DynamicBoundingVolumeTree3 =
+    DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb3<Real>>>;
 
 /// Utility method for registering 3D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -66,14 +68,16 @@ pub type DynamicBoundingVolumeTree3 = DynamicBoundingVolumeTree<
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 /// - `Y`: Shape type, see `Collider`
-pub fn register_collision<'a, T, Y>(world: &mut World)
+pub fn register_collision<T, Y>(world: &mut World)
 where
     T: Transform<Point3<Real>> + Component + Send + Sync + 'static,
-    Y: Send + Sync + 'static,
+    Y: Collider + Send + Sync + 'static,
 {
-    world.register::<T>();
-    world.register::<NextFrame<T>>();
-    world.register::<CollisionShape3<T, Y>>();
-    world.add_resource(EventChannel::<ContactEvent3>::new());
-    world.add_resource(DynamicBoundingVolumeTree3::new());
+    world.register_collision::<
+        Primitive3<Real>,
+        Aabb3<Real>,
+        T,
+        TreeValueWrapped<Entity, Aabb3<Real>>,
+        Y
+    >();
 }

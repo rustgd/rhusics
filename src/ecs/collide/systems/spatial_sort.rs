@@ -27,14 +27,19 @@ use collide::{CollisionShape, Primitive};
 /// - `T`: Transform type, needs to implement `Transform` and have `FlaggedStorage`.
 /// - `D`: Type of values stored in the DBVT, needs to implement `TreeValue` and
 ///        `From<(Entity, CollisionShape)>`
+/// - `B`: Bounding volume
 /// - `Y`: Shape type, see `Collider`
+///
+/// ### System Function:
+///
+/// `fn(Entities, T, NextFrame<T>, CollisionShape) -> (CollisionShape, DynamicBoundingVolumeTree<D>)`
 #[derive(Debug)]
-pub struct SpatialSortingSystem<P, T, D, Y = ()> {
+pub struct SpatialSortingSystem<P, T, D, B, Y = ()> {
     entities: HashMap<Entity, usize>,
-    marker: PhantomData<(P, T, Y, D)>,
+    marker: PhantomData<(P, T, Y, B, D)>,
 }
 
-impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
+impl<P, T, D, B, Y> SpatialSortingSystem<P, T, D, B, Y> {
     /// Create a new sorting system.
     pub fn new() -> Self {
         Self {
@@ -44,29 +49,32 @@ impl<P, T, D, Y> SpatialSortingSystem<P, T, D, Y> {
     }
 }
 
-impl<'a, P, T, Y, D> System<'a> for SpatialSortingSystem<P, T, D, Y>
+impl<'a, P, T, Y, D, B> System<'a> for SpatialSortingSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
-    P::Aabb: Clone
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    B: Clone
         + Debug
         + Send
         + Sync
-        + Aabb<Scalar = Real>
-        + Contains<P::Aabb>
-        + SurfaceArea<Scalar = Real>,
+        + Union<B, Output = B>
+        + Bound<Point = P::Point>
+        + Contains<B>
+        + SurfaceArea<Scalar = Real>
+        + Send
+        + Sync
+        + 'static,
     P::Point: Debug,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
     Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
-    D: Send + Sync + 'static + TreeValue<Bound = P::Aabb>,
-    for<'c: 'a> D: From<(Entity, &'c CollisionShape<P, T, Y>)>,
+    D: Send + Sync + 'static + TreeValue<Bound = B> + From<(Entity, B)>,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
-        WriteStorage<'a, CollisionShape<P, T, Y>>,
+        WriteStorage<'a, CollisionShape<P, T, B, Y>>,
         FetchMut<'a, DynamicBoundingVolumeTree<D>>,
     );
 
@@ -80,7 +88,7 @@ where
 
             // Update the wrapper in the tree for the shape
             if let Some(node_index) = self.entities.get(&entity).cloned() {
-                tree.update_node(node_index, (entity, &*shape).into());
+                tree.update_node(node_index, (entity, shape.bound().clone()).into());
             }
         }
 
@@ -93,7 +101,7 @@ where
 
             // Update the wrapper in the tree for the shape
             if let Some(node_index) = self.entities.get(&entity).cloned() {
-                tree.update_node(node_index, (entity, &*shape).into());
+                tree.update_node(node_index, (entity, shape.bound().clone()).into());
             }
         }
 
@@ -105,7 +113,7 @@ where
 
             // if entity does not exist in entities list, add it to the tree and entities list
             if let None = self.entities.get(&entity) {
-                let node_index = tree.insert((entity, &*shape).into());
+                let node_index = tree.insert((entity, shape.bound().clone()).into());
                 self.entities.insert(entity, node_index);
             }
         }

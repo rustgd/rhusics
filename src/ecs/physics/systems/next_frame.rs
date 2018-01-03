@@ -18,6 +18,10 @@ use physics::simple::*;
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+///
+/// ### System function
+///
+/// `fn(DeltaTime, Mass, BodyPose, ForceAccumulator) -> (ForceAccumulator, NextFrame<Velocity>, NextFrame<BodyPose>)`
 pub struct NextFrameSetupSystem<P, R, I, A> {
     m: marker::PhantomData<(P, R, I, A)>,
 }

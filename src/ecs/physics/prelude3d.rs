@@ -5,9 +5,13 @@ pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude3d::*;
 
 use cgmath::{Matrix3, Point3, Quaternion, Vector3};
-use specs::World;
+use collision::Aabb3;
+use collision::dbvt::TreeValueWrapped;
+use collision::primitive::Primitive3;
+use specs::{Entity, World};
 
-use {NextFrame, Real};
+use Real;
+use ecs::WithRhusics;
 use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
@@ -23,12 +27,8 @@ pub type ContactResolutionSystem3 = ContactResolutionSystem<
 >;
 
 /// Next frame setup system for 2D
-pub type NextFrameSetupSystem3 = NextFrameSetupSystem<
-    Point3<Real>,
-    Quaternion<Real>,
-    Matrix3<Real>,
-    Vector3<Real>,
->;
+pub type NextFrameSetupSystem3 =
+    NextFrameSetupSystem<Point3<Real>, Quaternion<Real>, Matrix3<Real>, Vector3<Real>>;
 
 /// Utility method for registering 3D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -43,13 +43,15 @@ pub type NextFrameSetupSystem3 = NextFrameSetupSystem<
 /// - `Y`: Collision shape type, see `Collider`
 pub fn register_physics<Y>(world: &mut World)
 where
-    Y: Send + Sync + 'static,
+    Y: Collider + Default + Send + Sync + 'static,
 {
-    world.add_resource(DeltaTime { delta_seconds: 0. });
-    world.register::<Mass3>();
-    world.register::<Velocity3>();
-    world.register::<NextFrame<Velocity3>>();
-    world.register::<RigidBody>();
-    world.register::<ForceAccumulator3>();
-    register_collision::<BodyPose3, Y>(world);
+    world.register_physics::<
+        Primitive3<Real>,
+        Aabb3<Real>, Quaternion<Real>,
+        TreeValueWrapped<Entity, Aabb3<Real>>,
+        Y,
+        Vector3<Real>,
+        Vector3<Real>,
+        Matrix3<Real>
+    >();
 }

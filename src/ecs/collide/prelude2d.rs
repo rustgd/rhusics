@@ -7,14 +7,14 @@ pub use collide::{CollisionMode, CollisionStrategy};
 pub use collide::prelude2d::*;
 
 use cgmath::{Point2, Transform};
-use collision::dbvt::DynamicBoundingVolumeTree;
+use collision::Aabb2;
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
-use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
-use {NextFrame, Real};
+use Real;
 use collide::ContactEvent;
-use collide::util::ContainerShapeWrapper;
+use ecs::WithRhusics;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
@@ -25,7 +25,8 @@ pub type ContactEvent2 = ContactEvent<Entity, Point2<Real>>;
 pub type BasicCollisionSystem2<T, Y = ()> = BasicCollisionSystem<
     Primitive2<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    TreeValueWrapped<Entity, Aabb2<Real>>,
+    Aabb2<Real>,
     Y,
 >;
 
@@ -34,7 +35,8 @@ pub type BasicCollisionSystem2<T, Y = ()> = BasicCollisionSystem<
 pub type SpatialSortingSystem2<T, Y = ()> = SpatialSortingSystem<
     Primitive2<Real>,
     T,
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
+    TreeValueWrapped<Entity, Aabb2<Real>>,
+    Aabb2<Real>,
     Y,
 >;
 
@@ -44,15 +46,15 @@ pub type SpatialSortingSystem2<T, Y = ()> = SpatialSortingSystem<
 pub type SpatialCollisionSystem2<T, Y = ()> = SpatialCollisionSystem<
     Primitive2<Real>,
     T,
-    (usize, ContainerShapeWrapper<Entity, Primitive2<Real>>),
+    (usize, TreeValueWrapped<Entity, Aabb2<Real>>),
+    Aabb2<Real>,
     Y,
 >;
 
 /// Dynamic bounding volume tree for 2D
 
-pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
-    ContainerShapeWrapper<Entity, Primitive2<Real>>,
->;
+pub type DynamicBoundingVolumeTree2 =
+    DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb2<Real>>>;
 
 /// Utility method for registering 2D collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -70,11 +72,13 @@ pub type DynamicBoundingVolumeTree2 = DynamicBoundingVolumeTree<
 pub fn register_collision<T, Y>(world: &mut World)
 where
     T: Transform<Point2<Real>> + Component + Send + Sync + 'static,
-    Y: Send + Sync + 'static,
+    Y: Collider + Send + Sync + 'static,
 {
-    world.register::<T>();
-    world.register::<NextFrame<T>>();
-    world.register::<CollisionShape2<T, Y>>();
-    world.add_resource(EventChannel::<ContactEvent2>::new());
-    world.add_resource(DynamicBoundingVolumeTree2::new());
+    world.register_collision::<
+        Primitive2<Real>,
+        Aabb2<Real>,
+        T,
+        TreeValueWrapped<Entity, Aabb2<Real>>,
+        Y
+    >();
 }

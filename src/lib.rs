@@ -45,6 +45,7 @@ pub mod physics;
 #[cfg(feature = "ecs")]
 pub mod ecs;
 
+use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::prelude::*;
 
@@ -63,11 +64,7 @@ pub struct NextFrame<T> {
 
 /// Transform component used throughout the library
 #[derive(Clone, Debug, PartialEq)]
-pub struct BodyPose<P, R>
-where
-    P: EuclideanSpace<Scalar = Real>,
-    R: Rotation<P>,
-{
+pub struct BodyPose<P, R> {
     dirty: bool,
     position: P,
     rotation: R,
@@ -76,7 +73,8 @@ where
 
 impl<P, R> BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
 {
     /// Create a new [`BodyPose`](struct.BodyPose.html) with initial state given by the supplied
@@ -121,11 +119,12 @@ where
 
 impl<P, R> Transform<P> for BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
 {
     fn one() -> Self {
-        Self::new(P::from_value(0.), R::one())
+        Self::new(P::origin(), R::one())
     }
 
     fn look_at(eye: P, center: P, up: P::Diff) -> Self {
@@ -159,7 +158,8 @@ where
 
 impl<P, R> TranslationInterpolate<P::Scalar> for BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace,
     R: Rotation<P> + Clone,
 {
@@ -173,7 +173,8 @@ where
 
 impl<P, R> Interpolate<P::Scalar> for BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace,
     R: Rotation<P> + Interpolate<P::Scalar>,
 {
