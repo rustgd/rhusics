@@ -13,7 +13,7 @@ use specs::{Fetch, RunNow, System, World};
 use rhusics::ecs::physics::prelude3d::{register_physics, BodyPose3, CollisionMode,
                                        CollisionShape3, CollisionStrategy, ContactEvent3,
                                        ContactResolutionSystem3, Cuboid,
-                                       DynamicBoundingVolumeTree3, GJK3, ImpulseSolverSystem3,
+                                       DynamicBoundingVolumeTree3, GJK3, CurrentFrameUpdateSystem3,
                                        Mass3, NextFrameSetupSystem3, RigidBody,
                                        SpatialCollisionSystem3, SpatialSortingSystem3,
                                        WithRigidBody};
@@ -85,7 +85,7 @@ pub fn main() {
     );
     raycast.run_now(&world.res);
 
-    let mut impulse_solver = ImpulseSolverSystem3::new();
+    let mut impulse_solver = CurrentFrameUpdateSystem3::new();
     impulse_solver.run_now(&world.res);
     let mut next_frame = NextFrameSetupSystem3::new();
     next_frame.run_now(&world.res);

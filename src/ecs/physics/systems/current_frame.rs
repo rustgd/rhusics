@@ -20,11 +20,11 @@ use physics::Velocity;
 /// ### System function:
 ///
 /// `fn(NextFrame<Velocity>, NextFrame<BodyPose>) -> (Velocity, BodyPose)`
-pub struct ImpulseSolverSystem<P, R, A> {
+pub struct CurrentFrameUpdateSystem<P, R, A> {
     m: marker::PhantomData<(P, R, A)>,
 }
 
-impl<P, R, A> ImpulseSolverSystem<P, R, A>
+impl<P, R, A> CurrentFrameUpdateSystem<P, R, A>
 where
     P: EuclideanSpace<Scalar = Real>,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug,
@@ -39,7 +39,7 @@ where
     }
 }
 
-impl<'a, P, R, A> System<'a> for ImpulseSolverSystem<P, R, A>
+impl<'a, P, R, A> System<'a> for CurrentFrameUpdateSystem<P, R, A>
 where
     P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
     P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
