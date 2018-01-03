@@ -1,10 +1,9 @@
 use std;
 use std::ops::Mul;
 
-use cgmath::{Basis2, Matrix, Matrix3, Quaternion, SquareMatrix, Zero};
+use cgmath::{BaseFloat, Basis2, Matrix, Matrix3, Quaternion, SquareMatrix, Zero};
 
 use super::{Material, Volume};
-use Real;
 
 /// Mass
 ///
@@ -16,9 +15,9 @@ use Real;
 ///
 /// - `I`: Inertia type, usually `Scalar` or `Matrix3`, see `Inertia` for more information.
 #[derive(Debug)]
-pub struct Mass<I> {
-    mass: Real,
-    inverse_mass: Real,
+pub struct Mass<S, I> {
+    mass: S,
+    inverse_mass: S,
 
     inertia: I,
     inverse_inertia: I,
@@ -36,8 +35,8 @@ pub trait Inertia: Mul<Self, Output = Self> + Copy {
     fn tensor(&self, orientation: &Self::Orientation) -> Self;
 }
 
-impl Inertia for Real {
-    type Orientation = Basis2<Real>;
+impl Inertia for f32 {
+    type Orientation = Basis2<f32>;
 
     fn invert(&self) -> Self {
         if *self == 0. || self.is_infinite() {
@@ -47,17 +46,40 @@ impl Inertia for Real {
         }
     }
 
-    fn tensor(&self, _: &Basis2<Real>) -> Self {
+    fn tensor(&self, _: &Basis2<f32>) -> Self {
         *self
     }
 
     fn infinite() -> Self {
-        std::f64::INFINITY as Real
+        std::f32::INFINITY
     }
 }
 
-impl Inertia for Matrix3<Real> {
-    type Orientation = Quaternion<Real>;
+impl Inertia for f64 {
+    type Orientation = Basis2<f64>;
+
+    fn invert(&self) -> Self {
+        if *self == 0. || self.is_infinite() {
+            0.
+        } else {
+            1. / *self
+        }
+    }
+
+    fn tensor(&self, _: &Basis2<f64>) -> Self {
+        *self
+    }
+
+    fn infinite() -> Self {
+        std::f64::INFINITY
+    }
+}
+
+impl<S> Inertia for Matrix3<S>
+where
+    S: BaseFloat,
+{
+    type Orientation = Quaternion<S>;
 
     fn invert(&self) -> Self {
         if self.x.x.is_infinite() {
@@ -67,33 +89,38 @@ impl Inertia for Matrix3<Real> {
         }
     }
 
-    fn tensor(&self, orientation: &Quaternion<Real>) -> Self {
+    fn tensor(&self, orientation: &Quaternion<S>) -> Self {
         let mat3 = Matrix3::from(*orientation);
         mat3 * (*self * mat3.transpose())
     }
 
     fn infinite() -> Self {
-        Matrix3::from_value(std::f64::INFINITY as Real)
+        Matrix3::from_value(S::infinity())
     }
 }
 
-impl<I> Mass<I>
+impl<S, I> Mass<S, I>
 where
+    S: BaseFloat,
     I: Inertia,
 {
     /// Create new mass object
-    pub fn new(mass: Real) -> Self {
+    pub fn new(mass: S) -> Self {
         Self::new_with_inertia(mass, I::infinite())
     }
 
     /// Create new infinite mass object
     pub fn infinite() -> Self {
-        Self::new_with_inertia(std::f64::INFINITY as Real, I::infinite())
+        Self::new_with_inertia(S::infinity(), I::infinite())
     }
 
     /// Create new mass object with given inertia
-    pub fn new_with_inertia(mass: Real, inertia: I) -> Self {
-        let inverse_mass = if mass.is_infinite() { 0. } else { 1. / mass };
+    pub fn new_with_inertia(mass: S, inertia: I) -> Self {
+        let inverse_mass = if mass.is_infinite() {
+            S::zero()
+        } else {
+            S::one() / mass
+        };
         let inverse_inertia = inertia.invert();
         Mass {
             mass,
@@ -106,18 +133,18 @@ where
     /// Compute mass from the given volume shape and material
     pub fn from_volume_and_material<V>(volume: &V, material: &Material) -> Self
     where
-        V: Volume<I>,
+        V: Volume<S, I>,
     {
         volume.get_mass(material)
     }
 
     /// Get mass
-    pub fn mass(&self) -> Real {
+    pub fn mass(&self) -> S {
         self.mass
     }
 
     /// Get inverse mass
-    pub fn inverse_mass(&self) -> Real {
+    pub fn inverse_mass(&self) -> S {
         self.inverse_mass
     }
 

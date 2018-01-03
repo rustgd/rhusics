@@ -2,10 +2,10 @@ use std::fmt::Debug;
 use std::marker;
 use std::ops::Mul;
 
-use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use specs::{Fetch, Join, ReadStorage, System, WriteStorage};
 
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 use ecs::physics::resources::DeltaTime;
 use physics::{ApplyAngular, ForceAccumulator, Inertia, Mass, Velocity};
 use physics::simple::*;
@@ -28,11 +28,12 @@ pub struct NextFrameSetupSystem<P, R, I, A> {
 
 impl<P, R, I, A> NextFrameSetupSystem<P, R, I, A>
 where
-    P: EuclideanSpace<Scalar = Real>,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug,
-    R: Rotation<P> + ApplyAngular<A>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
+    P::Diff: VectorSpace + InnerSpace + Debug,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A>,
     I: Inertia<Orientation = R> + Mul<A, Output = A>,
-    A: Mul<Real, Output = A> + Zero + Clone + Copy,
+    A: Mul<P::Scalar, Output = A> + Zero + Clone + Copy,
 {
     /// Create system.
     pub fn new() -> Self {
@@ -44,15 +45,16 @@ where
 
 impl<'a, P, R, I, A> System<'a> for NextFrameSetupSystem<P, R, I, A>
 where
-    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
-    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
+    P: EuclideanSpace + Send + Sync + 'static,
+    P::Scalar: BaseFloat + Send + Sync + 'static,
+    P::Diff: VectorSpace + InnerSpace + Debug + Send + Sync + 'static,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A> + Send + Sync + 'static,
     I: Inertia<Orientation = R> + Mul<A, Output = A> + Send + Sync + 'static,
-    A: Mul<Real, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
+    A: Mul<P::Scalar, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
 {
     type SystemData = (
-        Fetch<'a, DeltaTime>,
-        ReadStorage<'a, Mass<I>>,
+        Fetch<'a, DeltaTime<P::Scalar>>,
+        ReadStorage<'a, Mass<P::Scalar, I>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, BodyPose<P, R>>,
         WriteStorage<'a, NextFrame<BodyPose<P, R>>>,

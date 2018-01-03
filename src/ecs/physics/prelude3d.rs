@@ -4,31 +4,34 @@ pub use ecs::collide::prelude3d::*;
 pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude3d::*;
 
-use cgmath::{Matrix3, Point3, Quaternion, Vector3};
+use cgmath::{BaseFloat, Matrix3, Point3, Quaternion, Vector3};
 use collision::Aabb3;
 use collision::dbvt::TreeValueWrapped;
 use collision::primitive::Primitive3;
 use specs::{Entity, World};
 
-use Real;
 use ecs::WithRhusics;
 use ecs::physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
-pub type CurrentFrameUpdateSystem3 = CurrentFrameUpdateSystem<Point3<Real>, Quaternion<Real>, Vector3<Real>>;
+pub type CurrentFrameUpdateSystem3<S> = CurrentFrameUpdateSystem<Point3<S>, Quaternion<S>, Vector3<S>>;
 
 /// Resolution system for 2D
-pub type ContactResolutionSystem3 = ContactResolutionSystem<
-    Point3<Real>,
-    Quaternion<Real>,
-    Matrix3<Real>,
-    Vector3<Real>,
-    Vector3<Real>,
+pub type ContactResolutionSystem3<S> = ContactResolutionSystem<
+    Point3<S>,
+    Quaternion<S>,
+    Matrix3<S>,
+    Vector3<S>,
+    Vector3<S>,
 >;
 
 /// Next frame setup system for 2D
-pub type NextFrameSetupSystem3 =
-    NextFrameSetupSystem<Point3<Real>, Quaternion<Real>, Matrix3<Real>, Vector3<Real>>;
+pub type NextFrameSetupSystem3<S> = NextFrameSetupSystem<
+    Point3<S>,
+    Quaternion<S>,
+    Matrix3<S>,
+    Vector3<S>,
+>;
 
 /// Utility method for registering 3D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -41,17 +44,19 @@ pub type NextFrameSetupSystem3 =
 /// # Type parameters
 ///
 /// - `Y`: Collision shape type, see `Collider`
-pub fn register_physics<Y>(world: &mut World)
+pub fn register_physics<S, Y>(world: &mut World)
 where
+    S: BaseFloat + Send + Sync + 'static,
     Y: Collider + Default + Send + Sync + 'static,
 {
     world.register_physics::<
-        Primitive3<Real>,
-        Aabb3<Real>, Quaternion<Real>,
-        TreeValueWrapped<Entity, Aabb3<Real>>,
+        Primitive3<S>,
+        Aabb3<S>,
+        Quaternion<S>,
+        TreeValueWrapped<Entity, Aabb3<S>>,
         Y,
-        Vector3<Real>,
-        Vector3<Real>,
-        Matrix3<Real>
+        Vector3<S>,
+        Vector3<S>,
+        Matrix3<S>
     >();
 }

@@ -20,7 +20,7 @@ use rhusics::ecs::physics::prelude2d::{register_physics, BodyPose2, CollisionMod
 struct RayCastSystem;
 
 impl<'a> System<'a> for RayCastSystem {
-    type SystemData = (Fetch<'a, DynamicBoundingVolumeTree2>,);
+    type SystemData = (Fetch<'a, DynamicBoundingVolumeTree2<f32>>,);
 
     fn run(&mut self, (tree,): Self::SystemData) {
         let ray = Ray2::new(Point2::new(-4., 10.), Vector2::new(0., -1.));
@@ -32,12 +32,12 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    register_physics::<()>(&mut world);
+    register_physics::<f32, ()>(&mut world);
 
     world
         .create_entity()
         .with_static_rigid_body(
-            CollisionShape2::<BodyPose2, ()>::new_simple(
+            CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Rectangle::new(10., 10.).into(),
@@ -51,7 +51,7 @@ pub fn main() {
     world
         .create_entity()
         .with_static_rigid_body(
-            CollisionShape2::<BodyPose2, ()>::new_simple(
+            CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Rectangle::new(10., 10.).into(),
@@ -63,31 +63,31 @@ pub fn main() {
         .build();
 
     let mut reader_1 = world
-        .write_resource::<EventChannel<ContactEvent2>>()
+        .write_resource::<EventChannel<ContactEvent2<f32>>>()
         .register_reader();
     let reader_2 = world
-        .write_resource::<EventChannel<ContactEvent2>>()
+        .write_resource::<EventChannel<ContactEvent2<f32>>>()
         .register_reader();
 
-    let mut sort = SpatialSortingSystem2::<BodyPose2, ()>::new();
+    let mut sort = SpatialSortingSystem2::<f32, BodyPose2<f32>, ()>::new();
     let mut collide =
-        SpatialCollisionSystem2::<BodyPose2, ()>::new().with_narrow_phase(GJK2::new());
+        SpatialCollisionSystem2::<f32, BodyPose2<f32>, ()>::new().with_narrow_phase(GJK2::new());
     let mut raycast = RayCastSystem;
     sort.run_now(&world.res);
     collide.run_now(&world.res);
     println!(
         "Contacts: {:?}",
         world
-            .read_resource::<EventChannel<ContactEvent2>>()
+            .read_resource::<EventChannel<ContactEvent2<f32>>>()
             .read(&mut reader_1)
             .collect::<Vec<_>>()
     );
     raycast.run_now(&world.res);
 
-    let mut impulse_solver = CurrentFrameUpdateSystem2::new();
+    let mut impulse_solver = CurrentFrameUpdateSystem2::<f32>::new();
     impulse_solver.run_now(&world.res);
-    let mut next_frame = NextFrameSetupSystem2::new();
+    let mut next_frame = NextFrameSetupSystem2::<f32>::new();
     next_frame.run_now(&world.res);
-    let mut contact_resolution = ContactResolutionSystem2::new(reader_2);
+    let mut contact_resolution = ContactResolutionSystem2::<f32>::new(reader_2);
     contact_resolution.run_now(&world.res);
 }

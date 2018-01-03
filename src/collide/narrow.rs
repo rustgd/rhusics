@@ -175,11 +175,10 @@ mod tests {
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
 
-    use Real;
     use collide::*;
     use collide::narrow::NarrowPhase;
 
-    fn transform(x: Real, y: Real, angle: Real) -> Decomposed<Vector2<Real>, Basis2<Real>> {
+    fn transform(x: f32, y: f32, angle: f32) -> Decomposed<Vector2<f32>, Basis2<f32>> {
         Decomposed {
             disp: Vector2::new(x, y),
             rot: Rotation2::from_angle(Rad(angle)),
@@ -202,7 +201,7 @@ mod tests {
             Rectangle::new(10., 10.),
         );
         let right_transform = transform(15., 0., 0.);
-        let gjk = GJK2::<Real>::new();
+        let gjk = GJK2::<f32>::new();
 
         assert!(gjk.collide_continuous(
             &left,

@@ -2,10 +2,10 @@
 
 use std::ops::Mul;
 
-use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 
 use super::{ApplyAngular, ForceAccumulator, Inertia, Mass, Velocity};
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 
 /// Do force integration for next frame.
 ///
@@ -25,21 +25,22 @@ use {BodyPose, NextFrame, Real};
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-pub fn next_frame_integration<'a, D, P, A, I, R>(data: D, dt: Real)
+pub fn next_frame_integration<'a, D, P, A, I, R>(data: D, dt: P::Scalar)
 where
     D: Iterator<
         Item = (
             &'a mut NextFrame<Velocity<P::Diff, A>>,
             &'a NextFrame<BodyPose<P, R>>,
             &'a mut ForceAccumulator<P::Diff, A>,
-            &'a Mass<I>,
+            &'a Mass<P::Scalar, I>,
         ),
     >,
-    P: EuclideanSpace<Scalar = Real> + 'a,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + 'a,
+    P: EuclideanSpace + 'a,
+    P::Scalar: BaseFloat,
+    P::Diff: VectorSpace + InnerSpace + 'a,
     I: Inertia<Orientation = R> + Mul<A, Output = A> + 'a,
-    A: Mul<Real, Output = A> + Clone + Copy + Zero + 'a,
-    R: Rotation<P> + ApplyAngular<A> + 'a,
+    A: Mul<P::Scalar, Output = A> + Clone + Copy + Zero + 'a,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A> + 'a,
 {
     // Do force integration
     for (next_velocity, next_pose, force, mass) in data {
@@ -68,7 +69,7 @@ where
 /// - `P`: Point, usually `Point2` or `Point3`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-pub fn next_frame_pose<'a, D, P, A, R>(data: D, dt: Real)
+pub fn next_frame_pose<'a, D, P, A, R>(data: D, dt: P::Scalar)
 where
     D: Iterator<
         Item = (
@@ -77,10 +78,11 @@ where
             &'a mut NextFrame<BodyPose<P, R>>,
         ),
     >,
-    P: EuclideanSpace<Scalar = Real> + 'a,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + 'a,
-    A: Mul<Real, Output = A> + Clone + Copy + Zero + 'a,
-    R: Rotation<P> + ApplyAngular<A> + 'a,
+    P: EuclideanSpace + 'a,
+    P::Scalar: BaseFloat,
+    P::Diff: VectorSpace + InnerSpace + 'a,
+    A: Mul<P::Scalar, Output = A> + Clone + Copy + Zero + 'a,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A> + 'a,
 {
     for (next_velocity, pose, next_pose) in data {
         next_pose.value = next_velocity.value.apply(pose, dt)

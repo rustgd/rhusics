@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 use std::ops::{Add, Mul, Sub};
 
-use cgmath::{EuclideanSpace, InnerSpace, Rotation, Transform, Zero};
-use cgmath::num_traits::NumCast;
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, One, Rotation, Transform, Zero};
+use cgmath::num_traits::{Float, NumCast};
 use collision::Contact;
 
 use super::{Inertia, Mass, Material, PartialCrossProduct, Velocity};
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 
 const POSITIONAL_CORRECTION_PERCENT: f32 = 0.2;
 const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
@@ -23,7 +23,8 @@ const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
 #[derive(Debug, PartialEq)]
 pub struct SingleChangeSet<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
 {
@@ -33,7 +34,8 @@ where
 
 impl<P, R, A> Default for SingleChangeSet<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
 {
@@ -47,7 +49,8 @@ where
 
 impl<P, R, A> SingleChangeSet<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
 {
@@ -84,7 +87,8 @@ where
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 pub struct ResolveData<'a, P, R, I, A>
 where
-    P: EuclideanSpace<Scalar = Real> + 'a,
+    P: EuclideanSpace + 'a,
+    P::Scalar: BaseFloat,
     R: Rotation<P> + 'a,
     I: 'a,
     A: Clone + 'a,
@@ -94,7 +98,7 @@ where
     /// Position for next frame
     pub pose: &'a BodyPose<P, R>,
     /// Mass
-    pub mass: &'a Mass<I>,
+    pub mass: &'a Mass<P::Scalar, I>,
     /// Material
     pub material: &'a Material,
 }
@@ -126,7 +130,8 @@ pub fn resolve_contact<'a, P, R, I, A, O>(
     b: ResolveData<'a, P, R, I, A>,
 ) -> (SingleChangeSet<P, R, A>, SingleChangeSet<P, R, A>)
 where
-    P: EuclideanSpace<Scalar = Real> + 'a,
+    P: EuclideanSpace + 'a,
+    P::Scalar: BaseFloat,
     R: Rotation<P> + 'a,
     P::Diff: Debug + Zero + Clone + InnerSpace + PartialCrossProduct<P::Diff, Output = O>,
     O: PartialCrossProduct<P::Diff, Output = P::Diff>,
@@ -155,7 +160,7 @@ where
 
     // This only happens when we have 2 infinite masses colliding. We only do positional correction
     // for the bodies and return early
-    if total_inverse_mass == 0. {
+    if total_inverse_mass == P::Scalar::zero() {
         return (a_set, b_set);
     }
 
@@ -169,15 +174,15 @@ where
     let velocity_along_normal = contact.normal.dot(rv);
 
     // Check if shapes are already separating, if so only do positional correction
-    if velocity_along_normal > 0. {
+    if velocity_along_normal > P::Scalar::zero() {
         return (a_set, b_set);
     }
 
     // Compute impulse force
-    let a_res = a.material.restitution();
-    let b_res = b.material.restitution();
+    let a_res: P::Scalar = a.material.restitution();
+    let b_res: P::Scalar = b.material.restitution();
     let e = a_res.min(b_res);
-    let numerator = -(1. + e) * velocity_along_normal;
+    let numerator = -(P::Scalar::one() + e) * velocity_along_normal;
 
     let a_tensor = a.mass.world_inverse_inertia(a.pose.rotation());
     let b_tensor = b.mass.world_inverse_inertia(b.pose.rotation());
@@ -233,23 +238,25 @@ where
 ///
 /// - `P`: Positional quantity, usually `Point2` or `Point3`
 /// - `R` Rotational quantity, usually `Basis2` or `Quaternion`
-fn positional_correction<P, R>(
+fn positional_correction<S, P, R>(
     contact: &Contact<P>,
     a_position: &BodyPose<P, R>,
     b_position: &BodyPose<P, R>,
-    a_inverse_mass: Real,
-    b_inverse_mass: Real,
+    a_inverse_mass: S,
+    b_inverse_mass: S,
 ) -> (Option<BodyPose<P, R>>, Option<BodyPose<P, R>>)
 where
-    P: EuclideanSpace<Scalar = Real>,
+    S: BaseFloat,
+    P: EuclideanSpace<Scalar = S>,
     R: Rotation<P>,
     P::Diff: Debug + Zero + Clone + InnerSpace,
 {
     let total_inverse_mass = a_inverse_mass + b_inverse_mass;
-    let k_slop: Real = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
-    let percent: Real = NumCast::from(POSITIONAL_CORRECTION_PERCENT).unwrap();
+    let k_slop: S = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
+    let percent: S = NumCast::from(POSITIONAL_CORRECTION_PERCENT).unwrap();
     let correction_penetration_depth = contact.penetration_depth - k_slop;
-    let correction_magnitude = correction_penetration_depth.max(0.) / total_inverse_mass * percent;
+    let correction_magnitude =
+        correction_penetration_depth.max(S::zero()) / total_inverse_mass * percent;
     let correction = contact.normal * correction_magnitude;
     let a_position_new = new_pose(a_position, correction * -a_inverse_mass);
     let b_position_new = new_pose(b_position, correction * b_inverse_mass);
@@ -258,7 +265,8 @@ where
 
 fn new_pose<P, R>(next_frame: &BodyPose<P, R>, correction: P::Diff) -> BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
     P::Diff: Clone,
 {

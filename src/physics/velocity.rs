@@ -1,7 +1,7 @@
-use cgmath::{Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2, Vector3,
-             VectorSpace, Zero};
+use cgmath::{BaseFloat, Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2,
+             Vector3, VectorSpace, Zero};
 
-use {BodyPose, Real};
+use BodyPose;
 
 /// Velocity
 ///
@@ -71,11 +71,12 @@ where
     ///
     /// - `P`: Positional quantity, usually `Point2` or `Point3`
     /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: Real) -> BodyPose<P, R>
+    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: L::Scalar) -> BodyPose<P, R>
     where
-        P: EuclideanSpace<Scalar = Real, Diff = L>,
-        L: VectorSpace<Scalar = Real>,
-        R: ApplyAngular<A> + Rotation<P>,
+        P: EuclideanSpace<Scalar = L::Scalar, Diff = L>,
+        L: VectorSpace,
+        L::Scalar: BaseFloat,
+        R: ApplyAngular<L::Scalar, A> + Rotation<P>,
     {
         BodyPose::new(
             self.apply_linear(pose.position(), dt),
@@ -93,10 +94,11 @@ where
     /// ### Type parameters:
     ///
     /// - `P`: Positional quantity, usually `Point2` or `Point3`
-    pub fn apply_linear<P>(&self, linear: &P, dt: Real) -> P
+    pub fn apply_linear<P>(&self, linear: &P, dt: L::Scalar) -> P
     where
-        P: EuclideanSpace<Scalar = Real, Diff = L>,
-        L: VectorSpace<Scalar = Real>,
+        P: EuclideanSpace<Scalar = L::Scalar, Diff = L>,
+        L::Scalar: BaseFloat,
+        L: VectorSpace,
     {
         *linear + self.linear * dt
     }
@@ -111,9 +113,11 @@ where
     /// ### Type parameters:
     ///
     /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-    pub fn apply_angular<R>(&self, rotation: &R, dt: Real) -> R
+    pub fn apply_angular<R>(&self, rotation: &R, dt: L::Scalar) -> R
     where
-        R: ApplyAngular<A>,
+        R: ApplyAngular<L::Scalar, A>,
+        L: VectorSpace,
+        L::Scalar: BaseFloat,
     {
         rotation.apply(&self.angular, dt)
     }
@@ -124,25 +128,34 @@ where
 /// ### Type parameters:
 ///
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
-pub trait ApplyAngular<A> {
+pub trait ApplyAngular<S, A> {
     /// Apply given velocity
-    fn apply(&self, velocity: &A, dt: Real) -> Self;
+    fn apply(&self, velocity: &A, dt: S) -> Self;
 }
 
-impl ApplyAngular<Real> for Real {
-    fn apply(&self, velocity: &Real, dt: Real) -> Self {
-        self + velocity * dt
+impl<S> ApplyAngular<S, S> for S
+where
+    S: BaseFloat,
+{
+    fn apply(&self, velocity: &S, dt: S) -> Self {
+        *self + *velocity * dt
     }
 }
 
-impl ApplyAngular<Real> for Basis2<Real> {
-    fn apply(&self, velocity: &Real, dt: Real) -> Self {
-        *self * Basis2::from_angle(Rad(velocity * dt))
+impl<S> ApplyAngular<S, S> for Basis2<S>
+where
+    S: BaseFloat,
+{
+    fn apply(&self, velocity: &S, dt: S) -> Self {
+        *self * Basis2::from_angle(Rad(*velocity * dt))
     }
 }
 
-impl ApplyAngular<Vector3<Real>> for Quaternion<Real> {
-    fn apply(&self, velocity: &Vector3<Real>, dt: Real) -> Self {
+impl<S> ApplyAngular<S, Vector3<S>> for Quaternion<S>
+where
+    S: BaseFloat,
+{
+    fn apply(&self, velocity: &Vector3<S>, dt: S) -> Self {
         self * Quaternion::from(Euler {
             x: Rad(velocity.x * dt),
             y: Rad(velocity.y * dt),

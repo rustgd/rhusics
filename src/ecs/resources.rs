@@ -1,12 +1,12 @@
 use std::fmt::Debug;
 
-use cgmath::{EuclideanSpace, Rotation, Transform};
+use cgmath::{BaseFloat, EuclideanSpace, Rotation, Transform, Zero};
 use collision::{Bound, Contains, Primitive, SurfaceArea, Union};
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 use collide::{Collider, CollisionShape, ContactEvent};
 use ecs::collide::GetEntity;
 use ecs::physics::DeltaTime;
@@ -20,7 +20,7 @@ pub trait WithRhusics {
         P: Primitive + Send + Sync + 'static,
         P::Point: Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-        <P::Point as EuclideanSpace>::Scalar: Debug + Send + Sync + 'static,
+        <P::Point as EuclideanSpace>::Scalar: BaseFloat + Debug + Send + Sync + 'static,
         B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
@@ -39,8 +39,9 @@ pub trait WithRhusics {
     fn register_physics<P, B, R, D, Y, L, A, I>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
+        P::Point: EuclideanSpace + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+        <P::Point as EuclideanSpace>::Scalar: BaseFloat + Debug + Send + Sync + 'static,
         B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
@@ -63,7 +64,7 @@ impl WithRhusics for World {
         P: Primitive + Send + Sync + 'static,
         P::Point: Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
-        <P::Point as EuclideanSpace>::Scalar: Debug + Send + Sync + 'static,
+        <P::Point as EuclideanSpace>::Scalar: BaseFloat + Debug + Send + Sync + 'static,
         B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
@@ -86,8 +87,9 @@ impl WithRhusics for World {
     fn register_physics<P, B, R, D, Y, L, A, I>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
+        P::Point: EuclideanSpace + Send + Sync + 'static,
         <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+        <P::Point as EuclideanSpace>::Scalar: BaseFloat + Debug + Send + Sync + 'static,
         B: Bound<Point = P::Point>
             + Clone
             + Union<B, Output = B>
@@ -103,11 +105,13 @@ impl WithRhusics for World {
         A: Clone + Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.add_resource(DeltaTime { delta_seconds: 0. });
-        self.register::<Mass<I>>();
+        self.add_resource(DeltaTime {
+            delta_seconds: <P::Point as EuclideanSpace>::Scalar::zero(),
+        });
+        self.register::<Mass<<P::Point as EuclideanSpace>::Scalar, I>>();
         self.register::<Velocity<L, A>>();
         self.register::<NextFrame<Velocity<L, A>>>();
-        self.register::<RigidBody>();
+        self.register::<RigidBody<<P::Point as EuclideanSpace>::Scalar>>();
         self.register::<ForceAccumulator<L, A>>();
         self.register_collision::<P, B, BodyPose<P::Point, R>, D, Y>();
     }

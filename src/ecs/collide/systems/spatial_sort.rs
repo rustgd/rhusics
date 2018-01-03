@@ -2,12 +2,13 @@ use std::collections::{HashMap, HashSet};
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
+use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
-use {NextFrame, Real};
+use NextFrame;
 use collide::{CollisionShape, Primitive};
 
 /// Spatial sorting [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
@@ -59,11 +60,12 @@ where
         + Union<B, Output = B>
         + Bound<Point = P::Point>
         + Contains<B>
-        + SurfaceArea<Scalar = Real>
+        + SurfaceArea<Scalar = <P::Point as EuclideanSpace>::Scalar>
         + Send
         + Sync
         + 'static,
     P::Point: Debug,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
     Y: Default + Send + Sync + 'static,

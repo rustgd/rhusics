@@ -13,8 +13,6 @@ description = "Physics library for use with `specs`"
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [features]
-double = []
-
 ecs = ["specs", "shrev"]
 
 [dependencies]

@@ -1,10 +1,10 @@
 use std::fmt::Debug;
 use std::marker;
 
-use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use specs::{Join, ReadStorage, System, WriteStorage};
 
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 use physics::Velocity;
 
 /// Impulse physics solver system.
@@ -26,8 +26,9 @@ pub struct CurrentFrameUpdateSystem<P, R, A> {
 
 impl<P, R, A> CurrentFrameUpdateSystem<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real>,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug,
+    P: EuclideanSpace,
+    P::Diff: VectorSpace + InnerSpace + Debug,
+    P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone + Zero,
 {
@@ -41,8 +42,9 @@ where
 
 impl<'a, P, R, A> System<'a> for CurrentFrameUpdateSystem<P, R, A>
 where
-    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
-    P::Diff: VectorSpace<Scalar = Real> + InnerSpace + Debug + Send + Sync + 'static,
+    P: EuclideanSpace + Send + Sync + 'static,
+    P::Diff: VectorSpace + InnerSpace + Debug + Send + Sync + 'static,
+    P::Scalar: BaseFloat + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
     A: Clone + Zero + Send + Sync + 'static,
 {
