@@ -1,9 +1,9 @@
 //! Physics systems
 
 pub use self::contact_resolution::ContactResolutionSystem;
-pub use self::impulse_solver::ImpulseSolverSystem;
+pub use self::current_frame::CurrentFrameUpdateSystem;
 pub use self::next_frame::NextFrameSetupSystem;
 
-mod impulse_solver;
+mod current_frame;
 mod contact_resolution;
 mod next_frame;

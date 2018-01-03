@@ -12,10 +12,10 @@ use specs::{Entity, World};
 
 use Real;
 use ecs::WithRhusics;
-use ecs::physics::{ContactResolutionSystem, ImpulseSolverSystem, NextFrameSetupSystem};
+use ecs::physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
-pub type ImpulseSolverSystem3 = ImpulseSolverSystem<Point3<Real>, Quaternion<Real>, Vector3<Real>>;
+pub type CurrentFrameUpdateSystem3 = CurrentFrameUpdateSystem<Point3<Real>, Quaternion<Real>, Vector3<Real>>;
 
 /// Resolution system for 2D
 pub type ContactResolutionSystem3 = ContactResolutionSystem<
