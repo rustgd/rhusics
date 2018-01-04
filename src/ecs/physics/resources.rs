@@ -37,7 +37,11 @@ where
     type Storage = DenseVecStorage<Self>;
 }
 
-/// Time step
+/// Time step resource
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar
 pub struct DeltaTime<S>
 where
     S: BaseFloat,
@@ -49,6 +53,16 @@ where
 /// Adds rigid body builder functions to `EntityBuilder`
 pub trait WithRigidBody {
     /// Add dynamic rigid body components to entity
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Collision Primitive
+    /// - `Y`: Collider
+    /// - `R`: Rotational quantity
+    /// - `V`: Vector
+    /// - `A`: Angular velocity
+    /// - `I`: Inertia
+    /// - `B`: Bounding volume
     fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         self,
         shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
@@ -69,6 +83,15 @@ pub trait WithRigidBody {
         I: Send + Sync + 'static;
 
     /// Add static rigid body components to entity
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `S`: Scalar (f32 or f64)
+    /// - `P`: Collision Primitive
+    /// - `Y`: Collider
+    /// - `R`: Rotational quantity
+    /// - `I`: Inertia
+    /// - `B`: Bounding volume
     fn with_static_rigid_body<S, P, Y, R, I, B>(
         self,
         shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
@@ -89,6 +112,16 @@ pub trait WithRigidBody {
 /// Adds rigid body builder functions to `LazyUpdate`
 pub trait WithLazyRigidBody {
     /// Add dynamic rigid body components to entity
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Collision Primitive
+    /// - `Y`: Collider
+    /// - `R`: Rotational quantity
+    /// - `V`: Vector
+    /// - `A`: Angular velocity
+    /// - `I`: Inertia
+    /// - `B`: Bounding volume
     fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
         &self,
         entity: Entity,
@@ -109,6 +142,15 @@ pub trait WithLazyRigidBody {
         I: Send + Sync + 'static;
 
     /// Add static rigid body components to entity
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `S`: Scalar (f32 or f64)
+    /// - `P`: Collision Primitive
+    /// - `Y`: Collider
+    /// - `R`: Rotational quantity
+    /// - `I`: Inertia
+    /// - `B`: Bounding volume
     fn with_static_rigid_body<S, P, Y, R, I, B>(
         &self,
         entity: Entity,

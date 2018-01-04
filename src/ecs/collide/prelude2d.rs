@@ -17,21 +17,43 @@ use ecs::WithRhusics;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type ContactEvent2<S> = ContactEvent<Entity, Point2<S>>;
 
 /// Basic collision system for 2D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type BasicCollisionSystem2<S, T, Y = ()> =
     BasicCollisionSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial sorting system for 2D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type SpatialSortingSystem2<S, T, Y = ()> =
     SpatialSortingSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial collision system for 2D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type SpatialCollisionSystem2<S, T, Y = ()> = SpatialCollisionSystem<
     Primitive2<S>,
     T,
@@ -41,7 +63,10 @@ pub type SpatialCollisionSystem2<S, T, Y = ()> = SpatialCollisionSystem<
 >;
 
 /// Dynamic bounding volume tree for 2D
-
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type DynamicBoundingVolumeTree2<S> =
     DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb2<S>>>;
 
@@ -53,8 +78,9 @@ pub type DynamicBoundingVolumeTree2<S> =
 /// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
 /// to register components/resources in.
 ///
-/// # Type parameters
+/// ### Type parameters:
 ///
+/// - `S`: Scalar type (f32 or f64)
 /// - `T`: Transform type that implements
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 /// - `Y`: Shape type, see `Collider`

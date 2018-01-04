@@ -14,12 +14,24 @@ use ecs::WithRhusics;
 use ecs::physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type CurrentFrameUpdateSystem2<S> = CurrentFrameUpdateSystem<Point2<S>, Basis2<S>, S>;
 
 /// Resolution system for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type ContactResolutionSystem2<S> = ContactResolutionSystem<Point2<S>, Basis2<S>, S, S, S>;
 
 /// Next frame setup system for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type NextFrameSetupSystem2<S> = NextFrameSetupSystem<Point2<S>, Basis2<S>, S, S>;
 
 /// Utility method for registering 2D physics and collision components and resources with
@@ -30,8 +42,9 @@ pub type NextFrameSetupSystem2<S> = NextFrameSetupSystem<Point2<S>, Basis2<S>, S
 /// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
 /// to register components/resources in.
 ///
-/// # Type parameters
+/// ### Type parameters:
 ///
+/// - `S`: Scalar type (f32 or f64)
 /// - `Y`: Collision shape type, see `Collider`
 pub fn register_physics<S, Y>(world: &mut World)
 where

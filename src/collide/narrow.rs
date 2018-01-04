@@ -170,7 +170,7 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
 #[cfg(test)]
 mod tests {
 
-    use cgmath::{Basis2, Decomposed, Rad, Rotation2, Vector2, BaseFloat};
+    use cgmath::{BaseFloat, Basis2, Decomposed, Rad, Rotation2, Vector2};
     use collision::Aabb2;
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
@@ -178,7 +178,10 @@ mod tests {
     use collide::*;
     use collide::narrow::NarrowPhase;
 
-    fn transform<S>(x: S, y: S, angle: S) -> Decomposed<Vector2<S>, Basis2<S>> where S: BaseFloat {
+    fn transform<S>(x: S, y: S, angle: S) -> Decomposed<Vector2<S>, Basis2<S>>
+    where
+        S: BaseFloat,
+    {
         Decomposed {
             disp: Vector2::new(x, y),
             rot: Rotation2::from_angle(Rad(angle)),

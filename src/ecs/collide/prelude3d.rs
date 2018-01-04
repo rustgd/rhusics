@@ -17,21 +17,43 @@ use ecs::WithRhusics;
 use ecs::collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 
 /// Contact event for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type ContactEvent3<S> = ContactEvent<Entity, Point3<S>>;
 
 /// ECS collision system for 3D, see
 /// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type BasicCollisionSystem3<S, T, Y = ()> =
     BasicCollisionSystem<Primitive3<S>, T, TreeValueWrapped<Entity, Aabb3<S>>, Aabb3<S>, Y>;
 
 /// Spatial sorting system for 3D, see
 /// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type SpatialSortingSystem3<S, T, Y = ()> =
     SpatialSortingSystem<Primitive3<S>, T, TreeValueWrapped<Entity, Aabb3<S>>, Aabb3<S>, Y>;
 
 /// Spatial collision system for 3D, see
 /// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
+/// - `Y`: Collider type, see `Collider` for more information
 pub type SpatialCollisionSystem3<S, T, Y = ()> = SpatialCollisionSystem<
     Primitive3<S>,
     T,
@@ -41,6 +63,10 @@ pub type SpatialCollisionSystem3<S, T, Y = ()> = SpatialCollisionSystem<
 >;
 
 /// Dynamic bounding volume tree for 3D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
 pub type DynamicBoundingVolumeTree3<S> =
     DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb3<S>>>;
 

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use cgmath::{BaseFloat, EuclideanSpace, Rotation, Transform, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, Point2, Point3, Rotation, Transform, Zero};
 use collision::{Bound, Contains, Primitive, SurfaceArea, Union};
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use shrev::EventChannel;
@@ -15,6 +15,14 @@ use physics::{ForceAccumulator, Mass, RigidBody, Velocity};
 /// Utility method for registering collision types with `World`
 pub trait WithRhusics {
     /// Register collision types
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Collision Primitive
+    /// - `B`: Bounding volume
+    /// - `T`: Transform
+    /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
+    /// - `Y`: Collider
     fn register_collision<P, B, T, D, Y>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
@@ -36,6 +44,17 @@ pub trait WithRhusics {
     /// Register physics types
     ///
     /// Will also call `register_collision`
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `P`: Collision Primitive
+    /// - `B`: Bounding volume
+    /// - `R`: Rotational quantity
+    /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
+    /// - `Y`: Collider
+    /// - `L`: Linear velocity/force
+    /// - `A`: Angular velocity/force
+    /// - `I`: Inertia
     fn register_physics<P, B, R, D, Y, L, A, I>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
@@ -56,6 +75,58 @@ pub trait WithRhusics {
         L: Clone + Send + Sync + 'static,
         A: Clone + Send + Sync + 'static,
         I: Send + Sync + 'static;
+
+    /// Register physics types for 2D
+    ///
+    /// Will also call `register_collision`
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `S`: Scalar (f32 or f64)
+    /// - `P`: Collision Primitive
+    /// - `B`: Bounding volume
+    /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
+    /// - `Y`: Collider
+    fn register_physics_2d<S, P, B, D, Y>(&mut self)
+    where
+        P: Primitive<Point = Point2<S>> + Send + Sync + 'static,
+        S: BaseFloat + Send + Sync + 'static,
+        B: Bound<Point = P::Point>
+            + Clone
+            + Union<B, Output = B>
+            + Contains<B>
+            + SurfaceArea<Scalar = S>
+            + Send
+            + Sync
+            + 'static,
+        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        Y: Collider + Send + Sync + 'static;
+
+    /// Register physics types for 3D
+    ///
+    /// Will also call `register_collision`
+    ///
+    /// ### Type parameters:
+    ///
+    /// - `S`: Scalar (f32 or f64)
+    /// - `P`: Collision Primitive
+    /// - `B`: Bounding volume
+    /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
+    /// - `Y`: Collider
+    fn register_physics_3d<S, P, B, D, Y>(&mut self)
+    where
+        P: Primitive<Point = Point3<S>> + Send + Sync + 'static,
+        S: BaseFloat + Send + Sync + 'static,
+        B: Bound<Point = P::Point>
+            + Clone
+            + Union<B, Output = B>
+            + Contains<B>
+            + SurfaceArea<Scalar = S>
+            + Send
+            + Sync
+            + 'static,
+        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        Y: Collider + Send + Sync + 'static;
 }
 
 impl WithRhusics for World {
@@ -114,5 +185,43 @@ impl WithRhusics for World {
         self.register::<RigidBody<<P::Point as EuclideanSpace>::Scalar>>();
         self.register::<ForceAccumulator<L, A>>();
         self.register_collision::<P, B, BodyPose<P::Point, R>, D, Y>();
+    }
+
+    fn register_physics_2d<S, P, B, D, Y>(&mut self)
+    where
+        P: Primitive<Point = Point2<S>> + Send + Sync + 'static,
+        S: BaseFloat + Send + Sync + 'static,
+        B: Bound<Point = P::Point>
+            + Clone
+            + Union<B, Output = B>
+            + Contains<B>
+            + SurfaceArea<Scalar = S>
+            + Send
+            + Sync
+            + 'static,
+        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        Y: Collider + Send + Sync + 'static,
+    {
+        use cgmath::{Basis2, Vector2};
+        self.register_physics::<P, B, Basis2<S>, D, Y, Vector2<S>, S, S>()
+    }
+
+    fn register_physics_3d<S, P, B, D, Y>(&mut self)
+    where
+        P: Primitive<Point = Point3<S>> + Send + Sync + 'static,
+        S: BaseFloat + Send + Sync + 'static,
+        B: Bound<Point = P::Point>
+            + Clone
+            + Union<B, Output = B>
+            + Contains<B>
+            + SurfaceArea<Scalar = S>
+            + Send
+            + Sync
+            + 'static,
+        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        Y: Collider + Send + Sync + 'static,
+    {
+        use cgmath::{Matrix3, Quaternion, Vector3};
+        self.register_physics::<P, B, Quaternion<S>, D, Y, Vector3<S>, Vector3<S>, Matrix3<S>>()
     }
 }

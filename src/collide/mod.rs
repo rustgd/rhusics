@@ -35,7 +35,7 @@ pub enum CollisionMode {
     Continuous,
 }
 
-/// Contains all the contacts found between two bodies in a single pass.
+/// Contains all contact information for a single contact, together with IDs of the colliding bodies
 ///
 /// # Type parameters
 ///
@@ -61,13 +61,13 @@ where
     P: EuclideanSpace,
     P::Diff: VectorSpace + Zero + Debug,
 {
-    /// Create a new contact set
+    /// Create a new contact event
     pub fn new(bodies: (ID, ID), contact: Contact<P>) -> Self {
         Self { bodies, contact }
     }
 
-    /// Convenience function to create a contact set with a single [`Contact`](struct.Contact.html).
-    pub fn new_single(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
+    /// Convenience function to create a contact set with a simple [`Contact`](struct.Contact.html).
+    pub fn new_simple(strategy: CollisionStrategy, bodies: (ID, ID)) -> Self {
         Self::new(bodies, Contact::new(strategy))
     }
 }
@@ -82,7 +82,8 @@ where
 /// in model space coordinates. Also contains a cached version of the transformed bounding box,
 /// in world space coordinates.
 ///
-/// Also have details about what collision strategy to use for contact resolution with this shape.
+/// Also have details about what collision strategy/mode to use for contact resolution with this
+/// shape.
 ///
 /// ### Type parameters:
 ///

@@ -7,9 +7,9 @@ use specs::{Join, ReadStorage, System, WriteStorage};
 use {BodyPose, NextFrame};
 use physics::Velocity;
 
-/// Impulse physics solver system.
+/// Current frame update system.
 ///
-/// Will update positions and velocities for the current frame
+/// Will update positions and velocities for the current frame, based on `NextFrame` values.
 ///
 /// ### Type parameters:
 ///
