@@ -1,12 +1,13 @@
 use std::fmt::Debug;
 
+use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
-use {NextFrame, Real};
+use NextFrame;
 use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
 use collide::broad::BroadPhase;
 use collide::narrow::NarrowPhase;
@@ -50,6 +51,7 @@ impl<P, T, D, B, Y> SpatialCollisionSystem<P, T, D, B, Y>
 where
     P: Primitive + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat,
     B: Clone
         + Debug
         + Send
@@ -58,7 +60,7 @@ where
         + Bound<Point = P::Point>
         + Union<B, Output = B>
         + Contains<B>
-        + SurfaceArea<Scalar = Real>,
+        + SurfaceArea<Scalar = <P::Point as EuclideanSpace>::Scalar>,
     T: Transform<P::Point> + Component,
     D: HasBound<Bound = B>,
 {
@@ -97,7 +99,8 @@ where
 impl<'a, P, T, Y, B, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), B, Y>
 where
     P: Primitive + ComputeBound<B> + Send + Sync + 'static,
-    P::Point: EuclideanSpace<Scalar = Real>,
+    P::Point: EuclideanSpace,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat + Send + Sync + 'static,
     B: Clone
         + Debug
         + Send
@@ -107,7 +110,7 @@ where
         + Union<B, Output = B>
         + Discrete<B>
         + Contains<B>
-        + SurfaceArea<Scalar = Real>,
+        + SurfaceArea<Scalar = <P::Point as EuclideanSpace>::Scalar>,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,

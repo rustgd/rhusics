@@ -13,24 +13,24 @@ use rhusics::ecs::collide::prelude2d::{register_collision, BasicCollisionSystem2
 
 pub fn main() {
     let mut world = World::new();
-    register_collision::<BodyPose2, ()>(&mut world);
+    register_collision::<f32, BodyPose2<f32>, ()>(&mut world);
 
     let mut reader_1 = world
-        .write_resource::<EventChannel<ContactEvent2>>()
+        .write_resource::<EventChannel<ContactEvent2<f32>>>()
         .register_reader();
 
     world
         .create_entity()
-        .with(CollisionShape2::<BodyPose2, ()>::new_simple(
+        .with(CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
         ))
-        .with(BodyPose2::one());
+        .with(BodyPose2::<f32>::one());
 
     world
         .create_entity()
-        .with(CollisionShape2::<BodyPose2, ()>::new_simple(
+        .with(CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
@@ -40,14 +40,14 @@ pub fn main() {
             Rotation2::from_angle(Rad(0.)),
         ));
 
-    let mut system = BasicCollisionSystem2::<BodyPose2, ()>::new()
+    let mut system = BasicCollisionSystem2::<f32, BodyPose2<f32>, ()>::new()
         .with_broad_phase(BroadBruteForce2::default())
         .with_narrow_phase(GJK2::new());
     system.run_now(&world.res);
     println!(
         "Contacts: {:?}",
         world
-            .read_resource::<EventChannel<ContactEvent2>>()
+            .read_resource::<EventChannel<ContactEvent2<f32>>>()
             .read(&mut reader_1)
             .collect::<Vec<_>>()
     );

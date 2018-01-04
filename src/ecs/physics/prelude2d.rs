@@ -4,25 +4,23 @@ pub use ecs::collide::prelude2d::*;
 pub use ecs::physics::{DeltaTime, WithLazyRigidBody, WithRigidBody};
 pub use physics::prelude2d::*;
 
-use cgmath::{Basis2, Point2, Vector2};
+use cgmath::{BaseFloat, Basis2, Point2, Vector2};
 use collision::Aabb2;
 use collision::dbvt::TreeValueWrapped;
 use collision::primitive::Primitive2;
 use specs::{Entity, World};
 
-use Real;
 use ecs::WithRhusics;
 use ecs::physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 
 /// Current frame integrator system for 2D
-pub type CurrentFrameUpdateSystem2 = CurrentFrameUpdateSystem<Point2<Real>, Basis2<Real>, Real>;
+pub type CurrentFrameUpdateSystem2<S> = CurrentFrameUpdateSystem<Point2<S>, Basis2<S>, S>;
 
 /// Resolution system for 2D
-pub type ContactResolutionSystem2 =
-    ContactResolutionSystem<Point2<Real>, Basis2<Real>, Real, Real, Real>;
+pub type ContactResolutionSystem2<S> = ContactResolutionSystem<Point2<S>, Basis2<S>, S, S, S>;
 
 /// Next frame setup system for 2D
-pub type NextFrameSetupSystem2 = NextFrameSetupSystem<Point2<Real>, Basis2<Real>, Real, Real>;
+pub type NextFrameSetupSystem2<S> = NextFrameSetupSystem<Point2<S>, Basis2<S>, S, S>;
 
 /// Utility method for registering 2D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -35,18 +33,19 @@ pub type NextFrameSetupSystem2 = NextFrameSetupSystem<Point2<Real>, Basis2<Real>
 /// # Type parameters
 ///
 /// - `Y`: Collision shape type, see `Collider`
-pub fn register_physics<Y>(world: &mut World)
+pub fn register_physics<S, Y>(world: &mut World)
 where
+    S: BaseFloat + Send + Sync + 'static,
     Y: Collider + Default + Send + Sync + 'static,
 {
     world.register_physics::<
-        Primitive2<Real>,
-        Aabb2<Real>,
-        Basis2<Real>,
-        TreeValueWrapped<Entity, Aabb2<Real>>,
+        Primitive2<S>,
+        Aabb2<S>,
+        Basis2<S>,
+        TreeValueWrapped<Entity, Aabb2<S>>,
         Y,
-        Vector2<Real>,
-        Real,
-        Real
+        Vector2<S>,
+        S,
+        S
     >();
 }

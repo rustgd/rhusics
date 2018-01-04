@@ -49,12 +49,6 @@ use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::prelude::*;
 
-#[cfg(not(feature = "double"))]
-pub(crate) type Real = f32;
-
-#[cfg(feature = "double")]
-pub(crate) type Real = f64;
-
 /// Wrapper for data computed for the next frame
 #[derive(Clone, Debug, PartialEq)]
 pub struct NextFrame<T> {

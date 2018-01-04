@@ -2,11 +2,11 @@ use std::fmt::Debug;
 use std::marker;
 use std::ops::{Add, Mul, Sub};
 
-use cgmath::{EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use shrev::{EventChannel, ReaderId};
 use specs::{Entity, Fetch, ReadStorage, System, WriteStorage};
 
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 use collide::ContactEvent;
 use physics::{resolve_contact, ApplyAngular, Inertia, Mass, PartialCrossProduct, ResolveData,
               RigidBody, Velocity};
@@ -37,12 +37,10 @@ where
 
 impl<P, R, I, A, O> ContactResolutionSystem<P, R, I, A, O>
 where
-    P: EuclideanSpace<Scalar = Real>,
-    P::Diff: VectorSpace<Scalar = Real>
-        + InnerSpace
-        + Debug
-        + PartialCrossProduct<P::Diff, Output = O>,
-    R: Rotation<P> + ApplyAngular<A>,
+    P: EuclideanSpace,
+    P::Scalar: BaseFloat,
+    P::Diff: VectorSpace + InnerSpace + Debug + PartialCrossProduct<P::Diff, Output = O>,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A>,
     O: PartialCrossProduct<P::Diff, Output = P::Diff>,
     A: PartialCrossProduct<P::Diff, Output = P::Diff> + Clone + Zero,
     for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
@@ -59,15 +57,16 @@ where
 
 impl<'a, P, R, I, A, O> System<'a> for ContactResolutionSystem<P, R, I, A, O>
 where
-    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
-    P::Diff: VectorSpace<Scalar = Real>
+    P: EuclideanSpace + Send + Sync + 'static,
+    P::Scalar: BaseFloat + Send + Sync + 'static,
+    P::Diff: VectorSpace
         + InnerSpace
         + Debug
         + Send
         + Sync
         + 'static
         + PartialCrossProduct<P::Diff, Output = O>,
-    R: Rotation<P> + ApplyAngular<A> + Send + Sync + 'static,
+    R: Rotation<P> + ApplyAngular<P::Scalar, A> + Send + Sync + 'static,
     O: PartialCrossProduct<P::Diff, Output = P::Diff>,
     A: PartialCrossProduct<P::Diff, Output = P::Diff> + Clone + Zero + Send + Sync + 'static,
     for<'b> &'b A: Sub<O, Output = A> + Add<O, Output = A>,
@@ -75,8 +74,8 @@ where
 {
     type SystemData = (
         Fetch<'a, EventChannel<ContactEvent<Entity, P>>>,
-        ReadStorage<'a, Mass<I>>,
-        ReadStorage<'a, RigidBody>,
+        ReadStorage<'a, Mass<P::Scalar, I>>,
+        ReadStorage<'a, RigidBody<P::Scalar>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, BodyPose<P, R>>,
         WriteStorage<'a, NextFrame<BodyPose<P, R>>>,

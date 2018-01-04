@@ -1,6 +1,4 @@
-use cgmath::{Vector2, Vector3};
-
-use Real;
+use cgmath::{BaseFloat, Vector2, Vector3};
 
 /// Cross product abstraction
 pub trait PartialCrossProduct<RHS = Self> {
@@ -10,24 +8,33 @@ pub trait PartialCrossProduct<RHS = Self> {
     fn cross(&self, other: &RHS) -> Self::Output;
 }
 
-impl PartialCrossProduct<Vector2<Real>> for Real {
-    type Output = Vector2<Real>;
+impl<S> PartialCrossProduct<Vector2<S>> for S
+where
+    S: BaseFloat,
+{
+    type Output = Vector2<S>;
 
-    fn cross(&self, other: &Vector2<Real>) -> Self::Output {
+    fn cross(&self, other: &Vector2<S>) -> Self::Output {
         Vector2::new(-*self * other.y, *self * other.x)
     }
 }
 
-impl PartialCrossProduct for Vector2<Real> {
-    type Output = Real;
-    fn cross(&self, other: &Vector2<Real>) -> Real {
+impl<S> PartialCrossProduct for Vector2<S>
+where
+    S: BaseFloat,
+{
+    type Output = S;
+    fn cross(&self, other: &Vector2<S>) -> S {
         self.x * other.y - self.y * other.x
     }
 }
 
-impl PartialCrossProduct for Vector3<Real> {
-    type Output = Vector3<Real>;
-    fn cross(&self, other: &Vector3<Real>) -> Vector3<Real> {
+impl<S> PartialCrossProduct for Vector3<S>
+where
+    S: BaseFloat,
+{
+    type Output = Vector3<S>;
+    fn cross(&self, other: &Vector3<S>) -> Vector3<S> {
         Vector3::cross(*self, *other)
     }
 }

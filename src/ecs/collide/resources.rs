@@ -1,16 +1,18 @@
 use std::fmt::Debug;
 
+use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::{Bound, Primitive};
 use collision::dbvt::TreeValueWrapped;
 use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
 
-use {BodyPose, NextFrame, Real};
+use {BodyPose, NextFrame};
 use collide::CollisionShape;
 
 impl<P, R> Component for BodyPose<P, R>
 where
-    P: EuclideanSpace<Scalar = Real> + Send + Sync + 'static,
+    P: EuclideanSpace + Send + Sync + 'static,
+    P::Scalar: BaseFloat,
     R: Rotation<P> + Send + Sync + 'static,
 {
     type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;

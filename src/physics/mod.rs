@@ -12,14 +12,15 @@ pub mod prelude2d;
 pub mod prelude3d;
 pub mod simple;
 
-use Real;
-
 mod resolution;
+
 mod volumes;
 mod mass;
 mod velocity;
 mod force;
 mod util;
+
+use cgmath::BaseFloat;
 
 /// Physics material
 ///
@@ -28,8 +29,8 @@ mod util;
 /// The default material has density 1, such that only the volume affects its mass, and restitution
 /// 1, such that all energy is preserved in collisions.
 pub struct Material {
-    density: Real,
-    restitution: Real,
+    density: f32,
+    restitution: f32,
 }
 
 impl Default for Material {
@@ -76,7 +77,7 @@ impl Material {
     };
 
     /// Create new material
-    pub fn new(density: Real, restitution: Real) -> Self {
+    pub fn new(density: f32, restitution: f32) -> Self {
         Self {
             density,
             restitution,
@@ -84,31 +85,43 @@ impl Material {
     }
 
     /// Get density
-    pub fn density(&self) -> Real {
-        self.density
+    pub fn density<S>(&self) -> S
+    where
+        S: BaseFloat,
+    {
+        S::from(self.density).unwrap()
     }
 
     /// Get restitution
-    pub fn restitution(&self) -> Real {
-        self.restitution
+    pub fn restitution<S>(&self) -> S
+    where
+        S: BaseFloat,
+    {
+        S::from(self.restitution).unwrap()
     }
 }
 
 /// Rigid body
-pub struct RigidBody {
+pub struct RigidBody<S> {
     material: Material,
-    gravity_scale: Real,
+    gravity_scale: S,
 }
 
-impl Default for RigidBody {
+impl<S> Default for RigidBody<S>
+where
+    S: BaseFloat,
+{
     fn default() -> Self {
-        RigidBody::new(Material::default(), 1.0)
+        RigidBody::new(Material::default(), S::one())
     }
 }
 
-impl RigidBody {
+impl<S> RigidBody<S>
+where
+    S: BaseFloat,
+{
     /// Create new rigid body
-    pub fn new(material: Material, gravity_scale: Real) -> Self {
+    pub fn new(material: Material, gravity_scale: S) -> Self {
         Self {
             material,
             gravity_scale,
@@ -121,7 +134,7 @@ impl RigidBody {
     }
 
     /// Get gravity scale
-    pub fn gravity_scale(&self) -> Real {
+    pub fn gravity_scale(&self) -> S {
         self.gravity_scale
     }
 }
