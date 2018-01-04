@@ -11,6 +11,8 @@ use BodyPose;
 ///
 /// - `F`: Force type, usually `Vector2` or `Vector3`
 /// - `T`: Torque force, usually `Scalar` or `Vector3`
+#[derive(Debug)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct ForceAccumulator<F, T> {
     force: F,
     torque: T,

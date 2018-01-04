@@ -28,6 +28,8 @@ use cgmath::BaseFloat;
 ///
 /// The default material has density 1, such that only the volume affects its mass, and restitution
 /// 1, such that all energy is preserved in collisions.
+#[derive(Debug)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct Material {
     density: f32,
     restitution: f32,
@@ -102,6 +104,8 @@ impl Material {
 }
 
 /// Rigid body
+#[derive(Debug)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct RigidBody<S> {
     material: Material,
     gravity_scale: S,
