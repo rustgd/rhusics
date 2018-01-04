@@ -40,6 +40,10 @@ extern crate specs;
 #[macro_use]
 extern crate approx;
 
+#[cfg(feature = "eders")]
+#[macro_use]
+extern crate serde;
+
 pub mod collide;
 pub mod physics;
 #[cfg(feature = "ecs")]
@@ -51,6 +55,7 @@ use collision::prelude::*;
 
 /// Wrapper for data computed for the next frame
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct NextFrame<T> {
     /// Wrapped value
     pub value: T,
@@ -58,6 +63,7 @@ pub struct NextFrame<T> {
 
 /// Transform component used throughout the library
 #[derive(Clone, Debug, PartialEq)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct BodyPose<P, R> {
     dirty: bool,
     position: P,

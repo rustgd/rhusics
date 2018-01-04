@@ -15,6 +15,7 @@ use super::{Material, Volume};
 ///
 /// - `I`: Inertia type, usually `Scalar` or `Matrix3`, see `Inertia` for more information.
 #[derive(Debug)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct Mass<S, I> {
     mass: S,
     inverse_mass: S,

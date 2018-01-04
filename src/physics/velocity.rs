@@ -10,6 +10,7 @@ use BodyPose;
 /// - `L`: Linear velocity, usually `Vector2` or `Vector3`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct Velocity<L, A> {
     linear: L,
     angular: A,

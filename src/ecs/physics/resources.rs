@@ -42,6 +42,8 @@ where
 /// ### Type parameters:
 ///
 /// - `S`: Scalar
+#[derive(Debug)]
+#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
 pub struct DeltaTime<S>
 where
     S: BaseFloat,
