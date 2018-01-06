@@ -14,11 +14,11 @@ keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [features]
 ecs = ["specs", "shrev"]
-eders = ["serde", "cgmath/serde", "collision/eders"]
+eders = ["serde", "cgmath/serde", "collision/eders", "specs/serde"]
 
 [dependencies]
-cgmath = "0.15"
-collision = { version = "0.13" }
+cgmath = "0.16"
+collision = { version = "0.14" }
 specs = { version = "0.10", optional = true }
 shrev = { version = "0.8", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"]}

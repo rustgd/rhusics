@@ -154,6 +154,10 @@ where
             self.inverse_rotation,
         ))
     }
+
+    fn inverse_transform_vector(&self, vec: P::Diff) -> Option<P::Diff> {
+        Some(self.inverse_rotation.rotate_vector(vec))
+    }
 }
 
 impl<P, R> TranslationInterpolate<P::Scalar> for BodyPose<P, R>
