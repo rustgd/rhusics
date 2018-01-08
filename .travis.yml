@@ -15,20 +15,9 @@ branches:
 matrix:
   allow_failures:
   - rust: nightly
-before_script:
-- |
-  pip install 'travis-cargo<0.2' --user &&
-  export PATH=$HOME/.local/bin:$PATH
 script:
 - |
-  travis-cargo build &&
-  travis-cargo test -- --all &&
-  travis-cargo test -- --all --features ecs &&
-  travis-cargo bench &&
-  travis-cargo --only stable doc
+  cargo build --all &&
+  cargo test --all &&
+  cargo test --all --all-features
 cache: cargo
-env:
-  global:
-  - TRAVIS_CARGO_NIGHTLY_FEATURE=""
-#after_success:
-#- travis-cargo --only stable doc-upload
