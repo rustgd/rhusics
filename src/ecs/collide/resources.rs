@@ -1,10 +1,7 @@
-use std::fmt::Debug;
-
 use cgmath::BaseFloat;
 use cgmath::prelude::*;
-use collision::{Bound, Primitive};
-use collision::dbvt::TreeValueWrapped;
-use specs::{Component, DenseVecStorage, Entity, FlaggedStorage};
+use collision::prelude::*;
+use specs::{Component, DenseVecStorage, FlaggedStorage};
 
 use {BodyPose, NextFrame};
 use collide::CollisionShape;
@@ -25,12 +22,6 @@ where
     type Storage = FlaggedStorage<Self, DenseVecStorage<Self>>;
 }
 
-/// Retrieve the entity for the given object
-pub trait GetEntity {
-    /// Return the entity
-    fn entity(&self) -> Entity;
-}
-
 impl<P, T, B, Y> Component for CollisionShape<P, T, B, Y>
 where
     T: Send + Sync + 'static,
@@ -39,14 +30,4 @@ where
     B: Bound + Send + Sync + 'static,
 {
     type Storage = DenseVecStorage<CollisionShape<P, T, B, Y>>;
-}
-
-impl<B> GetEntity for TreeValueWrapped<Entity, B>
-where
-    B: Bound,
-    <B::Point as EuclideanSpace>::Diff: Debug,
-{
-    fn entity(&self) -> Entity {
-        self.value
-    }
 }

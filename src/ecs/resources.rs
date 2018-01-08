@@ -7,8 +7,7 @@ use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
 use {BodyPose, NextFrame};
-use collide::{Collider, CollisionShape, ContactEvent};
-use ecs::collide::GetEntity;
+use collide::{Collider, CollisionShape, ContactEvent, GetId};
 use ecs::physics::DeltaTime;
 use physics::{ForceAccumulator, Mass, RigidBody, Velocity};
 
@@ -38,7 +37,7 @@ pub trait WithRhusics {
             + Sync
             + 'static,
         T: Transform<P::Point> + Component + Send + Sync + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static;
 
     /// Register physics types
@@ -70,7 +69,7 @@ pub trait WithRhusics {
             + Sync
             + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
         L: Clone + Send + Sync + 'static,
         A: Clone + Send + Sync + 'static,
@@ -99,7 +98,7 @@ pub trait WithRhusics {
             + Send
             + Sync
             + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static;
 
     /// Register physics types for 3D
@@ -125,7 +124,7 @@ pub trait WithRhusics {
             + Send
             + Sync
             + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static;
 }
 
@@ -145,7 +144,7 @@ impl WithRhusics for World {
             + Sync
             + 'static,
         T: Transform<P::Point> + Component + Send + Sync + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
     {
         self.register::<T>();
@@ -170,7 +169,7 @@ impl WithRhusics for World {
             + Sync
             + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
         L: Clone + Send + Sync + 'static,
         A: Clone + Send + Sync + 'static,
@@ -199,7 +198,7 @@ impl WithRhusics for World {
             + Send
             + Sync
             + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
     {
         use cgmath::{Basis2, Vector2};
@@ -218,7 +217,7 @@ impl WithRhusics for World {
             + Send
             + Sync
             + 'static,
-        D: TreeValue<Bound = B> + GetEntity + Send + Sync + 'static,
+        D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
     {
         use cgmath::{Matrix3, Quaternion, Vector3};

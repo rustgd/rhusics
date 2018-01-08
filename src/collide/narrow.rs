@@ -11,7 +11,7 @@ use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
 use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
 
-use collide::{Collider, CollisionMode, CollisionShape};
+use collide::{Collider, CollisionData, CollisionMode, CollisionShape, ContactEvent};
 
 /// Base trait implemented by all narrow phase algorithms.
 ///
@@ -165,6 +165,53 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
     } else {
         right.clone()
     }
+}
+
+/// Perform narrow phase collision detection on the given potential collider pairs, using the given
+/// narrow phase
+///
+/// ### Type parameters:
+///
+/// - `C`: Collision data
+/// - `I`: Id, returned by `GetId` on `D`, primary id for a collider
+/// - `P`: Primitive
+/// - `T`: Transform
+/// - `B`: Bounding volume, not used here, but required for `CollisionData`
+/// - `Y`: Collider, see `Collider` for more information, not used here, but required for
+///        `CollisionData`
+/// - `D`: Broad phase data, not used here, but required for `CollisionData`
+pub fn narrow_collide<C, I, P, T, B, Y, D>(
+    data: &C,
+    narrow: &Box<NarrowPhase<P, T, B, Y>>,
+    potentials: Vec<(I, I)>,
+) -> Vec<ContactEvent<I, P::Point>>
+where
+    C: CollisionData<I, P, T, B, Y, D>,
+    P: Primitive,
+    <P::Point as EuclideanSpace>::Diff: Debug,
+    I: Copy + Debug,
+{
+    potentials
+        .iter()
+        .filter_map(|&(left, right)| {
+            let left_shape = data.get_shape(left);
+            let right_shape = data.get_shape(right);
+            let left_pose = data.get_pose(left);
+            let right_pose = data.get_pose(right);
+            let left_next_pose = data.get_next_pose(left);
+            let right_next_pose = data.get_next_pose(right);
+            narrow
+                .collide_continuous(
+                    left_shape,
+                    left_pose,
+                    left_next_pose,
+                    right_shape,
+                    right_pose,
+                    right_next_pose,
+                )
+                .map(|contact| ContactEvent::new((left, right), contact))
+        })
+        .collect::<Vec<_>>()
 }
 
 #[cfg(test)]

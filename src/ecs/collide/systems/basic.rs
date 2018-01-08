@@ -6,10 +6,9 @@ use shrev::EventChannel;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
 
 use NextFrame;
-use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
+use collide::{basic_collide, CollisionData, CollisionShape, ContactEvent, GetId, Primitive};
 use collide::broad::BroadPhase;
 use collide::narrow::NarrowPhase;
-use ecs::collide::resources::GetEntity;
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
@@ -80,7 +79,8 @@ where
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
-    D: HasBound<Bound = B> + From<(Entity, B)> + GetEntity,
+    D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
+    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
 {
     type SystemData = (
         Entities<'a>,
@@ -94,45 +94,71 @@ where
         let (entities, poses, next_poses, mut shapes, mut event_channel) = system_data;
 
         if let Some(ref mut broad) = self.broad {
-            let mut info = Vec::default();
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
                 shape.update(&pose, next_poses.get(entity).map(|p| &p.value));
-                info.push((entity, shape.bound().clone()).into());
             }
-            let potentials = broad
-                .find_potentials(&mut info)
-                .iter()
-                .map(|&(a, b)| (info[a].entity(), info[b].entity()))
-                .collect::<Vec<_>>();
-
-            match self.narrow {
-                Some(ref mut narrow) => for (left_entity, right_entity) in potentials {
-                    let left_shape = shapes.get(left_entity).unwrap();
-                    let right_shape = shapes.get(right_entity).unwrap();
-                    let left_pose = poses.get(left_entity).unwrap();
-                    let right_pose = poses.get(right_entity).unwrap();
-                    match narrow.collide(left_shape, left_pose, right_shape, right_pose) {
-                        Some(contact) => {
-                            event_channel.single_write(ContactEvent::new(
-                                (left_entity.clone(), right_entity.clone()),
-                                contact,
-                            ));
-                        }
-                        None => (),
-                    };
+            event_channel.iter_write(basic_collide(
+                BasicCollisionData {
+                    poses: &poses,
+                    shapes: &shapes,
+                    next_poses: &next_poses,
+                    entities: &entities,
                 },
-                None => {
-                    // if we only have a broad phase, we generate contacts for aabb
-                    // intersections
-                    // right now, we only report the collision, no normal/depth calculation
-                    for (left_entity, right_entity) in potentials {
-                        event_channel.single_write(ContactEvent::new_simple(
-                            CollisionStrategy::CollisionOnly,
-                            (left_entity, right_entity),
-                        ));
-                    }
-                }
-            }
+                broad,
+                &self.narrow,
+            ));
         }
+    }
+}
+
+/// Collision data used by ECS systems
+struct BasicCollisionData<'a, P, T, B, Y>
+where
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    Y: Default + Send + Sync + 'static,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+{
+    /// collision shapes
+    pub shapes: &'a WriteStorage<'a, CollisionShape<P, T, B, Y>>,
+    /// current frame poses
+    pub poses: &'a ReadStorage<'a, T>,
+    /// next frame poses
+    pub next_poses: &'a ReadStorage<'a, NextFrame<T>>,
+    /// entities
+    pub entities: &'a Entities<'a>,
+}
+
+impl<'a, P, T, B, Y, D> CollisionData<Entity, P, T, B, Y, D> for BasicCollisionData<'a, P, T, B, Y>
+where
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    Y: Default + Send + Sync + 'static,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+    D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
+{
+    fn get_broad_data(&self) -> Vec<D> {
+        (&**self.entities, self.shapes)
+            .join()
+            .map(|(entity, shape)| (entity, shape.bound().clone()).into())
+            .collect::<Vec<_>>()
+    }
+
+    fn get_shape(&self, id: Entity) -> &CollisionShape<P, T, B, Y> {
+        self.shapes.get(id).unwrap()
+    }
+
+    fn get_pose(&self, id: Entity) -> &T {
+        self.poses.get(id).unwrap()
+    }
+
+    fn get_next_pose(&self, id: Entity) -> Option<&T> {
+        self.next_poses.get(id).as_ref().map(|p| &p.value)
     }
 }
