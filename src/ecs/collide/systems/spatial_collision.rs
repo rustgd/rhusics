@@ -2,16 +2,15 @@ use std::fmt::Debug;
 
 use cgmath::BaseFloat;
 use cgmath::prelude::*;
-use collision::dbvt::{DiscreteVisitor, DynamicBoundingVolumeTree, TreeValue};
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
 use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
 
 use NextFrame;
-use collide::{CollisionShape, CollisionStrategy, ContactEvent, Primitive};
+use collide::{tree_collide, CollisionData, CollisionShape, ContactEvent, GetId, Primitive};
 use collide::broad::BroadPhase;
 use collide::narrow::NarrowPhase;
-use ecs::collide::resources::GetEntity;
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).
@@ -85,17 +84,6 @@ where
     }
 }
 
-fn discrete_visitor<P, D, B>(bound: &B) -> DiscreteVisitor<B, D>
-where
-    P: Primitive,
-    B: Bound<Point = P::Point> + Debug + Discrete<B>,
-    P::Point: Debug,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-    D: TreeValue<Bound = B>,
-{
-    DiscreteVisitor::<B, D>::new(bound)
-}
-
 impl<'a, P, T, Y, B, D> System<'a> for SpatialCollisionSystem<P, T, (usize, D), B, Y>
 where
     P: Primitive + ComputeBound<B> + Send + Sync + 'static,
@@ -116,7 +104,7 @@ where
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
     Y: Default + Send + Sync + 'static,
     for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
-    D: Send + Sync + 'static + TreeValue<Bound = B> + HasBound<Bound = B> + GetEntity,
+    D: Send + Sync + 'static + TreeValue<Bound = B> + HasBound<Bound = B> + GetId<Entity>,
 {
     type SystemData = (
         Entities<'a>,
@@ -129,96 +117,78 @@ where
 
     fn run(&mut self, system_data: Self::SystemData) {
         let (entities, poses, next_poses, shapes, mut event_channel, mut tree) = system_data;
-
-        let potentials = if let Some(ref mut broad) = self.broad {
-            // Overridden broad phase, use that
-            let potentials = broad.find_potentials(tree.values_mut());
-            tree.reindex_values();
-            potentials
-                .iter()
-                .map(|&(ref l, ref r)| {
-                    (
-                        tree.values()[*l].1.entity().clone(),
-                        tree.values()[*r].1.entity().clone(),
-                    )
-                })
-                .collect()
-        } else {
-            // Fallback to DBVT based broad phase
-            let mut potentials = Vec::default();
-            // find changed values, do intersection tests against tree for each
-            // uses FlaggedStorage
-            for (entity, _, shape) in (&*entities, (&poses).open().1, &shapes).join() {
-                for (v, _) in tree.query(&mut discrete_visitor::<P, D, B>(shape.bound())) {
-                    let e = v.entity();
-                    if entity != e {
-                        let n = if entity < e {
-                            (entity, e.clone())
-                        } else {
-                            (e.clone(), entity)
-                        };
-                        if let Err(pos) = potentials.binary_search(&n) {
-                            potentials.insert(pos, n);
-                        }
-                    }
-                }
-            }
-            // find changed next frame values, do intersection tests against tree for each
-            // uses FlaggedStorage
-            for (entity, _, shape) in (&*entities, (&next_poses).open().1, &shapes).join() {
-                for (v, _) in tree.query(&mut discrete_visitor::<P, D, B>(shape.bound())) {
-                    let e = v.entity();
-                    if entity != e {
-                        let n = if entity < e {
-                            (entity, e.clone())
-                        } else {
-                            (e.clone(), entity)
-                        };
-                        if let Err(pos) = potentials.binary_search(&n) {
-                            potentials.insert(pos, n);
-                        }
-                    }
-                }
-            }
-            potentials
-        };
-
-        match self.narrow {
-            Some(ref narrow) => for (left_entity, right_entity) in potentials {
-                let left_shape = shapes.get(left_entity).unwrap();
-                let right_shape = shapes.get(right_entity).unwrap();
-                let left_pose = poses.get(left_entity).unwrap();
-                let right_pose = poses.get(right_entity).unwrap();
-                let left_next_pose = next_poses.get(left_entity).as_ref().map(|p| &p.value);
-                let right_next_pose = next_poses.get(right_entity).as_ref().map(|p| &p.value);
-                match narrow.collide_continuous(
-                    left_shape,
-                    left_pose,
-                    left_next_pose,
-                    right_shape,
-                    right_pose,
-                    right_next_pose,
-                ) {
-                    Some(contact) => {
-                        event_channel.single_write(ContactEvent::new(
-                            (left_entity.clone(), right_entity.clone()),
-                            contact,
-                        ));
-                    }
-                    None => (),
-                };
+        event_channel.iter_write(tree_collide(
+            SpatialCollisionData {
+                poses: &poses,
+                shapes: &shapes,
+                next_poses: &next_poses,
+                entities: &entities,
             },
-            None => {
-                // if we only have a broad phase, we generate contacts for aabb
-                // intersections
-                // right now, we only report the collision, no normal/depth calculation
-                for (left_entity, right_entity) in potentials {
-                    event_channel.single_write(ContactEvent::new_simple(
-                        CollisionStrategy::CollisionOnly,
-                        (left_entity, right_entity),
-                    ));
-                }
-            }
-        }
+            &mut *tree,
+            &mut self.broad,
+            &self.narrow,
+        ));
+    }
+}
+
+/// Collision data used by ECS systems
+pub struct SpatialCollisionData<'a, P, T, B, Y>
+where
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    Y: Default + Send + Sync + 'static,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+{
+    /// collision shapes
+    pub shapes: &'a ReadStorage<'a, CollisionShape<P, T, B, Y>>,
+    /// current frame poses
+    pub poses: &'a ReadStorage<'a, T>,
+    /// next frame poses
+    pub next_poses: &'a ReadStorage<'a, NextFrame<T>>,
+    /// entities
+    pub entities: &'a Entities<'a>,
+}
+
+impl<'a, P, T, B, Y, D> CollisionData<Entity, P, T, B, Y, D>
+    for SpatialCollisionData<'a, P, T, B, Y>
+where
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    Y: Default + Send + Sync + 'static,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+{
+    fn get_broad_data(&self) -> Vec<D> {
+        Vec::default()
+    }
+
+    fn get_shape(&self, id: Entity) -> &CollisionShape<P, T, B, Y> {
+        self.shapes.get(id).unwrap()
+    }
+
+    fn get_pose(&self, id: Entity) -> &T {
+        self.poses.get(id).unwrap()
+    }
+
+    fn get_next_pose(&self, id: Entity) -> Option<&T> {
+        self.next_poses.get(id).as_ref().map(|p| &p.value)
+    }
+
+    fn get_dirty_poses(&self) -> Vec<Entity> {
+        (&**self.entities, (self.poses).open().1, self.shapes)
+            .join()
+            .map(|(entity, _, _)| entity)
+            .chain(
+                (&**self.entities, (self.next_poses).open().1, self.shapes)
+                    .join()
+                    .map(|(entity, _, _)| entity),
+            )
+            .collect()
     }
 }

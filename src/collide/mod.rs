@@ -8,10 +8,16 @@ pub mod broad;
 pub mod prelude2d;
 pub mod prelude3d;
 
+use std::collections::HashSet;
 use std::fmt::Debug;
+use std::hash::Hash;
 
 use cgmath::prelude::*;
+use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue, TreeValueWrapped};
 use collision::prelude::*;
+
+use self::broad::{broad_collide, BroadPhase};
+use self::narrow::{narrow_collide, NarrowPhase};
 
 /// Used to check if two shapes should be checked for collisions
 pub trait Collider {
@@ -257,4 +263,140 @@ where
         .iter()
         .map(|&(ref p, ref t)| p.compute_bound().transform_volume(t))
         .fold(B::empty(), |bound, b| bound.union(&b))
+}
+
+/// Collision data used for performing a full broad + narrow phase
+pub trait CollisionData<I, P, T, B, Y, D>
+where
+    P: Primitive,
+{
+    /// Get the list of data to perform broad phase on
+    fn get_broad_data(&self) -> Vec<D>;
+    /// Get shape
+    fn get_shape(&self, id: I) -> &CollisionShape<P, T, B, Y>;
+    /// Get pose
+    fn get_pose(&self, id: I) -> &T;
+    /// Get the dirty poses, used by tree broad phase
+    fn get_dirty_poses(&self) -> Vec<I> {
+        Vec::default()
+    }
+    /// Get the next pose if possible
+    fn get_next_pose(&self, id: I) -> Option<&T>;
+}
+
+/// Trait used to extract the lookup id used by `CollisionData`, given the output from a broad phase
+pub trait GetId<I> {
+    /// Get the id
+    fn id(&self) -> I;
+}
+
+impl<I, B> GetId<I> for TreeValueWrapped<I, B>
+where
+    B: Bound,
+    I: Copy + Debug + Hash + Eq,
+    <B::Point as EuclideanSpace>::Diff: Debug,
+{
+    fn id(&self) -> I {
+        self.value
+    }
+}
+
+/// Do basic collision detection (not using a DBVT)
+///
+/// ### Type parameters:
+///
+/// - `C`: Collision data
+/// - `I`: Id, returned by `GetId` on `D`, primary id for a collider
+/// - `P`: Primitive
+/// - `T`: Transform
+/// - `B`: Bounding volume
+/// - `Y`: Collider, see `Collider` for more information
+/// - `D`: Broad phase data
+pub fn basic_collide<C, I, P, T, B, Y, D>(
+    data: C,
+    broad: &mut Box<BroadPhase<D>>,
+    narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
+) -> Vec<ContactEvent<I, P::Point>>
+where
+    C: CollisionData<I, P, T, B, Y, D>,
+    P: Primitive,
+    <P::Point as EuclideanSpace>::Diff: Debug,
+    I: Copy + Debug,
+    D: HasBound<Bound = B> + GetId<I>,
+    B: Bound<Point = P::Point>,
+{
+    let potentials = broad_collide(&data, broad);
+    if potentials.is_empty() {
+        return Vec::default();
+    }
+    match narrow {
+        &Some(ref narrow) => narrow_collide(&data, narrow, potentials),
+        &None => potentials
+            .iter()
+            .map(|&(left, right)| {
+                ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
+            })
+            .collect::<Vec<_>>(),
+    }
+}
+
+/// Do collision detection using a DBVT
+///
+/// ### Type parameters:
+///
+/// - `C`: Collision data
+/// - `I`: Id, returned by `GetId` on `D`, primary id for a collider
+/// - `P`: Primitive
+/// - `T`: Transform
+/// - `B`: Bounding volume
+/// - `Y`: Collider, see `Collider` for more information
+/// - `D`: TreeValue in DBVT
+pub fn tree_collide<C, I, P, T, B, Y, D>(
+    data: C,
+    tree: &mut DynamicBoundingVolumeTree<D>,
+    broad: &mut Option<Box<BroadPhase<(usize, D)>>>,
+    narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
+) -> Vec<ContactEvent<I, P::Point>>
+where
+    C: CollisionData<I, P, T, B, Y, D>,
+    P: Primitive,
+    <P::Point as EuclideanSpace>::Diff: Debug,
+    I: Copy + Debug + Hash + Eq,
+    D: HasBound<Bound = B> + GetId<I> + TreeValue<Bound = B>,
+    B: Bound<Point = P::Point>
+        + Clone
+        + SurfaceArea<Scalar = <P::Point as EuclideanSpace>::Scalar>
+        + Contains<B>
+        + Union<B, Output = B>
+        + Discrete<B>,
+{
+    use collision::algorithm::broad_phase::DbvtBroadPhase;
+    let potentials = match broad {
+        &mut Some(ref mut broad) => {
+            let p = broad.find_potentials(tree.values_mut());
+            tree.reindex_values();
+            p
+        }
+        &mut None => {
+            let dirty_entities = data.get_dirty_poses().into_iter().collect::<HashSet<I>>();
+            let dirty = tree.values()
+                .iter()
+                .map(|&(_, ref v)| dirty_entities.contains(&v.id()))
+                .collect::<Vec<_>>();
+            DbvtBroadPhase.find_collider_pairs(tree, &dirty[..])
+        }
+    };
+    let potentials = potentials
+        .iter()
+        .map(|&(ref l, ref r)| (tree.values()[*l].1.id(), tree.values()[*r].1.id()))
+        .collect();
+    match narrow {
+        &Some(ref narrow) => narrow_collide(&data, narrow, potentials),
+        &None => potentials
+            .iter()
+            .map(|&(left, right)| {
+                ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
+            })
+            .collect::<Vec<_>>(),
+    }
 }
