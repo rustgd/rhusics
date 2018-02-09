@@ -6,7 +6,6 @@ repository = "https://github.com/rustgd/rhusics.git"
 homepage = "https://github.com/rustgd/rhusics.git"
 
 license = "MIT OR Apache-2.0"
-readme = "README.md"
 documentation = "https://docs.rs/rhusics-ecs"
 description = "Physics library for use with `specs`"
 
