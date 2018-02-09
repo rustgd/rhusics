@@ -7,7 +7,7 @@ homepage = "https://github.com/rustgd/rhusics.git"
 
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-documentation = "https://docs.rs/rhusics"
+documentation = "https://docs.rs/rhusics-core"
 description = "Physics library for use with `specs`"
 
 keywords = ["gamedev", "cgmath", "specs", "physics"]
