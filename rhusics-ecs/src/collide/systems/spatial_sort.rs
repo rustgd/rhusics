@@ -68,7 +68,7 @@ where
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
     Y: Default + Send + Sync + 'static,
-    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    for<'b> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = B> + From<(Entity, B)>,
 {
     type SystemData = (
