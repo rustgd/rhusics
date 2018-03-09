@@ -78,7 +78,7 @@ where
     Y: Default + Send + Sync + 'static,
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
     D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
-    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    for<'b> &'b T::Storage: Join<Type = &'b T>,
 {
     type SystemData = (
         Entities<'a>,

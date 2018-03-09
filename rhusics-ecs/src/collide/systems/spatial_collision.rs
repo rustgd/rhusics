@@ -101,7 +101,7 @@ where
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
     Y: Default + Send + Sync + 'static,
-    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    for<'b> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = B> + HasBound<Bound = B> + GetId<Entity>,
 {
     type SystemData = (
@@ -160,7 +160,7 @@ where
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
-    for<'b: 'a> &'b T::Storage: Join<Type = &'b T>,
+    for<'b> &'b T::Storage: Join<Type = &'b T>,
 {
     fn get_broad_data(&self) -> Vec<D> {
         Vec::default()
