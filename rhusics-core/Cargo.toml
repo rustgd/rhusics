@@ -1,6 +1,6 @@
 [package]
 name = "rhusics-core"
-version = "0.1.1"
+version = "0.2.0"
 authors = ["Simon Rönnberg <seamonr@gmail.com>"]
 repository = "https://github.com/rustgd/rhusics.git"
 homepage = "https://github.com/rustgd/rhusics.git"
