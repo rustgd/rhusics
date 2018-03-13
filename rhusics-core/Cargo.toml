@@ -16,7 +16,7 @@ eders = ["serde", "cgmath/serde", "collision/eders"]
 
 [dependencies]
 cgmath = "0.16"
-collision = "0.14"
+collision = { version = "0.15" }
 specs = { version = "0.10", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 

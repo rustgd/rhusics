@@ -76,11 +76,11 @@ where
     ) -> Option<Contact<P::Point>>;
 }
 
-impl<P, T, Y, S, E, B> NarrowPhase<P, T, B, Y> for GJK<S, E>
+impl<P, T, Y, S, E, B> NarrowPhase<P, T, B, Y> for GJK<S, E, <P::Point as EuclideanSpace>::Scalar>
 where
     P: Primitive,
     P::Point: EuclideanSpace,
-    <P::Point as EuclideanSpace>::Scalar: BaseFloat,
+    <P::Point as EuclideanSpace>::Scalar: BaseFloat + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug
         + InnerSpace
         + Array<Element = <P::Point as EuclideanSpace>::Scalar>
