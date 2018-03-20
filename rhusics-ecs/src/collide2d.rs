@@ -24,7 +24,7 @@ use resources::WithRhusics;
 pub type ContactEvent2<S> = ContactEvent<Entity, Point2<S>>;
 
 /// Basic collision system for 2D, see
-/// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+/// [`BasicCollisionSystem`](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
 ///
 /// ### Type parameters:
 ///
@@ -35,7 +35,7 @@ pub type BasicCollisionSystem2<S, T, Y = ()> =
     BasicCollisionSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial sorting system for 2D, see
-/// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+/// [`SpatialSortingSystem`](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
 ///
 /// ### Type parameters:
 ///
@@ -46,7 +46,7 @@ pub type SpatialSortingSystem2<S, T, Y = ()> =
     SpatialSortingSystem<Primitive2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Aabb2<S>, Y>;
 
 /// Spatial collision system for 2D, see
-/// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
+/// [`SpatialCollisionSystem`](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
 ///
 /// ### Type parameters:

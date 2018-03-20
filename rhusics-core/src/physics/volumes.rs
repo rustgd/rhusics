@@ -177,8 +177,7 @@ where
     fn get_mass(&self, material: &Material) -> Mass<S, S> {
         use collision::primitive::Primitive2::*;
         match *self {
-            Particle(_) => Mass::new(material.density()),
-            Line(_) => Mass::new(material.density()),
+            Particle(_) | Line(_) => Mass::new(material.density()),
             Circle(ref circle) => circle.get_mass(material),
             Rectangle(ref rectangle) => rectangle.get_mass(material),
             ConvexPolygon(ref polygon) => polygon.get_mass(material),
@@ -240,8 +239,7 @@ where
     fn get_mass(&self, material: &Material) -> Mass<S, Matrix3<S>> {
         use collision::primitive::Primitive3::*;
         match *self {
-            Particle(_) => Mass::new(material.density()),
-            Quad(_) => Mass::new(material.density()),
+            Particle(_) | Quad(_) => Mass::new(material.density()),
             Sphere(ref sphere) => sphere.get_mass(material),
             Cuboid(ref cuboid) => cuboid.get_mass(material),
             Capsule(ref capsule) => capsule.get_mass(material),

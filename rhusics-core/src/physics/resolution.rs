@@ -126,8 +126,8 @@ where
 /// - `O`: Internal type used for unifying cross products for 2D/3D, usually `Scalar` or `Vector3`
 pub fn resolve_contact<'a, P, R, I, A, O>(
     contact: &Contact<P>,
-    a: ResolveData<'a, P, R, I, A>,
-    b: ResolveData<'a, P, R, I, A>,
+    a: &ResolveData<'a, P, R, I, A>,
+    b: &ResolveData<'a, P, R, I, A>,
 ) -> (SingleChangeSet<P, R, A>, SingleChangeSet<P, R, A>)
 where
     P: EuclideanSpace + 'a,
@@ -139,12 +139,8 @@ where
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,
     I: Inertia<Orientation = R> + Mul<O, Output = O>,
 {
-    let a_velocity = a.velocity
-        .map(|v| v.value.clone())
-        .unwrap_or(Velocity::default());
-    let b_velocity = b.velocity
-        .map(|v| v.value.clone())
-        .unwrap_or(Velocity::default());
+    let a_velocity = a.velocity.map(|v| v.value.clone()).unwrap_or_default();
+    let b_velocity = b.velocity.map(|v| v.value.clone()).unwrap_or_default();
     let a_inverse_mass = a.mass.inverse_mass();
     let b_inverse_mass = b.mass.inverse_mass();
     let total_inverse_mass = a_inverse_mass + b_inverse_mass;
@@ -270,10 +266,7 @@ where
     R: Rotation<P>,
     P::Diff: Clone,
 {
-    BodyPose::new(
-        *next_frame.position() + correction,
-        next_frame.rotation().clone(),
-    )
+    BodyPose::new(*next_frame.position() + correction, *next_frame.rotation())
 }
 
 #[cfg(test)]
@@ -303,13 +296,13 @@ mod tests {
         );
         let set = resolve_contact(
             &contact.contact,
-            ResolveData {
+            &ResolveData {
                 velocity: Some(&left_velocity),
                 pose: &left_pose,
                 mass: &mass,
                 material: &material,
             },
-            ResolveData {
+            &ResolveData {
                 velocity: Some(&right_velocity),
                 pose: &right_pose,
                 mass: &mass,
@@ -359,13 +352,13 @@ mod tests {
         );
         let set = resolve_contact(
             &contact.contact,
-            ResolveData {
+            &ResolveData {
                 velocity: Some(&left_velocity),
                 pose: &left_pose,
                 mass: &mass,
                 material: &material,
             },
-            ResolveData {
+            &ResolveData {
                 velocity: Some(&right_velocity),
                 pose: &right_pose,
                 mass: &mass,

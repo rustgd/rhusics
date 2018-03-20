@@ -251,7 +251,7 @@ where
     }
 }
 
-fn get_bound<P, T, B>(primitives: &Vec<(P, T)>) -> B
+fn get_bound<P, T, B>(primitives: &[(P, T)]) -> B
 where
     P: Primitive + ComputeBound<B>,
     B: Bound<Point = P::Point> + Union<B, Output = B>,
@@ -311,7 +311,7 @@ where
 /// - `Y`: Collider, see `Collider` for more information
 /// - `D`: Broad phase data
 pub fn basic_collide<C, I, P, T, B, Y, D>(
-    data: C,
+    data: &C,
     broad: &mut Box<BroadPhase<D>>,
     narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
 ) -> Vec<ContactEvent<I, P::Point>>
@@ -323,13 +323,13 @@ where
     D: HasBound<Bound = B> + GetId<I>,
     B: Bound<Point = P::Point>,
 {
-    let potentials = broad_collide(&data, broad);
+    let potentials = broad_collide(data, broad);
     if potentials.is_empty() {
         return Vec::default();
     }
-    match narrow {
-        &Some(ref narrow) => narrow_collide(&data, narrow, potentials),
-        &None => potentials
+    match *narrow {
+        Some(ref narrow) => narrow_collide(data, narrow, &potentials),
+        None => potentials
             .iter()
             .map(|&(left, right)| {
                 ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
@@ -348,9 +348,9 @@ where
 /// - `T`: Transform
 /// - `B`: Bounding volume
 /// - `Y`: Collider, see `Collider` for more information
-/// - `D`: TreeValue in DBVT
+/// - `D`: `TreeValue` in DBVT
 pub fn tree_collide<C, I, P, T, B, Y, D>(
-    data: C,
+    data: &C,
     tree: &mut DynamicBoundingVolumeTree<D>,
     broad: &mut Option<Box<BroadPhase<(usize, D)>>>,
     narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
@@ -369,13 +369,13 @@ where
         + Discrete<B>,
 {
     use collision::algorithm::broad_phase::DbvtBroadPhase;
-    let potentials = match broad {
-        &mut Some(ref mut broad) => {
+    let potentials = match *broad {
+        Some(ref mut broad) => {
             let p = broad.find_potentials(tree.values_mut());
             tree.reindex_values();
             p
         }
-        &mut None => {
+        None => {
             let dirty_entities = data.get_dirty_poses().into_iter().collect::<HashSet<I>>();
             let dirty = tree.values()
                 .iter()
@@ -387,10 +387,10 @@ where
     let potentials = potentials
         .iter()
         .map(|&(ref l, ref r)| (tree.values()[*l].1.id(), tree.values()[*r].1.id()))
-        .collect();
-    match narrow {
-        &Some(ref narrow) => narrow_collide(&data, narrow, potentials),
-        &None => potentials
+        .collect::<Vec<_>>();
+    match *narrow {
+        Some(ref narrow) => narrow_collide(data, narrow, &potentials),
+        None => potentials
             .iter()
             .map(|&(left, right)| {
                 ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))

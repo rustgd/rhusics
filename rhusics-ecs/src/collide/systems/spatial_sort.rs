@@ -85,7 +85,7 @@ where
         // Check for updated poses that are already in the tree
         // Uses FlaggedStorage
         for (entity, pose, shape) in (&*entities, (&poses).open().1, &mut shapes).join() {
-            shape.update(&pose, None);
+            shape.update(pose, None);
 
             // Update the wrapper in the tree for the shape
             if let Some(node_index) = self.entities.get(&entity).cloned() {
@@ -98,7 +98,7 @@ where
         for (entity, pose, next_pose, shape) in
             (&*entities, &poses, (&next_poses).open().1, &mut shapes).join()
         {
-            shape.update(&pose, Some(&next_pose.value));
+            shape.update(pose, Some(&next_pose.value));
 
             // Update the wrapper in the tree for the shape
             if let Some(node_index) = self.entities.get(&entity).cloned() {
@@ -113,7 +113,7 @@ where
             keys.remove(&entity);
 
             // if entity does not exist in entities list, add it to the tree and entities list
-            if let None = self.entities.get(&entity) {
+            if self.entities.get(&entity).is_none() {
                 let node_index = tree.insert((entity, shape.bound().clone()).into());
                 self.entities.insert(entity, node_index);
             }
@@ -121,12 +121,9 @@ where
 
         // remove entities that are missing from the tree
         for entity in keys {
-            match self.entities.get(&entity).cloned() {
-                Some(node_index) => {
-                    tree.remove(node_index);
-                    self.entities.remove(&entity);
-                }
-                None => (),
+            if let Some(node_index) = self.entities.get(&entity).cloned() {
+                tree.remove(node_index);
+                self.entities.remove(&entity);
             }
         }
 

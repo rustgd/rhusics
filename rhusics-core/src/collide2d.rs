@@ -11,7 +11,7 @@ use collision::primitive::Primitive2;
 use BodyPose;
 use collide::*;
 
-/// Collision shape for 2D, see [CollisionShape](../collide/struct.CollisionShape.html) for more
+/// Collision shape for 2D, see [`CollisionShape`](../collide/struct.CollisionShape.html) for more
 /// information
 ///
 /// ### Type parameters:
@@ -22,7 +22,7 @@ use collide::*;
 pub type CollisionShape2<S, T, Y = ()> = CollisionShape<Primitive2<S>, T, Aabb2<S>, Y>;
 
 /// Broad phase brute force algorithm for 2D, see
-/// [BruteForce](../collide/broad/struct.BruteForce.html) for more information.
+/// [`BruteForce`](../collide/broad/struct.BruteForce.html) for more information.
 pub type BroadBruteForce2 = BruteForce;
 
 /// Broad phase sweep and prune algorithm
@@ -32,7 +32,7 @@ pub type BroadBruteForce2 = BruteForce;
 /// - `S`: Scalar type (f32 or f64)
 pub type SweepAndPrune2<S> = ::collision::algorithm::broad_phase::SweepAndPrune2<S, Aabb2<S>>;
 
-/// Body pose transform for 2D, see [BodyPose](../struct.BodyPose.html) for more information.
+/// Body pose transform for 2D, see [`BodyPos`e](../struct.BodyPose.html) for more information.
 ///
 /// ### Type parameters:
 ///
