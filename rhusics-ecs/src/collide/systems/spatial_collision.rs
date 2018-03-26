@@ -116,7 +116,7 @@ where
     fn run(&mut self, system_data: Self::SystemData) {
         let (entities, poses, next_poses, shapes, mut event_channel, mut tree) = system_data;
         event_channel.iter_write(tree_collide(
-            SpatialCollisionData {
+            &SpatialCollisionData {
                 poses: &poses,
                 shapes: &shapes,
                 next_poses: &next_poses,

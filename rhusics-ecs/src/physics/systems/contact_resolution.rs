@@ -87,7 +87,7 @@ where
             // Resolve contact
             let change_set = resolve_contact(
                 &contact.contact,
-                ResolveData {
+                &ResolveData {
                     velocity: next_velocities.get(contact.bodies.0),
                     pose: next_poses
                         .get(contact.bodies.0)
@@ -96,7 +96,7 @@ where
                     mass: masses.get(contact.bodies.0).unwrap(),
                     material: bodies.get(contact.bodies.0).map(|b| b.material()).unwrap(),
                 },
-                ResolveData {
+                &ResolveData {
                     velocity: next_velocities.get(contact.bodies.1),
                     pose: next_poses
                         .get(contact.bodies.1)

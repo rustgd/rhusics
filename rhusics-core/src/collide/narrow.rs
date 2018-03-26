@@ -183,7 +183,7 @@ fn max(left: &CollisionStrategy, right: &CollisionStrategy) -> CollisionStrategy
 pub fn narrow_collide<C, I, P, T, B, Y, D>(
     data: &C,
     narrow: &Box<NarrowPhase<P, T, B, Y>>,
-    potentials: Vec<(I, I)>,
+    potentials: &[(I, I)],
 ) -> Vec<ContactEvent<I, P::Point>>
 where
     C: CollisionData<I, P, T, B, Y, D>,

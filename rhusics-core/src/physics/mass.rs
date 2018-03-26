@@ -86,7 +86,7 @@ where
         if self.x.x.is_infinite() {
             Matrix3::zero()
         } else {
-            SquareMatrix::invert(self).unwrap_or(Matrix3::zero())
+            SquareMatrix::invert(self).unwrap_or_else(Matrix3::zero)
         }
     }
 

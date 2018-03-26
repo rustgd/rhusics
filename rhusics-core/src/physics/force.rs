@@ -18,6 +18,16 @@ pub struct ForceAccumulator<F, T> {
     torque: T,
 }
 
+impl<F, T> Default for ForceAccumulator<F, T>
+where
+    F: VectorSpace + Zero,
+    T: Zero + Copy + Clone,
+{
+    fn default() -> Self {
+        ForceAccumulator::new()
+    }
+}
+
 impl<F, T> ForceAccumulator<F, T>
 where
     F: VectorSpace + Zero,
@@ -71,7 +81,7 @@ where
     ///
     /// Returns he current accumulated force. The force in the accumulator is reset.
     pub fn consume_force(&mut self) -> F {
-        let v = self.force.clone();
+        let v = self.force;
         self.force = F::zero();
         v
     }
@@ -80,7 +90,7 @@ where
     ///
     /// Returns the current accumulated torque. The torque in the accumulator is reset.
     pub fn consume_torque(&mut self) -> T {
-        let v = self.torque.clone();
+        let v = self.torque;
         self.torque = T::zero();
         v
     }

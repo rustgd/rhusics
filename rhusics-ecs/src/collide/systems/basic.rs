@@ -93,10 +93,10 @@ where
 
         if let Some(ref mut broad) = self.broad {
             for (entity, pose, shape) in (&*entities, &poses, &mut shapes).join() {
-                shape.update(&pose, next_poses.get(entity).map(|p| &p.value));
+                shape.update(pose, next_poses.get(entity).map(|p| &p.value));
             }
             event_channel.iter_write(basic_collide(
-                BasicCollisionData {
+                &BasicCollisionData {
                     poses: &poses,
                     shapes: &shapes,
                     next_poses: &next_poses,

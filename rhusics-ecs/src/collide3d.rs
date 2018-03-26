@@ -24,7 +24,7 @@ use resources::WithRhusics;
 pub type ContactEvent3<S> = ContactEvent<Entity, Point3<S>>;
 
 /// ECS collision system for 3D, see
-/// [BasicCollisionSystem](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
+/// [`BasicCollisionSystem`](../collide/ecs/struct.BasicCollisionSystem.html) for more information.
 ///
 /// ### Type parameters:
 ///
@@ -35,7 +35,7 @@ pub type BasicCollisionSystem3<S, T, Y = ()> =
     BasicCollisionSystem<Primitive3<S>, T, TreeValueWrapped<Entity, Aabb3<S>>, Aabb3<S>, Y>;
 
 /// Spatial sorting system for 3D, see
-/// [SpatialSortingSystem](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
+/// [`SpatialSortingSystem`](../collide/ecs/struct.SpatialSortingSystem.html) for more information.
 ///
 /// ### Type parameters:
 ///
@@ -46,7 +46,7 @@ pub type SpatialSortingSystem3<S, T, Y = ()> =
     SpatialSortingSystem<Primitive3<S>, T, TreeValueWrapped<Entity, Aabb3<S>>, Aabb3<S>, Y>;
 
 /// Spatial collision system for 3D, see
-/// [SpatialCollisionSystem](../collide/ecs/struct.SpatialCollisionSystem.html) for more
+/// [`SpatialCollisionSystem`](../collide/ecs/struct.SpatialCollisionSystem.html) for more
 /// information.
 ///
 /// ### Type parameters:

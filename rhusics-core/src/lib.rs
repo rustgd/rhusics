@@ -23,6 +23,7 @@
 
 #![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
         unused_qualifications)]
+#![allow(unknown_lints, type_complexity, borrowed_box)]
 
 extern crate cgmath;
 extern crate collision;
@@ -177,7 +178,7 @@ where
     fn translation_interpolate(&self, other: &Self, amount: P::Scalar) -> Self {
         BodyPose::new(
             P::from_vec(self.position.to_vec().lerp(other.position.to_vec(), amount)),
-            other.rotation.clone(),
+            other.rotation,
         )
     }
 }
