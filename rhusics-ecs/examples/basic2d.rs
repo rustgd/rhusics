@@ -1,4 +1,5 @@
 extern crate cgmath;
+extern crate rhusics_core;
 extern crate rhusics_ecs;
 extern crate shrev;
 extern crate specs;
@@ -7,6 +8,7 @@ use cgmath::{Point2, Rad, Rotation2, Transform};
 use shrev::EventChannel;
 use specs::{RunNow, World};
 
+use rhusics_core::Pose;
 use rhusics_ecs::collide2d::{register_collision, BasicCollisionSystem2, BodyPose2,
                              BroadBruteForce2, CollisionMode, CollisionShape2, CollisionStrategy,
                              ContactEvent2, GJK2, Rectangle};

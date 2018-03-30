@@ -1,12 +1,13 @@
 use std::fmt::Debug;
+use std::marker;
 use std::ops::{Add, Mul, Sub};
 
-use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, One, Rotation, Transform, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, One, Rotation, Zero};
 use cgmath::num_traits::{Float, NumCast};
 use collision::Contact;
 
 use super::{Inertia, Mass, Material, PartialCrossProduct, Velocity};
-use {BodyPose, NextFrame};
+use {NextFrame, Pose};
 
 const POSITIONAL_CORRECTION_PERCENT: f32 = 0.2;
 const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
@@ -21,40 +22,54 @@ const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 #[derive(Debug, PartialEq)]
-pub struct SingleChangeSet<P, R, A>
+pub struct SingleChangeSet<B, P, R, A>
 where
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
+    B: Pose<P, R>,
 {
-    pose: Option<BodyPose<P, R>>,
+    pose: Option<B>,
     velocity: Option<NextFrame<Velocity<P::Diff, A>>>,
+    m: marker::PhantomData<(P, R)>,
 }
 
-impl<P, R, A> Default for SingleChangeSet<P, R, A>
+impl<B, P, R, A> Default for SingleChangeSet<B, P, R, A>
 where
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
+    B: Pose<P, R>,
 {
     fn default() -> Self {
         Self {
             pose: None,
             velocity: None,
+            m: marker::PhantomData,
         }
     }
 }
 
-impl<P, R, A> SingleChangeSet<P, R, A>
+impl<B, P, R, A> SingleChangeSet<B, P, R, A>
 where
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone,
+    B: Pose<P, R>,
 {
-    fn add_pose(&mut self, pose: Option<BodyPose<P, R>>) {
+    #[allow(dead_code)]
+    fn new(pose: Option<B>, velocity: Option<NextFrame<Velocity<P::Diff, A>>>) -> Self {
+        SingleChangeSet {
+            pose,
+            velocity,
+            m: marker::PhantomData,
+        }
+    }
+
+    fn add_pose(&mut self, pose: Option<B>) {
         self.pose = pose;
     }
 
@@ -65,7 +80,7 @@ where
     /// Apply any changes to the next frame pose and/or velocity
     pub fn apply(
         self,
-        pose: Option<&mut NextFrame<BodyPose<P, R>>>,
+        pose: Option<&mut NextFrame<B>>,
         velocity: Option<&mut NextFrame<Velocity<P::Diff, A>>>,
     ) {
         if let (Some(pose), Some(update_pose)) = (pose, self.pose) {
@@ -85,22 +100,50 @@ where
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
-pub struct ResolveData<'a, P, R, I, A>
+pub struct ResolveData<'a, B, P, R, I, A>
 where
     P: EuclideanSpace + 'a,
     P::Scalar: BaseFloat,
     R: Rotation<P> + 'a,
     I: 'a,
     A: Clone + 'a,
+    B: Pose<P, R> + 'a,
 {
     /// Velocity for next frame
     pub velocity: Option<&'a NextFrame<Velocity<P::Diff, A>>>,
     /// Position for next frame
-    pub pose: &'a BodyPose<P, R>,
+    pub pose: &'a B,
     /// Mass
     pub mass: &'a Mass<P::Scalar, I>,
     /// Material
     pub material: &'a Material,
+    m: marker::PhantomData<(P, R)>,
+}
+
+impl<'a, B, P, R, I, A> ResolveData<'a, B, P, R, I, A>
+where
+    P: EuclideanSpace + 'a,
+    P::Scalar: BaseFloat,
+    R: Rotation<P> + 'a,
+    I: 'a,
+    A: Clone + 'a,
+    B: Pose<P, R> + 'a,
+{
+    /// Create resolve data
+    pub fn new(
+        velocity: Option<&'a NextFrame<Velocity<P::Diff, A>>>,
+        pose: &'a B,
+        mass: &'a Mass<P::Scalar, I>,
+        material: &'a Material,
+    ) -> Self {
+        ResolveData {
+            velocity,
+            pose,
+            mass,
+            material,
+            m: marker::PhantomData,
+        }
+    }
 }
 
 /// Perform contact resolution.
@@ -124,11 +167,11 @@ where
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 /// - `O`: Internal type used for unifying cross products for 2D/3D, usually `Scalar` or `Vector3`
-pub fn resolve_contact<'a, P, R, I, A, O>(
+pub fn resolve_contact<'a, B, P, R, I, A, O>(
     contact: &Contact<P>,
-    a: &ResolveData<'a, P, R, I, A>,
-    b: &ResolveData<'a, P, R, I, A>,
-) -> (SingleChangeSet<P, R, A>, SingleChangeSet<P, R, A>)
+    a: &ResolveData<'a, B, P, R, I, A>,
+    b: &ResolveData<'a, B, P, R, I, A>,
+) -> (SingleChangeSet<B, P, R, A>, SingleChangeSet<B, P, R, A>)
 where
     P: EuclideanSpace + 'a,
     P::Scalar: BaseFloat,
@@ -138,6 +181,7 @@ where
     A: PartialCrossProduct<P::Diff, Output = P::Diff> + Clone + Zero + 'a,
     &'a A: Sub<O, Output = A> + Add<O, Output = A>,
     I: Inertia<Orientation = R> + Mul<O, Output = O>,
+    B: Pose<P, R> + 'a,
 {
     let a_velocity = a.velocity.map(|v| v.value.clone()).unwrap_or_default();
     let b_velocity = b.velocity.map(|v| v.value.clone()).unwrap_or_default();
@@ -234,18 +278,19 @@ where
 ///
 /// - `P`: Positional quantity, usually `Point2` or `Point3`
 /// - `R` Rotational quantity, usually `Basis2` or `Quaternion`
-fn positional_correction<S, P, R>(
+fn positional_correction<S, B, P, R>(
     contact: &Contact<P>,
-    a_position: &BodyPose<P, R>,
-    b_position: &BodyPose<P, R>,
+    a_position: &B,
+    b_position: &B,
     a_inverse_mass: S,
     b_inverse_mass: S,
-) -> (Option<BodyPose<P, R>>, Option<BodyPose<P, R>>)
+) -> (Option<B>, Option<B>)
 where
     S: BaseFloat,
     P: EuclideanSpace<Scalar = S>,
     R: Rotation<P>,
     P::Diff: Debug + Zero + Clone + InnerSpace,
+    B: Pose<P, R>,
 {
     let total_inverse_mass = a_inverse_mass + b_inverse_mass;
     let k_slop: S = NumCast::from(POSITIONAL_CORRECTION_K_SLOP).unwrap();
@@ -259,14 +304,15 @@ where
     (Some(a_position_new), Some(b_position_new))
 }
 
-fn new_pose<P, R>(next_frame: &BodyPose<P, R>, correction: P::Diff) -> BodyPose<P, R>
+fn new_pose<B, P, R>(next_frame: &B, correction: P::Diff) -> B
 where
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     R: Rotation<P>,
     P::Diff: Clone,
+    B: Pose<P, R>,
 {
-    BodyPose::new(*next_frame.position() + correction, *next_frame.rotation())
+    B::new(*next_frame.position() + correction, *next_frame.rotation())
 }
 
 #[cfg(test)]
@@ -296,39 +342,29 @@ mod tests {
         );
         let set = resolve_contact(
             &contact.contact,
-            &ResolveData {
-                velocity: Some(&left_velocity),
-                pose: &left_pose,
-                mass: &mass,
-                material: &material,
-            },
-            &ResolveData {
-                velocity: Some(&right_velocity),
-                pose: &right_pose,
-                mass: &mass,
-                material: &material,
-            },
+            &ResolveData::new(Some(&left_velocity), &left_pose, &mass, &material),
+            &ResolveData::new(Some(&right_velocity), &right_pose, &mass, &material),
         );
         assert_eq!(
             (
-                SingleChangeSet {
-                    pose: Some(BodyPose::new(
+                SingleChangeSet::new(
+                    Some(BodyPose::new(
                         Point2::new(-0.04900000075250864, 0.),
                         Basis2::one()
                     )),
-                    velocity: Some(NextFrame {
+                    Some(NextFrame {
                         value: Velocity::new(Vector2::new(-2., 0.), 0.),
                     }),
-                },
-                SingleChangeSet {
-                    pose: Some(BodyPose::new(
+                ),
+                SingleChangeSet::new(
+                    Some(BodyPose::new(
                         Point2::new(1.0490000007525087, 0.),
                         Basis2::one()
                     )),
-                    velocity: Some(NextFrame {
+                    Some(NextFrame {
                         value: Velocity::new(Vector2::new(1., 0.), 0.),
                     }),
-                }
+                )
             ),
             set
         );
@@ -352,39 +388,29 @@ mod tests {
         );
         let set = resolve_contact(
             &contact.contact,
-            &ResolveData {
-                velocity: Some(&left_velocity),
-                pose: &left_pose,
-                mass: &mass,
-                material: &material,
-            },
-            &ResolveData {
-                velocity: Some(&right_velocity),
-                pose: &right_pose,
-                mass: &mass,
-                material: &material,
-            },
+            &ResolveData::new(Some(&left_velocity), &left_pose, &mass, &material),
+            &ResolveData::new(Some(&right_velocity), &right_pose, &mass, &material),
         );
         assert_eq!(
             (
-                SingleChangeSet {
-                    pose: Some(BodyPose::new(
+                SingleChangeSet::new(
+                    Some(BodyPose::new(
                         Point2::new(-0.04900000075250864, 0.),
                         Basis2::one()
                     )),
-                    velocity: Some(NextFrame {
+                    Some(NextFrame {
                         value: Velocity::new(Vector2::new(-2., 0.), 0.),
                     }),
-                },
-                SingleChangeSet {
-                    pose: Some(BodyPose::new(
+                ),
+                SingleChangeSet::new(
+                    Some(BodyPose::new(
                         Point2::new(1.0490000007525087, 0.),
                         Basis2::one()
                     )),
-                    velocity: Some(NextFrame {
+                    Some(NextFrame {
                         value: Velocity::new(Vector2::new(1., 0.), 0.),
                     }),
-                }
+                )
             ),
             set
         );

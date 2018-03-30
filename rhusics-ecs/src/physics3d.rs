@@ -7,8 +7,8 @@ use cgmath::{BaseFloat, Matrix3, Point3, Quaternion, Vector3};
 use collision::Aabb3;
 use collision::dbvt::TreeValueWrapped;
 use collision::primitive::Primitive3;
-use core::Collider;
-use specs::{Entity, World};
+use core::{Collider, Pose};
+use specs::{Component, Entity, World};
 
 use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
 use resources::WithRhusics;
@@ -18,24 +18,24 @@ use resources::WithRhusics;
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
-pub type CurrentFrameUpdateSystem3<S> =
-    CurrentFrameUpdateSystem<Point3<S>, Quaternion<S>, Vector3<S>>;
+pub type CurrentFrameUpdateSystem3<S, T> =
+    CurrentFrameUpdateSystem<Point3<S>, Quaternion<S>, Vector3<S>, T>;
 
 /// Resolution system for 2D
 ///
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
-pub type ContactResolutionSystem3<S> =
-    ContactResolutionSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, Vector3<S>>;
+pub type ContactResolutionSystem3<S, T> =
+    ContactResolutionSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, Vector3<S>, T>;
 
 /// Next frame setup system for 2D
 ///
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
-pub type NextFrameSetupSystem3<S> =
-    NextFrameSetupSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>>;
+pub type NextFrameSetupSystem3<S, T> =
+    NextFrameSetupSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, T>;
 
 /// Utility method for registering 3D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -49,10 +49,11 @@ pub type NextFrameSetupSystem3<S> =
 ///
 /// - `S`: Scalar type (f32 or f64)
 /// - `Y`: Collision shape type, see `Collider`
-pub fn register_physics<S, Y>(world: &mut World)
+pub fn register_physics<S, Y, T>(world: &mut World)
 where
     S: BaseFloat + Send + Sync + 'static,
     Y: Collider + Default + Send + Sync + 'static,
+    T: Pose<Point3<S>, Quaternion<S>> + Clone + Component + Send + Sync + 'static,
 {
     world.register_physics::<
         Primitive3<S>,
@@ -62,6 +63,7 @@ where
         Y,
         Vector3<S>,
         Vector3<S>,
-        Matrix3<S>
+        Matrix3<S>,
+        T
     >();
 }

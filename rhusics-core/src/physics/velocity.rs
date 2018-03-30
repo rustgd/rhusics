@@ -1,7 +1,7 @@
 use cgmath::{BaseFloat, Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2,
              Vector3, VectorSpace, Zero};
 
-use BodyPose;
+use Pose;
 
 /// Velocity
 ///
@@ -72,14 +72,15 @@ where
     ///
     /// - `P`: Positional quantity, usually `Point2` or `Point3`
     /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-    pub fn apply<P, R>(&self, pose: &BodyPose<P, R>, dt: L::Scalar) -> BodyPose<P, R>
+    pub fn apply<B, P, R>(&self, pose: &B, dt: L::Scalar) -> B
     where
         P: EuclideanSpace<Scalar = L::Scalar, Diff = L>,
         L: VectorSpace,
         L::Scalar: BaseFloat,
         R: ApplyAngular<L::Scalar, A> + Rotation<P>,
+        B: Pose<P, R>,
     {
-        BodyPose::new(
+        B::new(
             self.apply_linear(pose.position(), dt),
             self.apply_angular(pose.rotation(), dt),
         )

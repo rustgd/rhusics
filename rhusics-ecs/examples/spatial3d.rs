@@ -11,7 +11,7 @@ use collision::dbvt::query_ray_closest;
 use shrev::EventChannel;
 use specs::{Fetch, RunNow, System, World};
 
-use rhusics_core::RigidBody;
+use rhusics_core::{Pose, RigidBody};
 use rhusics_ecs::WithRigidBody;
 use rhusics_ecs::physics3d::{register_physics, BodyPose3, CollisionMode, CollisionShape3,
                              CollisionStrategy, ContactEvent3, ContactResolutionSystem3, Cuboid,
@@ -33,7 +33,7 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    register_physics::<f32, ()>(&mut world);
+    register_physics::<f32, (), BodyPose3<f32>>(&mut world);
 
     world
         .create_entity()
@@ -85,10 +85,10 @@ pub fn main() {
     );
     raycast.run_now(&world.res);
 
-    let mut impulse_solver = CurrentFrameUpdateSystem3::<f32>::new();
+    let mut impulse_solver = CurrentFrameUpdateSystem3::<f32, BodyPose3<f32>>::new();
     impulse_solver.run_now(&world.res);
-    let mut next_frame = NextFrameSetupSystem3::<f32>::new();
+    let mut next_frame = NextFrameSetupSystem3::<f32, BodyPose3<f32>>::new();
     next_frame.run_now(&world.res);
-    let mut contact_resolution = ContactResolutionSystem3::<f32>::new(reader_2);
+    let mut contact_resolution = ContactResolutionSystem3::<f32, BodyPose3<f32>>::new(reader_2);
     contact_resolution.run_now(&world.res);
 }

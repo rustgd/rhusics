@@ -1,9 +1,8 @@
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
-use specs::{Entity, EntityBuilder, LazyUpdate};
+use specs::{Component, Entity, EntityBuilder, LazyUpdate};
 
-use core::{BodyPose, CollisionShape, ForceAccumulator, Mass, NextFrame, Primitive, RigidBody,
-           Velocity};
+use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, Pose, Primitive, RigidBody, Velocity};
 
 /// Time step resource
 ///
@@ -33,15 +32,16 @@ pub trait WithRigidBody {
     /// - `A`: Angular velocity
     /// - `I`: Inertia
     /// - `B`: Bounding volume
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         velocity: Velocity<V, A>,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
@@ -62,14 +62,15 @@ pub trait WithRigidBody {
     /// - `R`: Rotational quantity
     /// - `I`: Inertia
     /// - `B`: Bounding volume
-    fn with_static_rigid_body<S, P, Y, R, I, B>(
+    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         body: RigidBody<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
@@ -92,15 +93,16 @@ pub trait WithLazyRigidBody {
     /// - `A`: Angular velocity
     /// - `I`: Inertia
     /// - `B`: Bounding volume
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         velocity: Velocity<V, A>,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
@@ -121,14 +123,15 @@ pub trait WithLazyRigidBody {
     /// - `R`: Rotational quantity
     /// - `I`: Inertia
     /// - `B`: Bounding volume
-    fn with_static_rigid_body<S, P, Y, R, I, B>(
+    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         body: RigidBody<S>,
         mass: Mass<S, I>,
     ) where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = S> + Send + Sync + 'static,
@@ -139,15 +142,16 @@ pub trait WithLazyRigidBody {
 }
 
 impl WithLazyRigidBody for LazyUpdate {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         velocity: Velocity<V, A>,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
@@ -169,14 +173,15 @@ impl WithLazyRigidBody for LazyUpdate {
         self.insert(entity, ForceAccumulator::<V, A>::new());
     }
 
-    fn with_static_rigid_body<S, P, Y, R, I, B>(
+    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
         &self,
         entity: Entity,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         body: RigidBody<S>,
         mass: Mass<S, I>,
     ) where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = S> + Send + Sync + 'static,
@@ -194,15 +199,16 @@ impl WithLazyRigidBody for LazyUpdate {
 }
 
 impl<'a> WithRigidBody for EntityBuilder<'a> {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B>(
+    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         velocity: Velocity<V, A>,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,
         P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
@@ -219,14 +225,15 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
             .with(ForceAccumulator::<V, A>::new())
     }
 
-    fn with_static_rigid_body<S, P, Y, R, I, B>(
+    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
         self,
-        shape: CollisionShape<P, BodyPose<P::Point, R>, B, Y>,
-        pose: BodyPose<P::Point, R>,
+        shape: CollisionShape<P, T, B, Y>,
+        pose: T,
         body: RigidBody<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
         P: Primitive + Send + Sync + 'static,
         B: Bound<Point = P::Point> + Send + Sync + 'static,

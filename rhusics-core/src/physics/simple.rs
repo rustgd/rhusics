@@ -5,7 +5,7 @@ use std::ops::Mul;
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 
 use super::{ApplyAngular, ForceAccumulator, Inertia, Mass, Velocity};
-use {BodyPose, NextFrame};
+use {NextFrame, Pose};
 
 /// Do force integration for next frame.
 ///
@@ -25,16 +25,17 @@ use {BodyPose, NextFrame};
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-pub fn next_frame_integration<'a, D, P, A, I, R>(data: D, dt: P::Scalar)
+pub fn next_frame_integration<'a, B, D, P, A, I, R>(data: D, dt: P::Scalar)
 where
     D: Iterator<
         Item = (
             &'a mut NextFrame<Velocity<P::Diff, A>>,
-            &'a NextFrame<BodyPose<P, R>>,
+            &'a NextFrame<B>,
             &'a mut ForceAccumulator<P::Diff, A>,
             &'a Mass<P::Scalar, I>,
         ),
     >,
+    B: Pose<P, R> + 'a,
     P: EuclideanSpace + 'a,
     P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace + 'a,
@@ -69,15 +70,16 @@ where
 /// - `P`: Point, usually `Point2` or `Point3`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-pub fn next_frame_pose<'a, D, P, A, R>(data: D, dt: P::Scalar)
+pub fn next_frame_pose<'a, B, D, P, A, R>(data: D, dt: P::Scalar)
 where
     D: Iterator<
         Item = (
             &'a NextFrame<Velocity<P::Diff, A>>,
-            &'a BodyPose<P, R>,
-            &'a mut NextFrame<BodyPose<P, R>>,
+            &'a B,
+            &'a mut NextFrame<B>,
         ),
     >,
+    B: Pose<P, R> + 'a,
     P: EuclideanSpace + 'a,
     P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace + 'a,
