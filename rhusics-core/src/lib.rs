@@ -27,6 +27,7 @@
 
 extern crate cgmath;
 extern crate collision;
+extern crate rhusics_transform;
 
 #[cfg(feature = "specs")]
 extern crate specs;
@@ -47,6 +48,7 @@ pub use collide::narrow::NarrowPhase;
 pub use physics::{resolve_contact, ApplyAngular, ForceAccumulator, Inertia, Mass, Material,
                   PartialCrossProduct, ResolveData, RigidBody, SingleChangeSet, Velocity, Volume};
 pub use physics::simple::{next_frame_integration, next_frame_pose};
+pub use rhusics_transform::Pose;
 
 pub mod collide2d;
 pub mod collide3d;
@@ -67,21 +69,4 @@ mod ecs;
 pub struct NextFrame<T> {
     /// Wrapped value
     pub value: T,
-}
-
-/// Pose abstraction
-pub trait Pose<P, R>: Transform<P>
-where
-    P: EuclideanSpace,
-{
-    /// New pose
-    fn new(position: P, rotation: R) -> Self;
-    /// Set rotation
-    fn set_rotation(&mut self, rotation: R);
-    /// Set position
-    fn set_position(&mut self, position: P);
-    /// Read rotation
-    fn rotation(&self) -> &R;
-    /// Read position
-    fn position(&self) -> &P;
 }

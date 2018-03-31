@@ -1,2 +1,2 @@
 [workspace]
-members = ["rhusics-core", "rhusics-ecs"]
+members = ["rhusics-transform", "rhusics-core", "rhusics-ecs"]
