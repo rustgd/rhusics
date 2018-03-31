@@ -3,9 +3,9 @@ use std::marker;
 use std::ops::Mul;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use core::{next_frame_integration, next_frame_pose, ApplyAngular, BodyPose, ForceAccumulator,
-           Inertia, Mass, NextFrame, Velocity};
-use specs::{Fetch, Join, ReadStorage, System, WriteStorage};
+use core::{next_frame_integration, next_frame_pose, ApplyAngular, ForceAccumulator, Inertia, Mass,
+           NextFrame, Pose, Velocity};
+use specs::{Component, Fetch, Join, ReadStorage, System, WriteStorage};
 
 use physics::resources::DeltaTime;
 
@@ -20,13 +20,14 @@ use physics::resources::DeltaTime;
 ///
 /// ### System function
 ///
-/// `fn(DeltaTime, Mass, BodyPose, ForceAccumulator) -> (ForceAccumulator, NextFrame<Velocity>, NextFrame<BodyPose>)`
-pub struct NextFrameSetupSystem<P, R, I, A> {
-    m: marker::PhantomData<(P, R, I, A)>,
+/// `fn(DeltaTime, Mass, T, ForceAccumulator) -> (ForceAccumulator, NextFrame<Velocity>, NextFrame<T>)`
+pub struct NextFrameSetupSystem<P, R, I, A, T> {
+    m: marker::PhantomData<(P, R, I, A, T)>,
 }
 
-impl<P, R, I, A> NextFrameSetupSystem<P, R, I, A>
+impl<P, R, I, A, T> NextFrameSetupSystem<P, R, I, A, T>
 where
+    T: Pose<P, R>,
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace + Debug,
@@ -42,8 +43,9 @@ where
     }
 }
 
-impl<'a, P, R, I, A> System<'a> for NextFrameSetupSystem<P, R, I, A>
+impl<'a, P, R, I, A, T> System<'a> for NextFrameSetupSystem<P, R, I, A, T>
 where
+    T: Pose<P, R> + Component + Send + Sync + 'static,
     P: EuclideanSpace + Send + Sync + 'static,
     P::Scalar: BaseFloat + Send + Sync + 'static,
     P::Diff: VectorSpace + InnerSpace + Debug + Send + Sync + 'static,
@@ -55,8 +57,8 @@ where
         Fetch<'a, DeltaTime<P::Scalar>>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
-        ReadStorage<'a, BodyPose<P, R>>,
-        WriteStorage<'a, NextFrame<BodyPose<P, R>>>,
+        ReadStorage<'a, T>,
+        WriteStorage<'a, NextFrame<T>>,
         WriteStorage<'a, ForceAccumulator<P::Diff, A>>,
     );
 

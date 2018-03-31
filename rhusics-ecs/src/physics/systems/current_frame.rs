@@ -2,8 +2,8 @@ use std::fmt::Debug;
 use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use core::{BodyPose, NextFrame, Velocity};
-use specs::{Join, ReadStorage, System, WriteStorage};
+use core::{NextFrame, Pose, Velocity};
+use specs::{Component, Join, ReadStorage, System, WriteStorage};
 
 /// Current frame update system.
 ///
@@ -17,18 +17,19 @@ use specs::{Join, ReadStorage, System, WriteStorage};
 ///
 /// ### System function:
 ///
-/// `fn(NextFrame<Velocity>, NextFrame<BodyPose>) -> (Velocity, BodyPose)`
-pub struct CurrentFrameUpdateSystem<P, R, A> {
-    m: marker::PhantomData<(P, R, A)>,
+/// `fn(NextFrame<Velocity>, NextFrame<T>) -> (Velocity, T)`
+pub struct CurrentFrameUpdateSystem<P, R, A, T> {
+    m: marker::PhantomData<(P, R, A, T)>,
 }
 
-impl<P, R, A> CurrentFrameUpdateSystem<P, R, A>
+impl<P, R, A, T> CurrentFrameUpdateSystem<P, R, A, T>
 where
     P: EuclideanSpace,
     P::Diff: VectorSpace + InnerSpace + Debug,
     P::Scalar: BaseFloat,
     R: Rotation<P>,
     A: Clone + Zero,
+    T: Pose<P, R>,
 {
     /// Create system.
     pub fn new() -> Self {
@@ -38,19 +39,20 @@ where
     }
 }
 
-impl<'a, P, R, A> System<'a> for CurrentFrameUpdateSystem<P, R, A>
+impl<'a, P, R, A, T> System<'a> for CurrentFrameUpdateSystem<P, R, A, T>
 where
     P: EuclideanSpace + Send + Sync + 'static,
     P::Diff: VectorSpace + InnerSpace + Debug + Send + Sync + 'static,
     P::Scalar: BaseFloat + Send + Sync + 'static,
     R: Rotation<P> + Send + Sync + 'static,
     A: Clone + Zero + Send + Sync + 'static,
+    T: Pose<P, R> + Component + Clone + Send + Sync + 'static,
 {
     type SystemData = (
         WriteStorage<'a, Velocity<P::Diff, A>>,
         ReadStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
-        WriteStorage<'a, BodyPose<P, R>>,
-        ReadStorage<'a, NextFrame<BodyPose<P, R>>>,
+        WriteStorage<'a, T>,
+        ReadStorage<'a, NextFrame<T>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {

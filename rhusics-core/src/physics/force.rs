@@ -1,7 +1,6 @@
-use cgmath::{BaseFloat, EuclideanSpace, Rotation, Transform, VectorSpace, Zero};
+use cgmath::{BaseFloat, EuclideanSpace, Transform, VectorSpace, Zero};
 
 use super::PartialCrossProduct;
-use BodyPose;
 
 /// Force accumulator for a rigid body.
 ///
@@ -64,11 +63,11 @@ where
     /// - `position`: Position on the body to apply the force at.
     /// - `pose`: Current pose of the body, used to compute the world coordinates of the body center
     ///           of mass
-    pub fn add_force_at_point<P, R>(&mut self, force: F, position: P, pose: &BodyPose<P, R>)
+    pub fn add_force_at_point<P, B>(&mut self, force: F, position: P, pose: &B)
     where
         P: EuclideanSpace<Scalar = F::Scalar, Diff = F>,
         P::Scalar: BaseFloat,
-        R: Rotation<P>,
+        B: Transform<P>,
         F: PartialCrossProduct<F, Output = T>,
     {
         let current_pos = pose.transform_point(P::origin());

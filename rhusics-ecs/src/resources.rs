@@ -1,13 +1,14 @@
 use std::fmt::Debug;
 
-use cgmath::{BaseFloat, EuclideanSpace, Point2, Point3, Rotation, Transform, Zero};
+use cgmath::{BaseFloat, Basis2, EuclideanSpace, Point2, Point3, Quaternion, Rotation, Transform,
+             Zero};
 use collision::{Bound, Contains, Primitive, SurfaceArea, Union};
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use shrev::EventChannel;
 use specs::{Component, Entity, World};
 
-use core::{BodyPose, Collider, CollisionShape, ContactEvent, ForceAccumulator, GetId, Mass,
-           NextFrame, RigidBody, Velocity};
+use core::{Collider, CollisionShape, ContactEvent, ForceAccumulator, GetId, Mass, NextFrame, Pose,
+           RigidBody, Velocity};
 use physics::DeltaTime;
 
 /// Utility method for registering collision types with `World`
@@ -53,7 +54,7 @@ pub trait WithRhusics {
     /// - `L`: Linear velocity/force
     /// - `A`: Angular velocity/force
     /// - `I`: Inertia
-    fn register_physics<P, B, R, D, Y, L, A, I>(&mut self)
+    fn register_physics<P, B, R, D, Y, L, A, I, T>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
         P::Point: EuclideanSpace + Send + Sync + 'static,
@@ -68,6 +69,7 @@ pub trait WithRhusics {
             + Sync
             + 'static,
         R: Rotation<P::Point> + Send + Sync + 'static,
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
         D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
         L: Clone + Send + Sync + 'static,
@@ -85,7 +87,7 @@ pub trait WithRhusics {
     /// - `B`: Bounding volume
     /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
     /// - `Y`: Collider
-    fn register_physics_2d<S, P, B, D, Y>(&mut self)
+    fn register_physics_2d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point2<S>> + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
@@ -98,6 +100,7 @@ pub trait WithRhusics {
             + Sync
             + 'static,
         D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
+        T: Pose<Point2<S>, Basis2<S>> + Clone + Component + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static;
 
     /// Register physics types for 3D
@@ -111,7 +114,7 @@ pub trait WithRhusics {
     /// - `B`: Bounding volume
     /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
     /// - `Y`: Collider
-    fn register_physics_3d<S, P, B, D, Y>(&mut self)
+    fn register_physics_3d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point3<S>> + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
@@ -124,6 +127,7 @@ pub trait WithRhusics {
             + Sync
             + 'static,
         D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
+        T: Pose<Point3<S>, Quaternion<S>> + Clone + Component + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static;
 }
 
@@ -153,7 +157,7 @@ impl WithRhusics for World {
         self.add_resource(DynamicBoundingVolumeTree::<D>::new());
     }
 
-    fn register_physics<P, B, R, D, Y, L, A, I>(&mut self)
+    fn register_physics<P, B, R, D, Y, L, A, I, T>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
         P::Point: EuclideanSpace + Send + Sync + 'static,
@@ -173,6 +177,7 @@ impl WithRhusics for World {
         L: Clone + Send + Sync + 'static,
         A: Clone + Send + Sync + 'static,
         I: Send + Sync + 'static,
+        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
     {
         self.add_resource(DeltaTime {
             delta_seconds: <P::Point as EuclideanSpace>::Scalar::zero(),
@@ -182,10 +187,10 @@ impl WithRhusics for World {
         self.register::<NextFrame<Velocity<L, A>>>();
         self.register::<RigidBody<<P::Point as EuclideanSpace>::Scalar>>();
         self.register::<ForceAccumulator<L, A>>();
-        self.register_collision::<P, B, BodyPose<P::Point, R>, D, Y>();
+        self.register_collision::<P, B, T, D, Y>();
     }
 
-    fn register_physics_2d<S, P, B, D, Y>(&mut self)
+    fn register_physics_2d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point2<S>> + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
@@ -199,12 +204,13 @@ impl WithRhusics for World {
             + 'static,
         D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
+        T: Pose<Point2<S>, Basis2<S>> + Clone + Component + Send + Sync + 'static,
     {
-        use cgmath::{Basis2, Vector2};
-        self.register_physics::<P, B, Basis2<S>, D, Y, Vector2<S>, S, S>()
+        use cgmath::Vector2;
+        self.register_physics::<P, B, Basis2<S>, D, Y, Vector2<S>, S, S, T>()
     }
 
-    fn register_physics_3d<S, P, B, D, Y>(&mut self)
+    fn register_physics_3d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point3<S>> + Send + Sync + 'static,
         S: BaseFloat + Send + Sync + 'static,
@@ -218,8 +224,9 @@ impl WithRhusics for World {
             + 'static,
         D: TreeValue<Bound = B> + GetId<Entity> + Send + Sync + 'static,
         Y: Collider + Send + Sync + 'static,
+        T: Pose<Point3<S>, Quaternion<S>> + Clone + Component + Send + Sync + 'static,
     {
-        use cgmath::{Matrix3, Quaternion, Vector3};
-        self.register_physics::<P, B, Quaternion<S>, D, Y, Vector3<S>, Vector3<S>, Matrix3<S>>()
+        use cgmath::{Matrix3, Vector3};
+        self.register_physics::<P, B, Quaternion<S>, D, Y, Vector3<S>, Vector3<S>, Matrix3<S>, T>()
     }
 }

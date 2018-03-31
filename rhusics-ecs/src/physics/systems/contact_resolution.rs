@@ -5,9 +5,9 @@ use std::ops::{Add, Mul, Sub};
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use core::{resolve_contact, ApplyAngular, ContactEvent, Inertia, Mass, PartialCrossProduct,
            ResolveData, RigidBody, Velocity};
-use core::{BodyPose, NextFrame};
+use core::{NextFrame, Pose};
 use shrev::{EventChannel, ReaderId};
-use specs::{Entity, Fetch, ReadStorage, System, WriteStorage};
+use specs::{Component, Entity, Fetch, ReadStorage, System, WriteStorage};
 
 /// Do single contact, forward resolution.
 ///
@@ -22,19 +22,20 @@ use specs::{Entity, Fetch, ReadStorage, System, WriteStorage};
 ///
 /// ### System function
 ///
-/// `fn(EventChannel<ContactEvent>, Mass, RigidBody, BodyPose, NextFrame<Velocity>, NextFrame<BodyPose>) -> (NextFrame<Velocity>, NextFrame<BodyPose>)`
+/// `fn(EventChannel<ContactEvent>, Mass, RigidBody, T, NextFrame<Velocity>, NextFrame<T>) -> (NextFrame<Velocity>, NextFrame<T>)`
 ///
-pub struct ContactResolutionSystem<P, R, I, A, O>
+pub struct ContactResolutionSystem<P, R, I, A, O, T>
 where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
     contact_reader: ReaderId<ContactEvent<Entity, P>>,
-    m: marker::PhantomData<(R, I, A, O)>,
+    m: marker::PhantomData<(R, I, A, O, T)>,
 }
 
-impl<P, R, I, A, O> ContactResolutionSystem<P, R, I, A, O>
+impl<P, R, I, A, O, T> ContactResolutionSystem<P, R, I, A, O, T>
 where
+    T: Pose<P, R>,
     P: EuclideanSpace,
     P::Scalar: BaseFloat,
     P::Diff: VectorSpace + InnerSpace + Debug + PartialCrossProduct<P::Diff, Output = O>,
@@ -53,8 +54,9 @@ where
     }
 }
 
-impl<'a, P, R, I, A, O> System<'a> for ContactResolutionSystem<P, R, I, A, O>
+impl<'a, P, R, I, A, O, T> System<'a> for ContactResolutionSystem<P, R, I, A, O, T>
 where
+    T: Pose<P, R> + Component + Send + Sync + 'static,
     P: EuclideanSpace + Send + Sync + 'static,
     P::Scalar: BaseFloat + Send + Sync + 'static,
     P::Diff: VectorSpace
@@ -75,8 +77,8 @@ where
         ReadStorage<'a, Mass<P::Scalar, I>>,
         ReadStorage<'a, RigidBody<P::Scalar>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
-        ReadStorage<'a, BodyPose<P, R>>,
-        WriteStorage<'a, NextFrame<BodyPose<P, R>>>,
+        ReadStorage<'a, T>,
+        WriteStorage<'a, NextFrame<T>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
@@ -87,24 +89,24 @@ where
             // Resolve contact
             let change_set = resolve_contact(
                 &contact.contact,
-                &ResolveData {
-                    velocity: next_velocities.get(contact.bodies.0),
-                    pose: next_poses
+                &ResolveData::new(
+                    next_velocities.get(contact.bodies.0),
+                    next_poses
                         .get(contact.bodies.0)
                         .map(|p| &p.value)
                         .unwrap_or_else(|| poses.get(contact.bodies.0).unwrap()),
-                    mass: masses.get(contact.bodies.0).unwrap(),
-                    material: bodies.get(contact.bodies.0).map(|b| b.material()).unwrap(),
-                },
-                &ResolveData {
-                    velocity: next_velocities.get(contact.bodies.1),
-                    pose: next_poses
+                    masses.get(contact.bodies.0).unwrap(),
+                    bodies.get(contact.bodies.0).map(|b| b.material()).unwrap(),
+                ),
+                &ResolveData::new(
+                    next_velocities.get(contact.bodies.1),
+                    next_poses
                         .get(contact.bodies.1)
                         .map(|p| &p.value)
                         .unwrap_or_else(|| poses.get(contact.bodies.1).unwrap()),
-                    mass: masses.get(contact.bodies.1).unwrap(),
-                    material: bodies.get(contact.bodies.1).map(|b| b.material()).unwrap(),
-                },
+                    masses.get(contact.bodies.1).unwrap(),
+                    bodies.get(contact.bodies.1).map(|b| b.material()).unwrap(),
+                ),
             );
             // Apply computed change sets
             change_set.0.apply(
