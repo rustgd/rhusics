@@ -17,6 +17,7 @@ use physics::resources::DeltaTime;
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `I`: Inertia, usually `Scalar` or `Matrix3`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `T`: Transform type (`BodyPose2` or similar)
 ///
 /// ### System function
 ///

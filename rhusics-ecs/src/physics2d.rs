@@ -10,7 +10,8 @@ use collision::primitive::Primitive2;
 use core::{Collider, Pose};
 use specs::{Component, Entity, World};
 
-use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem};
+use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem,
+              RigidBodyParts};
 use resources::WithRhusics;
 
 /// Current frame integrator system for 2D
@@ -18,6 +19,7 @@ use resources::WithRhusics;
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform
 pub type CurrentFrameUpdateSystem2<S, T> = CurrentFrameUpdateSystem<Point2<S>, Basis2<S>, S, T>;
 
 /// Resolution system for 2D
@@ -25,6 +27,7 @@ pub type CurrentFrameUpdateSystem2<S, T> = CurrentFrameUpdateSystem<Point2<S>, B
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform type (`BodyPose2` or similar)
 pub type ContactResolutionSystem2<S, T> = ContactResolutionSystem<Point2<S>, Basis2<S>, S, S, S, T>;
 
 /// Next frame setup system for 2D
@@ -32,7 +35,18 @@ pub type ContactResolutionSystem2<S, T> = ContactResolutionSystem<Point2<S>, Bas
 /// ### Type parameters:
 ///
 /// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform type (`BodyPose2` or similar)
 pub type NextFrameSetupSystem2<S, T> = NextFrameSetupSystem<Point2<S>, Basis2<S>, S, S, T>;
+
+/// SystemData for 2D
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type (f32 or f64)
+/// - `T`: Transform type (`BodyPose2` or similar)
+/// - `Y`: Collision shape type, see `Collider`
+pub type RigidBodyParts2<'a, S, T, Y> =
+    RigidBodyParts<'a, Primitive2<S>, Y, Basis2<S>, Vector2<S>, S, S, Aabb2<S>, T>;
 
 /// Utility method for registering 2D physics and collision components and resources with
 /// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
@@ -46,6 +60,7 @@ pub type NextFrameSetupSystem2<S, T> = NextFrameSetupSystem<Point2<S>, Basis2<S>
 ///
 /// - `S`: Scalar type (f32 or f64)
 /// - `Y`: Collision shape type, see `Collider`
+/// - `T`: Transform type (`BodyPose2` or similar)
 pub fn register_physics<S, Y, T>(world: &mut World)
 where
     S: BaseFloat + Send + Sync + 'static,

@@ -55,8 +55,6 @@ pub mod collide3d;
 pub mod physics2d;
 pub mod physics3d;
 
-use cgmath::{EuclideanSpace, Transform};
-
 mod body_pose;
 mod collide;
 mod physics;

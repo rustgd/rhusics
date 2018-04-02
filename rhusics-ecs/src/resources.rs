@@ -22,6 +22,7 @@ pub trait WithRhusics {
     /// - `T`: Transform
     /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
     /// - `Y`: Collider
+    /// - `T`: Transform type (`BodyPose2` or similar)
     fn register_collision<P, B, T, D, Y>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
@@ -54,6 +55,7 @@ pub trait WithRhusics {
     /// - `L`: Linear velocity/force
     /// - `A`: Angular velocity/force
     /// - `I`: Inertia
+    /// - `T`: Transform type (`BodyPose2` or similar)
     fn register_physics<P, B, R, D, Y, L, A, I, T>(&mut self)
     where
         P: Primitive + Send + Sync + 'static,
@@ -87,6 +89,7 @@ pub trait WithRhusics {
     /// - `B`: Bounding volume
     /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
     /// - `Y`: Collider
+    /// - `T`: Transform type (`BodyPose2` or similar)
     fn register_physics_2d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point2<S>> + Send + Sync + 'static,
@@ -114,6 +117,7 @@ pub trait WithRhusics {
     /// - `B`: Bounding volume
     /// - `D`: TreeValue (used in DynamicBoundingVolumeTree)
     /// - `Y`: Collider
+    /// - `T`: Transform type (`BodyPose2` or similar)
     fn register_physics_3d<S, P, B, D, Y, T>(&mut self)
     where
         P: Primitive<Point = Point3<S>> + Send + Sync + 'static,

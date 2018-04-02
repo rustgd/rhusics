@@ -28,8 +28,12 @@
 extern crate cgmath;
 extern crate collision;
 extern crate rhusics_core as core;
+extern crate shred;
 extern crate shrev;
 extern crate specs;
+
+#[macro_use]
+extern crate shred_derive;
 
 #[cfg(feature = "eders")]
 #[macro_use]
@@ -37,7 +41,7 @@ extern crate serde;
 
 pub use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 pub use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
-                  NextFrameSetupSystem, WithLazyRigidBody, WithRigidBody};
+                  NextFrameSetupSystem, RigidBodyParts, WithLazyRigidBody, WithRigidBody};
 pub use resources::WithRhusics;
 
 pub mod collide2d;
