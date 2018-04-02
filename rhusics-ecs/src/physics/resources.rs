@@ -162,7 +162,8 @@ impl WithLazyRigidBody for LazyUpdate {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.with_static_rigid_body(entity, shape, pose, body, mass);
+        self.with_static_rigid_body(entity, shape, pose.clone(), body, mass);
+        self.insert(entity, NextFrame { value: pose });
         self.insert(entity, velocity.clone());
         self.insert(
             entity,
@@ -193,8 +194,8 @@ impl WithLazyRigidBody for LazyUpdate {
         self.insert(entity, shape);
         self.insert(entity, body);
         self.insert(entity, mass);
-        self.insert(entity, pose.clone());
-        self.insert(entity, NextFrame { value: pose });
+        self.insert(entity, pose);
+
     }
 }
 
@@ -219,7 +220,8 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.with_static_rigid_body(shape, pose, body, mass)
+        self.with_static_rigid_body(shape, pose.clone(), body, mass)
+            .with(NextFrame { value: pose })
             .with(velocity.clone())
             .with(NextFrame { value: velocity })
             .with(ForceAccumulator::<V, A>::new())
@@ -245,7 +247,6 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
         self.with(shape)
             .with(body)
             .with(mass)
-            .with(pose.clone())
-            .with(NextFrame { value: pose })
+            .with(pose)
     }
 }
