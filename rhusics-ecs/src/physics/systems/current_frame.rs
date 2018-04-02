@@ -14,6 +14,7 @@ use specs::{Component, Join, ReadStorage, System, WriteStorage};
 /// - `P`: Positional quantity, usually `Point2` or `Point3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
+/// - `T`: Transform type (`BodyPose2` or similar)
 ///
 /// ### System function:
 ///

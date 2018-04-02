@@ -70,6 +70,7 @@ where
     ///
     /// ### Type parameters:
     ///
+    /// - `B`: Transform type (`BodyPose3` or similar)
     /// - `P`: Positional quantity, usually `Point2` or `Point3`
     /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
     pub fn apply<B, P, R>(&self, pose: &B, dt: L::Scalar) -> B

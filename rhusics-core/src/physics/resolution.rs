@@ -18,6 +18,7 @@ const POSITIONAL_CORRECTION_K_SLOP: f32 = 0.01;
 ///
 /// ### Type parameters:
 ///
+/// - `B`: Transform type (`BodyPose3` or similar)
 /// - `P`: Point type, usually `Point2` or `Point3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
@@ -96,6 +97,7 @@ where
 ///
 /// ### Type parameters:
 ///
+/// - `B`: Transform type (`BodyPose3` or similar)
 /// - `P`: Point type, usually `Point2` or `Point3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
@@ -162,6 +164,7 @@ where
 ///
 /// ### Type parameters:
 ///
+/// - `B`: Transform type (`BodyPose3` or similar)
 /// - `P`: Point type, usually `Point2` or `Point3`
 /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 /// - `A`: Angular velocity, usually `Scalar` or `Vector3`
@@ -276,8 +279,10 @@ where
 ///
 /// ### Type parameters:
 ///
+/// - `S`: Scalar type
+/// - `B`: Transform type (`BodyPose3` or similar)
 /// - `P`: Positional quantity, usually `Point2` or `Point3`
-/// - `R` Rotational quantity, usually `Basis2` or `Quaternion`
+/// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
 fn positional_correction<S, B, P, R>(
     contact: &Contact<P>,
     a_position: &B,

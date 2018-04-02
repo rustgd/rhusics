@@ -80,6 +80,7 @@ pub type DynamicBoundingVolumeTree3<S> =
 ///
 /// # Type parameters
 ///
+/// - `S`: Scalar type
 /// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
 ///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
 /// - `Y`: Shape type, see `Collider`
