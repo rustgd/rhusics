@@ -48,7 +48,7 @@ where
         let a = force.consume_force() * mass.inverse_mass();
         let new_velocity = *next_velocity.value.linear() + a * dt;
         next_velocity.value.set_linear(new_velocity);
-        let a = mass.world_inverse_inertia(next_pose.value.rotation()) * force.consume_torque();
+        let a = mass.world_inverse_inertia(&next_pose.value.rotation()) * force.consume_torque();
         let new_velocity = *next_velocity.value.angular() + a * dt;
         next_velocity.value.set_angular(new_velocity);
     }

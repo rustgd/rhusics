@@ -97,13 +97,13 @@ where
     /// ### Type parameters:
     ///
     /// - `P`: Positional quantity, usually `Point2` or `Point3`
-    pub fn apply_linear<P>(&self, linear: &P, dt: L::Scalar) -> P
+    pub fn apply_linear<P>(&self, linear: P, dt: L::Scalar) -> P
     where
         P: EuclideanSpace<Scalar = L::Scalar, Diff = L>,
         L::Scalar: BaseFloat,
         L: VectorSpace,
     {
-        *linear + self.linear * dt
+        linear + self.linear * dt
     }
 
     /// Apply angular velocity to a rotational quantity
@@ -116,7 +116,7 @@ where
     /// ### Type parameters:
     ///
     /// - `R`: Rotational quantity, usually `Basis2` or `Quaternion`
-    pub fn apply_angular<R>(&self, rotation: &R, dt: L::Scalar) -> R
+    pub fn apply_angular<R>(&self, rotation: R, dt: L::Scalar) -> R
     where
         R: ApplyAngular<L::Scalar, A>,
         L: VectorSpace,
@@ -179,7 +179,7 @@ mod tests_f32 {
     fn test_velocity_linear() {
         let velocity = Velocity::new(Vector2::new(1., 1.), 0.);
         let pose = Point2::<f32>::new(0., 0.);
-        let pose = velocity.apply_linear(&pose, 0.1);
+        let pose = velocity.apply_linear(pose, 0.1);
         assert_eq!(Point2::new(0.1, 0.1), pose);
     }
 
@@ -187,7 +187,7 @@ mod tests_f32 {
     fn test_velocity_2d_angular() {
         let velocity = Velocity::new(Vector2::new(1., 1.), 1.);
         let orientation = Basis2::<f32>::from_angle(Rad(0.));
-        let orientation = velocity.apply_angular(&orientation, 0.1);
+        let orientation = velocity.apply_angular(orientation, 0.1);
         assert_eq!(Basis2::from_angle(Rad(0.1)), orientation);
     }
 
@@ -196,7 +196,7 @@ mod tests_f32 {
         let velocity = Velocity::new(Vector3::new(1., 1., 1.), Vector3::new(0., 1., 0.));
 
         let orientation = Quaternion::<f32>::from_angle_y(Rad(0.));
-        let orientation = velocity.apply_angular(&orientation, 0.1);
+        let orientation = velocity.apply_angular(orientation, 0.1);
         assert_eq!(Quaternion::from_angle_y(Rad(0.1)), orientation);
     }
 
@@ -205,8 +205,8 @@ mod tests_f32 {
         let velocity = Velocity::new(Vector2::new(1., 1.), 1.);
         let pose = BodyPose2::<f32>::one();
         let pose = velocity.apply(&pose, 0.1);
-        assert_eq!(Point2::new(0.1, 0.1), *pose.position());
-        assert_eq!(Basis2::from_angle(Rad(0.1)), *pose.rotation());
+        assert_eq!(Point2::new(0.1, 0.1), pose.position());
+        assert_eq!(Basis2::from_angle(Rad(0.1)), pose.rotation());
     }
 
     #[test]
@@ -214,8 +214,8 @@ mod tests_f32 {
         let velocity = Velocity::new(Vector3::new(1., 1., 1.), Vector3::new(0., 1., 0.));
         let pose = BodyPose3::<f32>::one();
         let pose = velocity.apply(&pose, 0.1);
-        assert_eq!(Point3::new(0.1, 0.1, 0.1), *pose.position());
-        assert_eq!(Quaternion::from_angle_y(Rad(0.1)), *pose.rotation());
+        assert_eq!(Point3::new(0.1, 0.1, 0.1), pose.position());
+        assert_eq!(Quaternion::from_angle_y(Rad(0.1)), pose.rotation());
     }
 
     #[test]
@@ -267,7 +267,7 @@ mod tests_f64 {
     fn test_velocity_linear() {
         let velocity = Velocity::new(Vector2::new(1., 1.), 0.);
         let pose = Point2::<f64>::new(0., 0.);
-        let pose = velocity.apply_linear(&pose, 0.1);
+        let pose = velocity.apply_linear(pose, 0.1);
         assert_eq!(Point2::new(0.1, 0.1), pose);
     }
 
@@ -275,7 +275,7 @@ mod tests_f64 {
     fn test_velocity_2d_angular() {
         let velocity = Velocity::new(Vector2::new(1., 1.), 1.);
         let orientation = Basis2::<f64>::from_angle(Rad(0.));
-        let orientation = velocity.apply_angular(&orientation, 0.1);
+        let orientation = velocity.apply_angular(orientation, 0.1);
         assert_eq!(Basis2::from_angle(Rad(0.1)), orientation);
     }
 
@@ -284,7 +284,7 @@ mod tests_f64 {
         let velocity = Velocity::new(Vector3::new(1., 1., 1.), Vector3::new(0., 1., 0.));
 
         let orientation = Quaternion::<f64>::from_angle_y(Rad(0.));
-        let orientation = velocity.apply_angular(&orientation, 0.1);
+        let orientation = velocity.apply_angular(orientation, 0.1);
         assert_eq!(Quaternion::from_angle_y(Rad(0.1)), orientation);
     }
 
@@ -293,8 +293,8 @@ mod tests_f64 {
         let velocity = Velocity::new(Vector2::new(1., 1.), 1.);
         let pose = BodyPose2::<f64>::one();
         let pose = velocity.apply(&pose, 0.1);
-        assert_eq!(Point2::new(0.1, 0.1), *pose.position());
-        assert_eq!(Basis2::from_angle(Rad(0.1)), *pose.rotation());
+        assert_eq!(Point2::new(0.1, 0.1), pose.position());
+        assert_eq!(Basis2::from_angle(Rad(0.1)), pose.rotation());
     }
 
     #[test]
@@ -302,8 +302,8 @@ mod tests_f64 {
         let velocity = Velocity::new(Vector3::new(1., 1., 1.), Vector3::new(0., 1., 0.));
         let pose = BodyPose3::<f64>::one();
         let pose = velocity.apply(&pose, 0.1);
-        assert_eq!(Point3::new(0.1, 0.1, 0.1), *pose.position());
-        assert_eq!(Quaternion::from_angle_y(Rad(0.1)), *pose.rotation());
+        assert_eq!(Point3::new(0.1, 0.1, 0.1), pose.position());
+        assert_eq!(Quaternion::from_angle_y(Rad(0.1)), pose.rotation());
     }
 
     #[test]

@@ -16,7 +16,7 @@ where
     /// Set position
     fn set_position(&mut self, position: P);
     /// Read rotation
-    fn rotation(&self) -> &R;
+    fn rotation(&self) -> R;
     /// Read position
-    fn position(&self) -> &P;
+    fn position(&self) -> P;
 }

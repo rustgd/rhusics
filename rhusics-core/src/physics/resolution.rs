@@ -227,8 +227,8 @@ where
     let e = a_res.min(b_res);
     let numerator = -(P::Scalar::one() + e) * velocity_along_normal;
 
-    let a_tensor = a.mass.world_inverse_inertia(a.pose.rotation());
-    let b_tensor = b.mass.world_inverse_inertia(b.pose.rotation());
+    let a_tensor = a.mass.world_inverse_inertia(&a.pose.rotation());
+    let b_tensor = b.mass.world_inverse_inertia(&b.pose.rotation());
 
     let term3 = contact
         .normal
@@ -317,7 +317,7 @@ where
     P::Diff: Clone,
     B: Pose<P, R>,
 {
-    B::new(*next_frame.position() + correction, *next_frame.rotation())
+    B::new(next_frame.position() + correction, next_frame.rotation())
 }
 
 #[cfg(test)]
