@@ -43,14 +43,14 @@ where
         self.dirty = true;
     }
 
-    /// Borrows the position attribute
-    fn position(&self) -> &P {
-        &self.position
+    /// Borrows the rotation attribute
+    fn rotation(&self) -> R {
+        self.rotation
     }
 
-    /// Borrows the rotation attribute
-    fn rotation(&self) -> &R {
-        &self.rotation
+    /// Borrows the position attribute
+    fn position(&self) -> P {
+        self.position
     }
 }
 
@@ -86,6 +86,10 @@ where
         self.rotation.rotate_vector(vec)
     }
 
+    fn inverse_transform_vector(&self, vec: P::Diff) -> Option<P::Diff> {
+        Some(self.inverse_rotation.rotate_vector(vec))
+    }
+
     fn transform_point(&self, point: P) -> P {
         self.rotation.rotate_point(point) + self.position.to_vec()
     }
@@ -102,10 +106,6 @@ where
             self.rotation.rotate_point(self.position) * -P::Scalar::one(),
             self.inverse_rotation,
         ))
-    }
-
-    fn inverse_transform_vector(&self, vec: P::Diff) -> Option<P::Diff> {
-        Some(self.inverse_rotation.rotate_vector(vec))
     }
 }
 
