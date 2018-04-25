@@ -3,7 +3,7 @@ use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use core::{NextFrame, Pose, Velocity};
-use specs::{Component, Join, ReadStorage, System, WriteStorage};
+use specs::prelude::{Component, Join, ReadStorage, System, WriteStorage};
 
 /// Current frame update system.
 ///

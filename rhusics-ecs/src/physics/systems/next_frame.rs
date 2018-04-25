@@ -5,7 +5,7 @@ use std::ops::Mul;
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use core::{next_frame_integration, next_frame_pose, ApplyAngular, ForceAccumulator, Inertia, Mass,
            NextFrame, Pose, Velocity};
-use specs::{Component, Fetch, Join, ReadStorage, System, WriteStorage};
+use specs::prelude::{Component, Join, Read, ReadStorage, System, WriteStorage};
 
 use physics::resources::DeltaTime;
 
@@ -55,7 +55,7 @@ where
     A: Mul<P::Scalar, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
 {
     type SystemData = (
-        Fetch<'a, DeltaTime<P::Scalar>>,
+        Read<'a, DeltaTime<P::Scalar>>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, T>,

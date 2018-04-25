@@ -4,8 +4,10 @@ use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
+use shred::Resources;
 use shrev::EventChannel;
-use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System};
+use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
+                     ReadStorage, ReaderId, System, Tracked, Write, WriteExpect};
 
 use core::{tree_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
            NarrowPhase, NextFrame, Primitive};
@@ -42,6 +44,11 @@ where
 {
     narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
+    dirty: BitSet,
+    pose_inserted_id: Option<ReaderId<InsertedFlag>>,
+    pose_modified_id: Option<ReaderId<ModifiedFlag>>,
+    next_pose_inserted_id: Option<ReaderId<InsertedFlag>>,
+    next_pose_modified_id: Option<ReaderId<ModifiedFlag>>,
 }
 
 impl<P, T, D, B, Y> SpatialCollisionSystem<P, T, D, B, Y>
@@ -63,9 +70,14 @@ where
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
-        Self {
+        SpatialCollisionSystem {
             narrow: None,
             broad: None,
+            dirty: BitSet::default(),
+            pose_inserted_id: None,
+            pose_modified_id: None,
+            next_pose_inserted_id: None,
+            next_pose_modified_id: None,
         }
     }
 
@@ -100,8 +112,8 @@ where
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync + 'static,
+    T::Storage: Tracked,
     Y: Default + Send + Sync + 'static,
-    for<'b> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = B> + HasBound<Bound = B> + GetId<Entity>,
 {
     type SystemData = (
@@ -109,23 +121,48 @@ where
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
         ReadStorage<'a, CollisionShape<P, T, B, Y>>,
-        FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<D>>,
+        Write<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
+        WriteExpect<'a, DynamicBoundingVolumeTree<D>>, // FIXME
     );
 
     fn run(&mut self, system_data: Self::SystemData) {
         let (entities, poses, next_poses, shapes, mut event_channel, mut tree) = system_data;
+        self.dirty.clear();
+
+        poses.populate_inserted(self.pose_inserted_id.as_mut().unwrap(), &mut self.dirty);
+        poses.populate_modified(self.pose_modified_id.as_mut().unwrap(), &mut self.dirty);
+        next_poses.populate_inserted(
+            self.next_pose_inserted_id.as_mut().unwrap(),
+            &mut self.dirty,
+        );
+        next_poses.populate_modified(
+            self.next_pose_modified_id.as_mut().unwrap(),
+            &mut self.dirty,
+        );
+
         event_channel.iter_write(tree_collide(
             &SpatialCollisionData {
                 poses: &poses,
                 shapes: &shapes,
                 next_poses: &next_poses,
                 entities: &entities,
+                dirty: &self.dirty,
             },
             &mut *tree,
             &mut self.broad,
             &self.narrow,
         ));
+    }
+
+    fn setup(&mut self, res: &mut Resources) {
+        use specs::prelude::{SystemData, WriteStorage};
+        Self::SystemData::setup(res);
+        let mut poses = WriteStorage::<T>::fetch(res);
+        self.pose_inserted_id = Some(poses.track_inserted());
+        self.pose_modified_id = Some(poses.track_modified());
+        let mut next_poses = WriteStorage::<NextFrame<T>>::fetch(res);
+        self.next_pose_inserted_id = Some(next_poses.track_inserted());
+        self.next_pose_modified_id = Some(next_poses.track_modified());
     }
 }
 
@@ -148,6 +185,8 @@ where
     pub next_poses: &'a ReadStorage<'a, NextFrame<T>>,
     /// entities
     pub entities: &'a Entities<'a>,
+    ///
+    pub dirty: &'a BitSet,
 }
 
 impl<'a, P, T, B, Y, D> CollisionData<Entity, P, T, B, Y, D>
@@ -160,7 +199,6 @@ where
     T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
     Y: Default + Send + Sync + 'static,
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
-    for<'b> &'b T::Storage: Join<Type = &'b T>,
 {
     fn get_broad_data(&self) -> Vec<D> {
         Vec::default()
@@ -174,19 +212,14 @@ where
         self.poses.get(id).unwrap()
     }
 
-    fn get_next_pose(&self, id: Entity) -> Option<&T> {
-        self.next_poses.get(id).as_ref().map(|p| &p.value)
-    }
-
     fn get_dirty_poses(&self) -> Vec<Entity> {
-        (&**self.entities, (self.poses).open().1, self.shapes)
+        (&**self.entities, self.dirty, self.shapes)
             .join()
             .map(|(entity, _, _)| entity)
-            .chain(
-                (&**self.entities, (self.next_poses).open().1, self.shapes)
-                    .join()
-                    .map(|(entity, _, _)| entity),
-            )
             .collect()
+    }
+
+    fn get_next_pose(&self, id: Entity) -> Option<&T> {
+        self.next_poses.get(id).as_ref().map(|p| &p.value)
     }
 }

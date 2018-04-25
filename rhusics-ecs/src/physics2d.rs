@@ -3,16 +3,12 @@
 pub use collide2d::*;
 pub use core::physics2d::*;
 
-use cgmath::{BaseFloat, Basis2, Point2, Vector2};
+use cgmath::{Basis2, Point2, Vector2};
 use collision::Aabb2;
-use collision::dbvt::TreeValueWrapped;
 use collision::primitive::Primitive2;
-use core::{Collider, Pose};
-use specs::{Component, Entity, World};
 
 use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem,
               RigidBodyParts};
-use resources::WithRhusics;
 
 /// Current frame integrator system for 2D
 ///
@@ -47,35 +43,3 @@ pub type NextFrameSetupSystem2<S, T> = NextFrameSetupSystem<Point2<S>, Basis2<S>
 /// - `Y`: Collision shape type, see `Collider`
 pub type RigidBodyParts2<'a, S, T, Y> =
     RigidBodyParts<'a, Primitive2<S>, Y, Basis2<S>, Vector2<S>, S, S, Aabb2<S>, T>;
-
-/// Utility method for registering 2D physics and collision components and resources with
-/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
-///
-/// # Parameters
-///
-/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
-/// to register components/resources in.
-///
-/// ### Type parameters:
-///
-/// - `S`: Scalar type (f32 or f64)
-/// - `Y`: Collision shape type, see `Collider`
-/// - `T`: Transform type (`BodyPose2` or similar)
-pub fn register_physics<S, Y, T>(world: &mut World)
-where
-    S: BaseFloat + Send + Sync + 'static,
-    Y: Collider + Default + Send + Sync + 'static,
-    T: Pose<Point2<S>, Basis2<S>> + Clone + Component + Send + Sync + 'static,
-{
-    world.register_physics::<
-        Primitive2<S>,
-        Aabb2<S>,
-        Basis2<S>,
-        TreeValueWrapped<Entity, Aabb2<S>>,
-        Y,
-        Vector2<S>,
-        S,
-        S,
-        T
-    >();
-}

@@ -2,8 +2,7 @@ use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
-use shred::SystemData;
-use specs::{Component, Entity, EntityBuilder, LazyUpdate, World, WriteStorage};
+use specs::prelude::{Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
 
 use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, Pose, Primitive, RigidBody, Velocity};
 
@@ -20,6 +19,17 @@ where
 {
     /// Delta time since last frame
     pub delta_seconds: S,
+}
+
+impl<S> Default for DeltaTime<S>
+where
+    S: BaseFloat,
+{
+    fn default() -> Self {
+        DeltaTime {
+            delta_seconds: S::zero(),
+        }
+    }
 }
 
 /// Adds rigid body builder functions to `EntityBuilder`
@@ -83,126 +93,6 @@ pub trait WithRigidBody {
         R: Rotation<P::Point> + Send + Sync + 'static,
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static;
-}
-
-/// Adds rigid body builder functions to `LazyUpdate`
-pub trait WithLazyRigidBody {
-    /// Add dynamic rigid body components to entity
-    ///
-    /// ### Type parameters:
-    ///
-    /// - `P`: Collision Primitive
-    /// - `Y`: Collider
-    /// - `R`: Rotational quantity
-    /// - `V`: Vector
-    /// - `A`: Angular velocity
-    /// - `I`: Inertia
-    /// - `B`: Bounding volume
-    /// - `T`: Transform
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
-        &self,
-        entity: Entity,
-        shape: CollisionShape<P, T, B, Y>,
-        pose: T,
-        velocity: Velocity<V, A>,
-        body: RigidBody<V::Scalar>,
-        mass: Mass<V::Scalar, I>,
-    ) where
-        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
-        P: Primitive + Send + Sync + 'static,
-        B: Bound<Point = P::Point> + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
-        R: Rotation<P::Point> + Send + Sync + 'static,
-        V: VectorSpace + Zero + Clone + Send + Sync + 'static,
-        V::Scalar: BaseFloat + Send + Sync + 'static,
-        A: Copy + Zero + Clone + Send + Sync + 'static,
-        Y: Send + Sync + 'static,
-        I: Send + Sync + 'static;
-
-    /// Add static rigid body components to entity
-    ///
-    /// ### Type parameters:
-    ///
-    /// - `S`: Scalar (f32 or f64)
-    /// - `P`: Collision Primitive
-    /// - `Y`: Collider
-    /// - `R`: Rotational quantity
-    /// - `I`: Inertia
-    /// - `B`: Bounding volume
-    /// - `T`: Transform
-    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
-        &self,
-        entity: Entity,
-        shape: CollisionShape<P, T, B, Y>,
-        pose: T,
-        body: RigidBody<S>,
-        mass: Mass<S, I>,
-    ) where
-        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
-        P: Primitive + Send + Sync + 'static,
-        B: Bound<Point = P::Point> + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = S> + Send + Sync + 'static,
-        S: BaseFloat + Send + Sync + 'static,
-        R: Rotation<P::Point> + Send + Sync + 'static,
-        Y: Send + Sync + 'static,
-        I: Send + Sync + 'static;
-}
-
-impl WithLazyRigidBody for LazyUpdate {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
-        &self,
-        entity: Entity,
-        shape: CollisionShape<P, T, B, Y>,
-        pose: T,
-        velocity: Velocity<V, A>,
-        body: RigidBody<V::Scalar>,
-        mass: Mass<V::Scalar, I>,
-    ) where
-        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
-        P: Primitive + Send + Sync + 'static,
-        B: Bound<Point = P::Point> + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = V::Scalar> + Send + Sync + 'static,
-        R: Rotation<P::Point> + Send + Sync + 'static,
-        V: VectorSpace + Zero + Clone + Send + Sync + 'static,
-        V::Scalar: BaseFloat + Send + Sync + 'static,
-        A: Copy + Zero + Clone + Send + Sync + 'static,
-        Y: Send + Sync + 'static,
-        I: Send + Sync + 'static,
-    {
-        self.with_static_rigid_body(entity, shape, pose.clone(), body, mass);
-        self.insert(entity, NextFrame { value: pose });
-        self.insert(entity, velocity.clone());
-        self.insert(
-            entity,
-            NextFrame {
-                value: velocity.clone(),
-            },
-        );
-        self.insert(entity, ForceAccumulator::<V, A>::new());
-    }
-
-    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
-        &self,
-        entity: Entity,
-        shape: CollisionShape<P, T, B, Y>,
-        pose: T,
-        body: RigidBody<S>,
-        mass: Mass<S, I>,
-    ) where
-        T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
-        P: Primitive + Send + Sync + 'static,
-        B: Bound<Point = P::Point> + Send + Sync + 'static,
-        P::Point: EuclideanSpace<Scalar = S> + Send + Sync + 'static,
-        S: BaseFloat + Send + Sync + 'static,
-        R: Rotation<P::Point> + Send + Sync + 'static,
-        Y: Send + Sync + 'static,
-        I: Send + Sync + 'static,
-    {
-        self.insert(entity, shape);
-        self.insert(entity, body);
-        self.insert(entity, mass);
-        self.insert(entity, pose);
-    }
 }
 
 impl<'a> WithRigidBody for EntityBuilder<'a> {
@@ -314,7 +204,7 @@ where
 {
     /// Extract rigid body storage from `World`
     pub fn new(world: &'a World) -> Self {
-        Self::fetch(&world.res, 0)
+        Self::fetch(&world.res)
     }
 
     /// Setup static rigid body for given entity.
@@ -354,34 +244,28 @@ where
 #[cfg(test)]
 mod tests {
     use super::RigidBodyParts;
-    use WithRhusics;
     use cgmath::{Matrix3, Quaternion, Vector3};
     use collision::Aabb3;
-    use collision::dbvt::TreeValueWrapped;
     use collision::primitive::Primitive3;
     use core::collide3d::BodyPose3;
-    use specs::{Entity, World};
+    use specs::prelude::{SystemData, World};
+
+    type RigidBodyPartsTest<'a> = RigidBodyParts<
+        'a,
+        Primitive3<f32>,
+        (),
+        Quaternion<f32>,
+        Vector3<f32>,
+        Vector3<f32>,
+        Matrix3<f32>,
+        Aabb3<f32>,
+        BodyPose3<f32>,
+    >;
 
     #[test]
     fn test() {
         let mut world = World::new();
-        world.register_physics_3d::<
-            f32,
-            Primitive3<f32>,
-            Aabb3<f32>,
-            TreeValueWrapped<Entity, Aabb3<f32>>,
-            (),
-            BodyPose3<f32>
-        >();
-        RigidBodyParts::<
-            Primitive3<f32>,
-            (),
-            Quaternion<f32>,
-            Vector3<f32>,
-            Vector3<f32>,
-            Matrix3<f32>,
-            Aabb3<f32>,
-            BodyPose3<f32>,
-        >::new(&world);
+        RigidBodyPartsTest::setup(&mut world.res);
+        RigidBodyPartsTest::new(&world);
     }
 }

@@ -6,15 +6,14 @@ pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 pub use core::{CollisionMode, CollisionStrategy};
 pub use core::collide3d::*;
 
-use cgmath::{BaseFloat, Point3, Transform};
+use cgmath::Point3;
 use collision::Aabb3;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive3;
-use specs::{Component, Entity, World};
+use specs::prelude::Entity;
 
 use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
-use core::{Collider, ContactEvent};
-use resources::WithRhusics;
+use core::ContactEvent;
 
 /// Contact event for 2D
 ///
@@ -69,26 +68,3 @@ pub type SpatialCollisionSystem3<S, T, Y = ()> = SpatialCollisionSystem<
 /// - `S`: Scalar type (f32 or f64)
 pub type DynamicBoundingVolumeTree3<S> =
     DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb3<S>>>;
-
-/// Utility method for registering 3D collision components and resources with
-/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
-///
-/// # Parameters
-///
-/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
-/// to register components/resources in.
-///
-/// # Type parameters
-///
-/// - `S`: Scalar type
-/// - `T`: Transform type that implements [`Pose`](../trait.Pose.html) and
-///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
-/// - `Y`: Shape type, see `Collider`
-pub fn register_collision<S, T, Y>(world: &mut World)
-where
-    S: BaseFloat + Send + Sync + 'static,
-    T: Transform<Point3<S>> + Component + Send + Sync + 'static,
-    Y: Collider + Send + Sync + 'static,
-{
-    world.register_collision::<Primitive3<S>, Aabb3<S>, T, TreeValueWrapped<Entity, Aabb3<S>>, Y>();
-}

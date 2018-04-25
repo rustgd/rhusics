@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use cgmath::prelude::*;
 use collision::prelude::*;
 use shrev::EventChannel;
-use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
+use specs::prelude::{Component, Entities, Entity, Join, ReadStorage, System, Write, WriteStorage};
 
 use core::{basic_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
            NarrowPhase, NextFrame, Primitive};
@@ -41,11 +41,14 @@ where
 
 impl<P, T, D, B, Y> BasicCollisionSystem<P, T, D, B, Y>
 where
-    P: Primitive + Send + Sync + 'static,
-    <P::Point as EuclideanSpace>::Diff: Debug,
-    T: Transform<P::Point> + Component,
-    D: HasBound<Bound = B>,
-    B: Bound<Point = P::Point>,
+    P: Primitive + ComputeBound<B> + Send + Sync + 'static,
+    P::Point: Debug + Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Scalar: Send + Sync + 'static,
+    <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync + 'static,
+    T: Component + Transform<P::Point> + Send + Sync + Clone + 'static,
+    Y: Default + Send + Sync + 'static,
+    B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
+    D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
 {
     /// Create a new collision detection system, with no broad or narrow phase activated.
     pub fn new() -> Self {
@@ -78,14 +81,13 @@ where
     Y: Default + Send + Sync + 'static,
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
     D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
-    for<'b> &'b T::Storage: Join<Type = &'b T>,
 {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T, B, Y>>,
-        FetchMut<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
+        Write<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
     );
 
     fn run(&mut self, system_data: Self::SystemData) {
