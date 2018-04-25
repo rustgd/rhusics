@@ -34,7 +34,6 @@ impl<'a> System<'a> for RayCastSystem {
 
 pub fn main() {
     let mut world = World::new();
-    world.add_resource(DynamicBoundingVolumeTree2::<f32>::new());
     let mut sort = SpatialSortingSystem2::<f32, BodyPose2<f32>, ()>::new();
     let mut collide =
         SpatialCollisionSystem2::<f32, BodyPose2<f32>, ()>::new().with_narrow_phase(GJK2::new());

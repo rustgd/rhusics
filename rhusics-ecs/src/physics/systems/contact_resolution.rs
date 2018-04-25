@@ -123,9 +123,11 @@ where
     }
 
     fn setup(&mut self, res: &mut Resources) {
-        use specs::prelude::{SystemData, Write};
+        use specs::prelude::SystemData;
         Self::SystemData::setup(res);
-        let mut event_channel = Write::<EventChannel<ContactEvent<Entity, P>>>::fetch(res);
-        self.contact_reader = Some(event_channel.register_reader());
+        self.contact_reader = Some(
+            res.fetch_mut::<EventChannel<ContactEvent<Entity, P>>>()
+                .register_reader(),
+        );
     }
 }

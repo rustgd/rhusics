@@ -7,7 +7,7 @@ use collision::prelude::*;
 use shred::Resources;
 use shrev::EventChannel;
 use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, System, Tracked, Write, WriteExpect};
+                     ReadStorage, ReaderId, System, Tracked, Write};
 
 use core::{tree_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
            NarrowPhase, NextFrame, Primitive};
@@ -122,7 +122,7 @@ where
         ReadStorage<'a, NextFrame<T>>,
         ReadStorage<'a, CollisionShape<P, T, B, Y>>,
         Write<'a, EventChannel<ContactEvent<Entity, P::Point>>>,
-        WriteExpect<'a, DynamicBoundingVolumeTree<D>>, // FIXME
+        Write<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(&mut self, system_data: Self::SystemData) {

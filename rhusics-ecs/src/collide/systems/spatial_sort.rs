@@ -8,8 +8,7 @@ use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shred::Resources;
 use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, RemovedFlag, System, Tracked, WriteExpect,
-                     WriteStorage};
+                     ReadStorage, ReaderId, RemovedFlag, System, Tracked, Write, WriteStorage};
 
 use core::{CollisionShape, NextFrame, Primitive};
 
@@ -95,7 +94,7 @@ where
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T, B, Y>>,
-        WriteExpect<'a, DynamicBoundingVolumeTree<D>>, // FIXME
+        Write<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(&mut self, (entities, poses, next_poses, mut shapes, mut tree): Self::SystemData) {
