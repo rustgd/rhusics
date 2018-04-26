@@ -4,10 +4,8 @@ use std::ops::Mul;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
 use core::{next_frame_integration, next_frame_pose, ApplyAngular, ForceAccumulator, Inertia, Mass,
-           NextFrame, Pose, Velocity};
+           NextFrame, PhysicsTime, Pose, Velocity};
 use specs::prelude::{Component, Join, Read, ReadStorage, System, WriteStorage};
-
-use physics::resources::DeltaTime;
 
 /// Setup the next frames positions and velocities.
 ///
@@ -22,11 +20,11 @@ use physics::resources::DeltaTime;
 /// ### System function
 ///
 /// `fn(DeltaTime, Mass, T, ForceAccumulator) -> (ForceAccumulator, NextFrame<Velocity>, NextFrame<T>)`
-pub struct NextFrameSetupSystem<P, R, I, A, T> {
-    m: marker::PhantomData<(P, R, I, A, T)>,
+pub struct NextFrameSetupSystem<P, R, I, A, T, D> {
+    m: marker::PhantomData<(P, R, I, A, T, D)>,
 }
 
-impl<P, R, I, A, T> NextFrameSetupSystem<P, R, I, A, T>
+impl<P, R, I, A, T, D> NextFrameSetupSystem<P, R, I, A, T, D>
 where
     T: Pose<P, R>,
     P: EuclideanSpace,
@@ -44,7 +42,7 @@ where
     }
 }
 
-impl<'a, P, R, I, A, T> System<'a> for NextFrameSetupSystem<P, R, I, A, T>
+impl<'a, P, R, I, A, T, D> System<'a> for NextFrameSetupSystem<P, R, I, A, T, D>
 where
     T: Pose<P, R> + Component + Send + Sync + 'static,
     P: EuclideanSpace + Send + Sync + 'static,
@@ -53,9 +51,10 @@ where
     R: Rotation<P> + ApplyAngular<P::Scalar, A> + Send + Sync + 'static,
     I: Inertia<Orientation = R> + Mul<A, Output = A> + Send + Sync + 'static,
     A: Mul<P::Scalar, Output = A> + Zero + Clone + Copy + Send + Sync + 'static,
+    D: PhysicsTime<P::Scalar> + Default + Send + Sync + 'static,
 {
     type SystemData = (
-        Read<'a, DeltaTime<P::Scalar>>,
+        Read<'a, D>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, T>,
@@ -69,13 +68,13 @@ where
         // Do force integration
         next_frame_integration(
             (&mut next_velocities, &next_poses, &mut forces, &masses).join(),
-            time.delta_seconds,
+            time.delta_seconds(),
         );
 
         // Compute next frames position
         next_frame_pose(
             (&next_velocities, &poses, &mut next_poses).join(),
-            time.delta_seconds,
+            time.delta_seconds(),
         );
     }
 }

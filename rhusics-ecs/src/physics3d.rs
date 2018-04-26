@@ -7,7 +7,7 @@ use cgmath::{Matrix3, Point3, Quaternion, Vector3};
 use collision::Aabb3;
 use collision::primitive::Primitive3;
 
-use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem,
+use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
               RigidBodyParts};
 
 /// Current frame integrator system for 2D
@@ -35,7 +35,7 @@ pub type ContactResolutionSystem3<S, T> =
 /// - `S`: Scalar type (f32 or f64)
 /// - `T`: Transform type (`BodyPose3` or similar)
 pub type NextFrameSetupSystem3<S, T> =
-    NextFrameSetupSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, T>;
+    NextFrameSetupSystem<Point3<S>, Quaternion<S>, Matrix3<S>, Vector3<S>, T, DeltaTime<S>>;
 
 /// SystemData for 3D
 ///
