@@ -6,9 +6,8 @@ use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero}
 use core::{resolve_contact, ApplyAngular, ContactEvent, Inertia, Mass, PartialCrossProduct,
            ResolveData, RigidBody, Velocity};
 use core::{NextFrame, Pose};
-use shred::Resources;
 use shrev::{EventChannel, ReaderId};
-use specs::prelude::{Component, Entity, Read, ReadStorage, System, WriteStorage};
+use specs::prelude::{Component, Entity, Read, ReadStorage, Resources, System, WriteStorage};
 
 /// Do single contact, forward resolution.
 ///

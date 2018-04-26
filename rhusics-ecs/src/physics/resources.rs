@@ -33,7 +33,10 @@ where
     }
 }
 
-impl<S> PhysicsTime<S> for DeltaTime<S> where S: BaseFloat {
+impl<S> PhysicsTime<S> for DeltaTime<S>
+where
+    S: BaseFloat,
+{
     fn delta_seconds(&self) -> S {
         self.delta_seconds
     }
