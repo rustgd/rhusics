@@ -6,9 +6,9 @@ use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
-use shred::Resources;
 use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, RemovedFlag, System, Tracked, Write, WriteStorage};
+                     ReadStorage, ReaderId, RemovedFlag, Resources, System, Tracked, Write,
+                     WriteStorage};
 
 use core::{CollisionShape, NextFrame, Primitive};
 

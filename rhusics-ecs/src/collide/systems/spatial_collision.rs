@@ -4,10 +4,9 @@ use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
-use shred::Resources;
 use shrev::EventChannel;
 use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, System, Tracked, Write};
+                     ReadStorage, ReaderId, Resources, System, Tracked, Write};
 
 use core::{tree_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
            NarrowPhase, NextFrame, Primitive};
