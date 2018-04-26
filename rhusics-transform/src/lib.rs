@@ -20,3 +20,7 @@ where
     /// Read position
     fn position(&self) -> P;
 }
+
+pub trait PhysicsTime<S> {
+    fn delta_seconds(&self) -> S;
+}

@@ -7,7 +7,7 @@ use cgmath::{Basis2, Point2, Vector2};
 use collision::Aabb2;
 use collision::primitive::Primitive2;
 
-use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, NextFrameSetupSystem,
+use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
               RigidBodyParts};
 
 /// Current frame integrator system for 2D
@@ -32,7 +32,8 @@ pub type ContactResolutionSystem2<S, T> = ContactResolutionSystem<Point2<S>, Bas
 ///
 /// - `S`: Scalar type (f32 or f64)
 /// - `T`: Transform type (`BodyPose2` or similar)
-pub type NextFrameSetupSystem2<S, T> = NextFrameSetupSystem<Point2<S>, Basis2<S>, S, S, T>;
+pub type NextFrameSetupSystem2<S, T> =
+    NextFrameSetupSystem<Point2<S>, Basis2<S>, S, S, T, DeltaTime<S>>;
 
 /// SystemData for 2D
 ///

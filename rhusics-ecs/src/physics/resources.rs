@@ -4,7 +4,8 @@ use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
 use specs::prelude::{Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
 
-use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, Pose, Primitive, RigidBody, Velocity};
+use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicsTime, Pose, Primitive,
+           RigidBody, Velocity};
 
 /// Time step resource
 ///
@@ -29,6 +30,12 @@ where
         DeltaTime {
             delta_seconds: S::zero(),
         }
+    }
+}
+
+impl<S> PhysicsTime<S> for DeltaTime<S> where S: BaseFloat {
+    fn delta_seconds(&self) -> S {
+        self.delta_seconds
     }
 }
 

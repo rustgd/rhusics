@@ -48,7 +48,7 @@ pub use collide::narrow::NarrowPhase;
 pub use physics::{resolve_contact, ApplyAngular, ForceAccumulator, Inertia, Mass, Material,
                   PartialCrossProduct, ResolveData, RigidBody, SingleChangeSet, Velocity, Volume};
 pub use physics::simple::{next_frame_integration, next_frame_pose};
-pub use rhusics_transform::Pose;
+pub use rhusics_transform::{PhysicsTime, Pose};
 
 pub mod collide2d;
 pub mod collide3d;
