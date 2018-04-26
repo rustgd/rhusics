@@ -6,8 +6,9 @@ use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero}
 use core::{resolve_contact, ApplyAngular, ContactEvent, Inertia, Mass, PartialCrossProduct,
            ResolveData, RigidBody, Velocity};
 use core::{NextFrame, Pose};
+use shred::Resources;
 use shrev::{EventChannel, ReaderId};
-use specs::{Component, Entity, Fetch, ReadStorage, System, WriteStorage};
+use specs::prelude::{Component, Entity, Read, ReadStorage, System, WriteStorage};
 
 /// Do single contact, forward resolution.
 ///
@@ -30,7 +31,7 @@ where
     P: EuclideanSpace,
     P::Diff: Debug,
 {
-    contact_reader: ReaderId<ContactEvent<Entity, P>>,
+    contact_reader: Option<ReaderId<ContactEvent<Entity, P>>>,
     m: marker::PhantomData<(R, I, A, O, T)>,
 }
 
@@ -47,9 +48,9 @@ where
     I: Inertia<Orientation = R> + Mul<O, Output = O>,
 {
     /// Create system.
-    pub fn new(contact_reader: ReaderId<ContactEvent<Entity, P>>) -> Self {
+    pub fn new() -> Self {
         Self {
-            contact_reader,
+            contact_reader: None,
             m: marker::PhantomData,
         }
     }
@@ -74,7 +75,7 @@ where
     I: Inertia<Orientation = R> + Mul<O, Output = O> + Send + Sync + 'static,
 {
     type SystemData = (
-        Fetch<'a, EventChannel<ContactEvent<Entity, P>>>,
+        Read<'a, EventChannel<ContactEvent<Entity, P>>>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
         ReadStorage<'a, RigidBody<P::Scalar>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
@@ -86,7 +87,7 @@ where
         let (contacts, masses, bodies, mut next_velocities, poses, mut next_poses) = data;
 
         // Process contacts since last run
-        for contact in contacts.read(&mut self.contact_reader) {
+        for contact in contacts.read(&mut self.contact_reader.as_mut().unwrap()) {
             // Resolve contact
             let change_set = resolve_contact(
                 &contact.contact,
@@ -119,5 +120,14 @@ where
                 next_velocities.get_mut(contact.bodies.1),
             );
         }
+    }
+
+    fn setup(&mut self, res: &mut Resources) {
+        use specs::prelude::SystemData;
+        Self::SystemData::setup(res);
+        self.contact_reader = Some(
+            res.fetch_mut::<EventChannel<ContactEvent<Entity, P>>>()
+                .register_reader(),
+        );
     }
 }

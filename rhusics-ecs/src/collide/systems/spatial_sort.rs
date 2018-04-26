@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
@@ -6,7 +6,9 @@ use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
-use specs::{Component, Entities, Entity, FetchMut, Join, ReadStorage, System, WriteStorage};
+use shred::Resources;
+use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
+                     ReadStorage, ReaderId, RemovedFlag, System, Tracked, Write, WriteStorage};
 
 use core::{CollisionShape, NextFrame, Primitive};
 
@@ -36,15 +38,31 @@ use core::{CollisionShape, NextFrame, Primitive};
 #[derive(Debug)]
 pub struct SpatialSortingSystem<P, T, D, B, Y = ()> {
     entities: HashMap<Entity, usize>,
+    dead: Vec<Entity>,
+    updated: BitSet,
+    removed: BitSet,
+    pose_inserted_id: Option<ReaderId<InsertedFlag>>,
+    pose_modified_id: Option<ReaderId<ModifiedFlag>>,
+    pose_removed_id: Option<ReaderId<RemovedFlag>>,
+    next_pose_inserted_id: Option<ReaderId<InsertedFlag>>,
+    next_pose_modified_id: Option<ReaderId<ModifiedFlag>>,
     marker: PhantomData<(P, T, Y, B, D)>,
 }
 
 impl<P, T, D, B, Y> SpatialSortingSystem<P, T, D, B, Y> {
     /// Create a new sorting system.
     pub fn new() -> Self {
-        Self {
+        SpatialSortingSystem {
             entities: HashMap::default(),
             marker: PhantomData,
+            updated: BitSet::default(),
+            removed: BitSet::default(),
+            pose_inserted_id: None,
+            pose_modified_id: None,
+            pose_removed_id: None,
+            next_pose_inserted_id: None,
+            next_pose_modified_id: None,
+            dead: Vec::default(),
         }
     }
 }
@@ -67,8 +85,8 @@ where
     <P::Point as EuclideanSpace>::Scalar: BaseFloat + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Diff: Debug + Send + Sync,
     T: Component + Clone + Debug + Transform<P::Point> + Send + Sync,
+    T::Storage: Tracked,
     Y: Default + Send + Sync + 'static,
-    for<'b> &'b T::Storage: Join<Type = &'b T>,
     D: Send + Sync + 'static + TreeValue<Bound = B> + From<(Entity, B)>,
 {
     type SystemData = (
@@ -76,27 +94,51 @@ where
         ReadStorage<'a, T>,
         ReadStorage<'a, NextFrame<T>>,
         WriteStorage<'a, CollisionShape<P, T, B, Y>>,
-        FetchMut<'a, DynamicBoundingVolumeTree<D>>,
+        Write<'a, DynamicBoundingVolumeTree<D>>,
     );
 
     fn run(&mut self, (entities, poses, next_poses, mut shapes, mut tree): Self::SystemData) {
-        let mut keys = self.entities.keys().cloned().collect::<HashSet<Entity>>();
+        self.updated.clear();
+        self.removed.clear();
 
-        // Check for updated poses that are already in the tree
+        poses.populate_inserted(self.pose_inserted_id.as_mut().unwrap(), &mut self.updated);
+        poses.populate_modified(self.pose_modified_id.as_mut().unwrap(), &mut self.updated);
+        poses.populate_removed(self.pose_removed_id.as_mut().unwrap(), &mut self.removed);
+
+        // Check for updated poses
         // Uses FlaggedStorage
-        for (entity, pose, shape) in (&*entities, (&poses).open().1, &mut shapes).join() {
+        for (entity, pose, shape, _) in (&*entities, &poses, &mut shapes, &self.updated).join() {
             shape.update(pose, None);
 
             // Update the wrapper in the tree for the shape
-            if let Some(node_index) = self.entities.get(&entity).cloned() {
-                tree.update_node(node_index, (entity, shape.bound().clone()).into());
+            match self.entities.get(&entity).cloned() {
+                // Update existing
+                Some(node_index) => {
+                    tree.update_node(node_index, (entity, shape.bound().clone()).into());
+                }
+                // Insert new
+                None => {
+                    let node_index = tree.insert((entity, shape.bound().clone()).into());
+                    self.entities.insert(entity, node_index);
+                }
             }
         }
 
-        // Check for updated next frame poses that are already in the tree
+        self.updated.clear();
+
+        next_poses.populate_inserted(
+            self.next_pose_inserted_id.as_mut().unwrap(),
+            &mut self.updated,
+        );
+        next_poses.populate_modified(
+            self.next_pose_modified_id.as_mut().unwrap(),
+            &mut self.updated,
+        );
+
+        // Check for updated next frame poses
         // Uses FlaggedStorage
-        for (entity, pose, next_pose, shape) in
-            (&*entities, &poses, (&next_poses).open().1, &mut shapes).join()
+        for (entity, pose, next_pose, shape, _) in
+            (&*entities, &poses, &next_poses, &mut shapes, &self.updated).join()
         {
             shape.update(pose, Some(&next_pose.value));
 
@@ -106,25 +148,16 @@ where
             }
         }
 
-        // For all active shapes, remove them from the deletion list, and add any new entities
-        // to the tree.
-        for (entity, _, shape) in (&*entities, &poses, &shapes).join() {
-            // entity still exists, remove from deletion list
-            keys.remove(&entity);
-
-            // if entity does not exist in entities list, add it to the tree and entities list
-            if self.entities.get(&entity).is_none() {
-                let node_index = tree.insert((entity, shape.bound().clone()).into());
-                self.entities.insert(entity, node_index);
+        // remove entities that are missing from the tree
+        self.dead.clear();
+        for (entity, node_index) in &self.entities {
+            if self.removed.contains(entity.id()) {
+                tree.remove(*node_index);
+                self.dead.push(*entity);
             }
         }
-
-        // remove entities that are missing from the tree
-        for entity in keys {
-            if let Some(node_index) = self.entities.get(&entity).cloned() {
-                tree.remove(node_index);
-                self.entities.remove(&entity);
-            }
+        for entity in &self.dead {
+            self.entities.remove(entity);
         }
 
         // process possibly updated values
@@ -132,5 +165,17 @@ where
 
         // do refitting
         tree.do_refit();
+    }
+
+    fn setup(&mut self, res: &mut Resources) {
+        use specs::prelude::SystemData;
+        Self::SystemData::setup(res);
+        let mut poses = WriteStorage::<T>::fetch(res);
+        self.pose_inserted_id = Some(poses.track_inserted());
+        self.pose_modified_id = Some(poses.track_modified());
+        self.pose_removed_id = Some(poses.track_removed());
+        let mut next_poses = WriteStorage::<NextFrame<T>>::fetch(res);
+        self.next_pose_inserted_id = Some(next_poses.track_inserted());
+        self.next_pose_modified_id = Some(next_poses.track_modified());
     }
 }

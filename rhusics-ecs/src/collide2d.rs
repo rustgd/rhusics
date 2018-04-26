@@ -6,15 +6,14 @@ pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 pub use core::{CollisionMode, CollisionStrategy};
 pub use core::collide2d::*;
 
-use cgmath::{BaseFloat, Point2, Transform};
+use cgmath::Point2;
 use collision::Aabb2;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
-use specs::{Component, Entity, World};
+use specs::prelude::Entity;
 
 use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
-use core::{Collider, ContactEvent};
-use resources::WithRhusics;
+use core::ContactEvent;
 
 /// Contact event for 2D
 ///
@@ -69,26 +68,3 @@ pub type SpatialCollisionSystem2<S, T, Y = ()> = SpatialCollisionSystem<
 /// - `S`: Scalar type (f32 or f64)
 pub type DynamicBoundingVolumeTree2<S> =
     DynamicBoundingVolumeTree<TreeValueWrapped<Entity, Aabb2<S>>>;
-
-/// Utility method for registering 2D collision components and resources with
-/// [`specs::World`](https://docs.rs/specs/0.9.5/specs/struct.World.html).
-///
-/// # Parameters
-///
-/// - `world`: The [world](https://docs.rs/specs/0.9.5/specs/struct.World.html)
-/// to register components/resources in.
-///
-/// ### Type parameters:
-///
-/// - `S`: Scalar type (f32 or f64)
-/// - `T`: Transform type that implements
-///        [`Transform`](https://docs.rs/cgmath/0.15.0/cgmath/trait.Transform.html).
-/// - `Y`: Shape type, see `Collider`
-pub fn register_collision<S, T, Y>(world: &mut World)
-where
-    S: BaseFloat + Send + Sync + 'static,
-    T: Transform<Point2<S>> + Component + Send + Sync + 'static,
-    Y: Collider + Send + Sync + 'static,
-{
-    world.register_collision::<Primitive2<S>, Aabb2<S>, T, TreeValueWrapped<Entity, Aabb2<S>>, Y>();
-}

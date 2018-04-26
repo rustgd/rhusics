@@ -41,8 +41,7 @@ extern crate serde;
 
 pub use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 pub use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
-                  NextFrameSetupSystem, RigidBodyParts, WithLazyRigidBody, WithRigidBody};
-pub use resources::WithRhusics;
+                  NextFrameSetupSystem, RigidBodyParts, WithRigidBody};
 
 pub mod collide2d;
 pub mod collide3d;
@@ -51,4 +50,3 @@ pub mod physics3d;
 
 mod collide;
 mod physics;
-mod resources;

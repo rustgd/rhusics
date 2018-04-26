@@ -4,7 +4,7 @@
 use cgmath::BaseFloat;
 use cgmath::prelude::*;
 use collision::prelude::*;
-use specs::{Component, DenseVecStorage, FlaggedStorage};
+use specs::prelude::{Component, DenseVecStorage, FlaggedStorage};
 
 use {BodyPose, NextFrame};
 use collide::CollisionShape;
