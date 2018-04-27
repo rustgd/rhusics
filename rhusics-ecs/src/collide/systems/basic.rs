@@ -99,10 +99,10 @@ where
             }
             event_channel.iter_write(basic_collide(
                 &BasicCollisionData {
-                    poses: &poses,
-                    shapes: &shapes,
-                    next_poses: &next_poses,
-                    entities: &entities,
+                    poses,
+                    shapes,
+                    next_poses,
+                    entities,
                 },
                 broad,
                 &self.narrow,
@@ -123,13 +123,13 @@ where
     B: Bound<Point = P::Point> + Send + Sync + 'static + Union<B, Output = B> + Clone,
 {
     /// collision shapes
-    pub shapes: &'a WriteStorage<'a, CollisionShape<P, T, B, Y>>,
+    pub shapes: WriteStorage<'a, CollisionShape<P, T, B, Y>>,
     /// current frame poses
-    pub poses: &'a ReadStorage<'a, T>,
+    pub poses: ReadStorage<'a, T>,
     /// next frame poses
-    pub next_poses: &'a ReadStorage<'a, NextFrame<T>>,
+    pub next_poses: ReadStorage<'a, NextFrame<T>>,
     /// entities
-    pub entities: &'a Entities<'a>,
+    pub entities: Entities<'a>,
 }
 
 impl<'a, P, T, B, Y, D> CollisionData<Entity, P, T, B, Y, D> for BasicCollisionData<'a, P, T, B, Y>
@@ -144,18 +144,18 @@ where
     D: HasBound<Bound = B> + From<(Entity, B)> + GetId<Entity>,
 {
     fn get_broad_data(&self) -> Vec<D> {
-        (&**self.entities, self.shapes)
+        (&*self.entities, &self.shapes)
             .join()
             .map(|(entity, shape)| (entity, shape.bound().clone()).into())
             .collect::<Vec<_>>()
     }
 
-    fn get_shape(&self, id: Entity) -> &CollisionShape<P, T, B, Y> {
-        self.shapes.get(id).unwrap()
+    fn get_shape(&self, id: Entity) -> Option<&CollisionShape<P, T, B, Y>> {
+        self.shapes.get(id)
     }
 
-    fn get_pose(&self, id: Entity) -> &T {
-        self.poses.get(id).unwrap()
+    fn get_pose(&self, id: Entity) -> Option<&T> {
+        self.poses.get(id)
     }
 
     fn get_next_pose(&self, id: Entity) -> Option<&T> {

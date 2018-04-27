@@ -271,9 +271,9 @@ where
     /// Get the list of data to perform broad phase on
     fn get_broad_data(&self) -> Vec<D>;
     /// Get shape
-    fn get_shape(&self, id: I) -> &CollisionShape<P, T, B, Y>;
+    fn get_shape(&self, id: I) -> Option<&CollisionShape<P, T, B, Y>>;
     /// Get pose
-    fn get_pose(&self, id: I) -> &T;
+    fn get_pose(&self, id: I) -> Option<&T>;
     /// Get the dirty poses, used by tree broad phase
     fn get_dirty_poses(&self) -> Vec<I> {
         Vec::default()

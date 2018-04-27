@@ -200,16 +200,20 @@ where
             let right_pose = data.get_pose(right);
             let left_next_pose = data.get_next_pose(left);
             let right_next_pose = data.get_next_pose(right);
-            narrow
-                .collide_continuous(
-                    left_shape,
-                    left_pose,
-                    left_next_pose,
-                    right_shape,
-                    right_pose,
-                    right_next_pose,
-                )
-                .map(|contact| ContactEvent::new((left, right), contact))
+            if left_shape.is_none() || right_shape.is_none() || left_pose.is_none() || right_pose.is_none() {
+                None
+            } else {
+                narrow
+                    .collide_continuous(
+                        left_shape.unwrap(),
+                        left_pose.unwrap(),
+                        left_next_pose,
+                        right_shape.unwrap(),
+                        right_pose.unwrap(),
+                        right_next_pose,
+                    )
+                    .map(|contact| ContactEvent::new((left, right), contact))
+            }
         })
         .collect::<Vec<_>>()
 }
