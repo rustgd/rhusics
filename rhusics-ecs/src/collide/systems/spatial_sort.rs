@@ -105,6 +105,18 @@ where
         poses.populate_modified(self.pose_modified_id.as_mut().unwrap(), &mut self.updated);
         poses.populate_removed(self.pose_removed_id.as_mut().unwrap(), &mut self.removed);
 
+        // remove entities that are missing from the tree
+        self.dead.clear();
+        for (entity, node_index) in &self.entities {
+            if self.removed.contains(entity.id()) {
+                tree.remove(*node_index);
+                self.dead.push(*entity);
+            }
+        }
+        for entity in &self.dead {
+            self.entities.remove(entity);
+        }
+
         // Check for updated poses
         // Uses FlaggedStorage
         for (entity, pose, shape, _) in (&*entities, &poses, &mut shapes, &self.updated).join() {
@@ -146,18 +158,6 @@ where
             if let Some(node_index) = self.entities.get(&entity).cloned() {
                 tree.update_node(node_index, (entity, shape.bound().clone()).into());
             }
-        }
-
-        // remove entities that are missing from the tree
-        self.dead.clear();
-        for (entity, node_index) in &self.entities {
-            if self.removed.contains(entity.id()) {
-                tree.remove(*node_index);
-                self.dead.push(*entity);
-            }
-        }
-        for entity in &self.dead {
-            self.entities.remove(entity);
         }
 
         // process possibly updated values
