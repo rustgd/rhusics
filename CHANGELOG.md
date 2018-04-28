@@ -1,5 +1,12 @@
 ## Changelog
 
+### v0.4
+
+- fix: Crashed if a collision was detected, but the Entity was removed before collision resolution
+- feat: Implement Pose for cgmath::Decomposed
+- feat: Abstract the time ECS resource, to make it pluggable
+- refactor: Adapt ECS integration to new Specs
+
 ### v0.3
 
 - Core code is now generic wrt transform type
