@@ -2,6 +2,7 @@
 
 pub use collide2d::*;
 pub use core::physics2d::*;
+pub use physics::setup_dispatch_2d;
 
 use cgmath::{Basis2, Point2, Vector2};
 use collision::Aabb2;

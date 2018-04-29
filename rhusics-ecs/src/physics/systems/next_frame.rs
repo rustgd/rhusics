@@ -33,6 +33,7 @@ where
     R: Rotation<P> + ApplyAngular<P::Scalar, A>,
     I: Inertia<Orientation = R> + Mul<A, Output = A>,
     A: Mul<P::Scalar, Output = A> + Zero + Clone + Copy,
+    D: PhysicsTime<P::Scalar> + Default,
 {
     /// Create system.
     pub fn new() -> Self {

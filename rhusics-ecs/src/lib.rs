@@ -40,7 +40,7 @@ extern crate shred_derive;
 extern crate serde;
 
 pub use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
-pub use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
+pub use physics::{setup_dispatch, ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
                   NextFrameSetupSystem, RigidBodyParts, WithRigidBody};
 
 pub mod collide2d;
