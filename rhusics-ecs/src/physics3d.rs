@@ -2,6 +2,7 @@
 
 pub use collide3d::*;
 pub use core::physics3d::*;
+pub use physics::setup_dispatch_3d;
 
 use cgmath::{Matrix3, Point3, Quaternion, Vector3};
 use collision::Aabb3;

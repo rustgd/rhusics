@@ -39,6 +39,10 @@ pub trait Inertia: Mul<Self, Output = Self> + Copy {
 impl Inertia for f32 {
     type Orientation = Basis2<f32>;
 
+    fn infinite() -> Self {
+        std::f32::INFINITY
+    }
+
     fn invert(&self) -> Self {
         if *self == 0. || self.is_infinite() {
             0.
@@ -49,10 +53,6 @@ impl Inertia for f32 {
 
     fn tensor(&self, _: &Basis2<f32>) -> Self {
         *self
-    }
-
-    fn infinite() -> Self {
-        std::f32::INFINITY
     }
 }
 

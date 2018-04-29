@@ -200,7 +200,9 @@ where
             let right_pose = data.get_pose(right);
             let left_next_pose = data.get_next_pose(left);
             let right_next_pose = data.get_next_pose(right);
-            if left_shape.is_none() || right_shape.is_none() || left_pose.is_none() || right_pose.is_none() {
+            if left_shape.is_none() || right_shape.is_none() || left_pose.is_none()
+                || right_pose.is_none()
+            {
                 None
             } else {
                 narrow
