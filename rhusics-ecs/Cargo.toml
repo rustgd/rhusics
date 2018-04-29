@@ -16,7 +16,7 @@ eders = ["serde", "cgmath/serde", "collision/eders", "specs/serde", "rhusics-cor
 
 [dependencies]
 cgmath = "0.16"
-collision = { version = "0.15" }
+collision = { version = "0.16" }
 rhusics-core = { version = "0.4.0-alpha1", path = "../rhusics-core", features = ["specs"] }
 specs = { version = "0.11.0-alpha4" }
 shred = { version = "0.7.0-alpha5" }

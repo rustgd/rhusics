@@ -9,7 +9,29 @@ use core::{ApplyAngular, BroadPhase, GetId, Inertia, NarrowPhase, PartialCrossPr
            PhysicsTime, Pose, Primitive};
 use specs::prelude::{Component, DispatcherBuilder, Entity, Tracked};
 
-/// Setup dispatch
+/// Create systems and add to a `Dispatcher` graph.
+///
+/// ### Parameters
+///
+/// - `dispatcher`: The dispatcher to add the systems to.
+/// - `broad_phase`: Broad phase to use
+/// - `narrow_phase`: Narrow phase to use
+/// - `spatial`: If spatial or basic collision detection should be used
+///
+/// ### Type parameters:
+///
+/// - `P`: Shape primitive
+/// - `T`: Pose (transform)
+/// - `B`: Bounding volume
+/// - `D`: Broad phase data, usually `TreeValueWrapped`.
+/// - `Y`: Collider
+/// - `V`: Broad phase algorithm
+/// - `N`: Narrow phase algorithm
+/// - `R`: Rotational quantity, `Basis2` or `Quaternion`
+/// - `A`: Angular velocity, `Scalar` or `Vector3`
+/// - `I`: Inertia, `Scalar` or `Matrix3`
+/// - `DT`: Time quantity, usually `DeltaTime`
+/// - `O`: Internal type used to abstract cross product for 2D vs 3D, `Scalar` or `Vector3`
 pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
     dispatcher: &mut DispatcherBuilder<'a, 'b>,
     broad_phase: V,
@@ -116,7 +138,26 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
     );
 }
 
-/// Setup dispatch for 2d
+/// Create systems for 2D and add to a `Dispatcher` graph.
+///
+/// ### Parameters
+///
+/// - `dispatcher`: The dispatcher to add the systems to.
+/// - `broad_phase`: Broad phase to use
+/// - `narrow_phase`: Narrow phase to use
+/// - `spatial`: If spatial or basic collision detection should be used
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type, `f32` or `f64`
+/// - `P`: Shape primitive
+/// - `T`: Pose (transform)
+/// - `B`: Bounding volume
+/// - `D`: Broad phase data, usually `TreeValueWrapped`.
+/// - `Y`: Collider
+/// - `V`: Broad phase algorithm
+/// - `N`: Narrow phase algorithm
+/// - `DT`: Time quantity, usually `DeltaTime`
 pub fn setup_dispatch_2d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
     dispatcher: &mut DispatcherBuilder<'a, 'b>,
     broad_phase: V,
@@ -166,7 +207,26 @@ pub fn setup_dispatch_2d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
     );
 }
 
-/// Setup dispatch for 3d
+/// Create systems for 3sD and add to a `Dispatcher` graph.
+///
+/// ### Parameters
+///
+/// - `dispatcher`: The dispatcher to add the systems to.
+/// - `broad_phase`: Broad phase to use
+/// - `narrow_phase`: Narrow phase to use
+/// - `spatial`: If spatial or basic collision detection should be used
+///
+/// ### Type parameters:
+///
+/// - `S`: Scalar type, `f32` or `f64`
+/// - `P`: Shape primitive
+/// - `T`: Pose (transform)
+/// - `B`: Bounding volume
+/// - `D`: Broad phase data, usually `TreeValueWrapped`.
+/// - `Y`: Collider
+/// - `V`: Broad phase algorithm
+/// - `N`: Narrow phase algorithm
+/// - `DT`: Time quantity, usually `DeltaTime`
 pub fn setup_dispatch_3d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
     dispatcher: &mut DispatcherBuilder<'a, 'b>,
     broad_phase: V,
