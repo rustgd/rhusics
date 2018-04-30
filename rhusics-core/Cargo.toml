@@ -18,7 +18,7 @@ eders = ["serde", "cgmath/serde", "collision/eders"]
 cgmath = "0.16"
 collision = { version = "0.16" }
 rhusics-transform = { version = "0.3.0-alpha1", path = "../rhusics-transform" }
-specs = { version = "0.11.0-alpha4", optional = true }
+specs = { version = "0.11.0-alpha5", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 
 [dev-dependencies]
