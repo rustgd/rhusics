@@ -11,9 +11,6 @@ description = "Physics library for use with `specs`"
 
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
-[features]
-eders = ["serde", "cgmath/serde", "collision/eders", "specs/serde", "rhusics-core/eders"]
-
 [dependencies]
 cgmath = "0.16"
 collision = { version = "0.16" }
@@ -23,6 +20,12 @@ shred = { version = "0.7.0-alpha5" }
 shred-derive = { version = "0.5.0-alpha1" }
 shrev = { version = "0.8" }
 serde = { version = "1.0", optional = true, features = ["derive"]}
+
+[target.'cfg(feature = "serde")'.dependencies]
+cgmath = { version = "0.16", features = ["serde"] }
+collision = { version = "0.16", features = ["eders"] }
+rhusics-core = { version = "0.4.0-alpha1", path = "../rhusics-core", features = ["specs", "serde"] }
+specs = { version = "0.11.0-alpha5", features = ["serde"] }
 
 [[example]]
 name = "basic2d"
