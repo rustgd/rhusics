@@ -13,7 +13,7 @@ use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicsTime, Pose,
 ///
 /// - `S`: Scalar
 #[derive(Debug)]
-#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct DeltaTime<S>
 where
     S: BaseFloat,

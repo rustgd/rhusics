@@ -42,6 +42,19 @@ where
     }
 }
 
+impl<S> Volume<S, S> for Square<S>
+where
+    S: BaseFloat + Inertia,
+{
+    fn get_mass(&self, material: &Material) -> Mass<S, S> {
+        let b: Aabb2<S> = self.compute_bound();
+        let mass = b.volume() * material.density();
+        let inertia =
+            mass * (b.dim().x * b.dim().x + b.dim().y * b.dim().y) / S::from(12.).unwrap();
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
 impl<S> Volume<S, S> for ConvexPolygon<S>
 where
     S: BaseFloat + Inertia,
@@ -83,6 +96,22 @@ where
 }
 
 impl<S> Volume<S, Matrix3<S>> for Cuboid<S>
+where
+    S: BaseFloat,
+{
+    fn get_mass(&self, material: &Material) -> Mass<S, Matrix3<S>> {
+        let b: Aabb3<S> = self.compute_bound();
+        let mass = b.volume() * material.density();
+        let x2 = b.dim().x * b.dim().x;
+        let y2 = b.dim().y * b.dim().y;
+        let z2 = b.dim().z * b.dim().z;
+        let mnorm = mass / S::from(12.).unwrap();
+        let inertia = Matrix3::from_diagonal(Vector3::new(y2 + z2, x2 + z2, x2 + y2) * mnorm);
+        Mass::new_with_inertia(mass, inertia)
+    }
+}
+
+impl<S> Volume<S, Matrix3<S>> for Cube<S>
 where
     S: BaseFloat,
 {
@@ -180,6 +209,7 @@ where
             Particle(_) | Line(_) => Mass::new(material.density()),
             Circle(ref circle) => circle.get_mass(material),
             Rectangle(ref rectangle) => rectangle.get_mass(material),
+            Square(ref square) => square.get_mass(material),
             ConvexPolygon(ref polygon) => polygon.get_mass(material),
         }
     }
@@ -242,6 +272,7 @@ where
             Particle(_) | Quad(_) => Mass::new(material.density()),
             Sphere(ref sphere) => sphere.get_mass(material),
             Cuboid(ref cuboid) => cuboid.get_mass(material),
+            Cube(ref cube) => cube.get_mass(material),
             Capsule(ref capsule) => capsule.get_mass(material),
             Cylinder(ref cylinder) => cylinder.get_mass(material),
             ConvexPolyhedron(ref polyhedra) => polyhedra.get_mass(material),

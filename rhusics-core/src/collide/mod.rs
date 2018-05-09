@@ -31,7 +31,7 @@ impl<'a> Collider for () {
 
 /// Control continuous mode for shapes
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
-#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum CollisionMode {
     /// Discrete collision mode
     Discrete,
@@ -97,7 +97,7 @@ where
 /// - `B`: Bounding volume type
 /// - `Y`: Shape type (see `Collider`)
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "eders", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct CollisionShape<P, T, B, Y = ()>
 where
     P: Primitive,

@@ -2,10 +2,13 @@
 
 ### v0.4
 
+- Update to new version of collision:
+  * BREAKING CHANGE: Primitive2 and Primitive3 have new variants
+- refactor: Rename feature `eders` to `serde`
 - fix: Crashed if a collision was detected, but the Entity was removed before collision resolution
 - feat: Implement Pose for cgmath::Decomposed
-- feat: Abstract the time ECS resource, to make it pluggable
-- refactor: Adapt ECS integration to new Specs
+- feat: Abstract the time ECS resource, to make it pluggable, BREAKING CHANGE
+- refactor: Adapt ECS integration to new Specs, BREAKING CHANGE
 
 ### v0.3
 
