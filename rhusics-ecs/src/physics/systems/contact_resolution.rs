@@ -27,7 +27,7 @@ use specs::prelude::{Component, Entity, Read, ReadStorage, Resources, System, Wr
 ///
 pub struct ContactResolutionSystem<P, R, I, A, O, T>
 where
-    P: EuclideanSpace,
+    P: EuclideanSpace + 'static,
     P::Diff: Debug,
 {
     contact_reader: Option<ReaderId<ContactEvent<Entity, P>>>,
