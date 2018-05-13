@@ -4,6 +4,7 @@
 
 - Update to new version of collision:
   * BREAKING CHANGE: Primitive2 and Primitive3 have new variants
+  * BREAKING CHANGE: Signature change of `GJK::intersect`
 - refactor: Rename feature `eders` to `serde`
 - fix: Crashed if a collision was detected, but the Entity was removed before collision resolution
 - feat: Implement Pose for cgmath::Decomposed
