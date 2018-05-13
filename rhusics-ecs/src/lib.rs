@@ -27,6 +27,8 @@
 
 extern crate cgmath;
 extern crate collision;
+#[macro_use]
+extern crate failure;
 extern crate rhusics_core as core;
 extern crate shred;
 extern crate shrev;
@@ -41,7 +43,7 @@ extern crate serde;
 
 pub use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
 pub use physics::{setup_dispatch, ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
-                  NextFrameSetupSystem, RigidBodyParts, WithRigidBody};
+                  NextFrameSetupSystem, RigidBodyCreationError, RigidBodyParts, WithRigidBody};
 
 pub mod collide2d;
 pub mod collide3d;

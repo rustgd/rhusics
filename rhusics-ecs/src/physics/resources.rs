@@ -3,6 +3,7 @@ use std::marker;
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
 use specs::prelude::{Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
+use specs::error::Error as SpecsError;
 
 use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicsTime, Pose, Primitive,
            RigidBody, Velocity};
@@ -199,6 +200,20 @@ where
     m: marker::PhantomData<R>,
 }
 
+/// Error returned when rigid body setup fails
+#[derive(Debug, Fail)]
+pub enum RigidBodyCreationError {
+    /// Error returned when attempted to initialise a rigid body on a dead entity
+    #[fail(display = "dead entity")]
+    DeadEntity,
+}
+
+impl From<SpecsError> for RigidBodyCreationError {
+    fn from(_: SpecsError) -> Self {
+        RigidBodyCreationError::DeadEntity
+    }
+}
+
 impl<'a, P, Y, R, V, A, I, B, T> RigidBodyParts<'a, P, Y, R, V, A, I, B, T>
 where
     T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
@@ -225,11 +240,12 @@ where
         pose: T,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
-    ) {
-        self.shapes.insert(entity, shape);
-        self.poses.insert(entity, pose);
-        self.bodies.insert(entity, body);
-        self.masses.insert(entity, mass);
+    ) -> Result<(), RigidBodyCreationError> {
+        self.shapes.insert(entity, shape)?;
+        self.poses.insert(entity, pose)?;
+        self.bodies.insert(entity, body)?;
+        self.masses.insert(entity, mass)?;
+        Ok(())
     }
 
     /// Setup dynamic rigid body for given entity.
@@ -241,13 +257,14 @@ where
         velocity: Velocity<V, A>,
         body: RigidBody<V::Scalar>,
         mass: Mass<V::Scalar, I>,
-    ) {
-        self.static_body(entity, shape, pose.clone(), body, mass);
-        self.next_poses.insert(entity, NextFrame { value: pose });
-        self.velocities.insert(entity, velocity.clone());
+    ) -> Result<(), RigidBodyCreationError> {
+        self.static_body(entity, shape, pose.clone(), body, mass)?;
+        self.next_poses.insert(entity, NextFrame { value: pose })?;
+        self.velocities.insert(entity, velocity.clone())?;
         self.next_velocities
-            .insert(entity, NextFrame { value: velocity });
-        self.forces.insert(entity, ForceAccumulator::<V, A>::new());
+            .insert(entity, NextFrame { value: velocity })?;
+        self.forces.insert(entity, ForceAccumulator::<V, A>::new())?;
+        Ok(())
     }
 }
 

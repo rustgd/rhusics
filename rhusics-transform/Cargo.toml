@@ -13,4 +13,4 @@ keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [dependencies]
 cgmath = "0.16"
-collision = "0.17"
+collision = "0.18"
