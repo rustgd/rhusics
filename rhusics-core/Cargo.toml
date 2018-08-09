@@ -15,7 +15,7 @@ keywords = ["gamedev", "cgmath", "specs", "physics"]
 cgmath = "0.16"
 collision = { version = "0.18" }
 rhusics-transform = { version = "0.3.0", path = "../rhusics-transform" }
-specs = { version = "0.11", optional = true }
+specs = { version = "0.12", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 
 [target.'cfg(feature = "serde")'.dependencies]
