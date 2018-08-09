@@ -2,7 +2,7 @@ use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
-use specs::prelude::{Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
+use specs::prelude::{Builder, Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
 use specs::error::Error as SpecsError;
 
 use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicsTime, Pose, Primitive,

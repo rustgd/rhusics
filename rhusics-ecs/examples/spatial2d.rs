@@ -9,7 +9,7 @@ use cgmath::{Point2, Rad, Rotation2, Transform, Vector2};
 use collision::Ray2;
 use collision::dbvt::query_ray_closest;
 use shrev::EventChannel;
-use specs::prelude::{ReadExpect, System, World};
+use specs::prelude::{Builder, ReadExpect, System, World};
 
 use rhusics_core::{Pose, RigidBody};
 use rhusics_ecs::WithRigidBody;

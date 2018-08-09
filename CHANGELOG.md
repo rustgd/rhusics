@@ -1,5 +1,9 @@
 ## Changelog
 
+### Unreleased
+
+- Update specs version to 0.12
+
 ### v0.4
 
 - Update to new version of collision:

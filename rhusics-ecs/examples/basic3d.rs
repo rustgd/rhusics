@@ -6,7 +6,7 @@ extern crate specs;
 
 use cgmath::{Point3, Quaternion, Rad, Rotation3, Transform};
 use shrev::EventChannel;
-use specs::prelude::{RunNow, World};
+use specs::prelude::{Builder, RunNow, World};
 
 use rhusics_core::Pose;
 use rhusics_ecs::collide3d::{BasicCollisionSystem3, BodyPose3, BroadBruteForce3, CollisionMode,
@@ -30,7 +30,8 @@ pub fn main() {
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
         ))
-        .with(BodyPose3::<f32>::one());
+        .with(BodyPose3::<f32>::one())
+        .build();
 
     world
         .create_entity()
@@ -42,7 +43,8 @@ pub fn main() {
         .with(BodyPose3::<f32>::new(
             Point3::new(3., 2., 0.),
             Quaternion::from_angle_z(Rad(0.)),
-        ));
+        ))
+        .build();
 
     system.run_now(&world.res);
     println!(
