@@ -6,17 +6,18 @@ extern crate shrev;
 extern crate specs;
 
 use cgmath::{Point3, Quaternion, Rad, Rotation3, Transform, Vector3};
-use collision::Ray3;
 use collision::dbvt::query_ray_closest;
+use collision::Ray3;
 use shrev::EventChannel;
 use specs::prelude::{Builder, ReadExpect, System, World};
 
-use rhusics_core::{Pose, RigidBody};
-use rhusics_ecs::WithRigidBody;
-use rhusics_ecs::physics3d::{BodyPose3, CollisionMode, CollisionShape3, CollisionStrategy,
-                             ContactEvent3, ContactResolutionSystem3, Cuboid,
-                             CurrentFrameUpdateSystem3, DynamicBoundingVolumeTree3, GJK3, Mass3,
-                             NextFrameSetupSystem3, SpatialCollisionSystem3, SpatialSortingSystem3};
+use rhusics_core::{PhysicalEntity, Pose};
+use rhusics_ecs::physics3d::{
+    BodyPose3, CollisionMode, CollisionShape3, CollisionStrategy, ContactEvent3,
+    ContactResolutionSystem3, Cuboid, CurrentFrameUpdateSystem3, DynamicBoundingVolumeTree3, GJK3,
+    Mass3, NextFrameSetupSystem3, SpatialCollisionSystem3, SpatialSortingSystem3,
+};
+use rhusics_ecs::WithPhysics;
 
 struct RayCastSystem;
 
@@ -50,28 +51,28 @@ pub fn main() {
 
     world
         .create_entity()
-        .with_static_rigid_body(
+        .with_static_physical_entity(
             CollisionShape3::<f32, BodyPose3<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Cuboid::new(10., 10., 10.).into(),
             ),
             BodyPose3::one(),
-            RigidBody::default(),
+            PhysicalEntity::default(),
             Mass3::new(1.),
         )
         .build();
 
     world
         .create_entity()
-        .with_static_rigid_body(
+        .with_static_physical_entity(
             CollisionShape3::<f32, BodyPose3<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Cuboid::new(10., 10., 10.).into(),
             ),
             BodyPose3::new(Point3::new(3., 2., 0.), Quaternion::from_angle_z(Rad(0.))),
-            RigidBody::default(),
+            PhysicalEntity::default(),
             Mass3::new(1.),
         )
         .build();

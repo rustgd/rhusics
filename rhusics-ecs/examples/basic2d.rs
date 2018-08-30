@@ -9,8 +9,10 @@ use shrev::EventChannel;
 use specs::prelude::{Builder, RunNow, World};
 
 use rhusics_core::Pose;
-use rhusics_ecs::collide2d::{BasicCollisionSystem2, BodyPose2, BroadBruteForce2, CollisionMode,
-                             CollisionShape2, CollisionStrategy, ContactEvent2, GJK2, Rectangle};
+use rhusics_ecs::collide2d::{
+    BasicCollisionSystem2, BodyPose2, BroadBruteForce2, CollisionMode, CollisionShape2,
+    CollisionStrategy, ContactEvent2, GJK2, Rectangle,
+};
 
 pub fn main() {
     let mut world = World::new();

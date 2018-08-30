@@ -3,13 +3,13 @@
 pub use collision::algorithm::minkowski::GJK2;
 pub use collision::primitive::{Circle, ConvexPolygon, Particle2, Rectangle};
 
-pub use core::{CollisionMode, CollisionStrategy};
 pub use core::collide2d::*;
+pub use core::{CollisionMode, CollisionStrategy};
 
 use cgmath::Point2;
-use collision::Aabb2;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive2;
+use collision::Aabb2;
 use specs::prelude::Entity;
 
 use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};

@@ -3,8 +3,10 @@ use std::marker;
 use std::ops::Mul;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use core::{next_frame_integration, next_frame_pose, ApplyAngular, ForceAccumulator, Inertia, Mass,
-           NextFrame, PhysicsTime, Pose, Velocity};
+use core::{
+    next_frame_integration, next_frame_pose, ApplyAngular, ForceAccumulator, Inertia, Mass,
+    NextFrame, PhysicalEntity, PhysicsTime, Pose, Velocity, WorldParameters,
+};
 use specs::prelude::{Component, Join, Read, ReadStorage, System, WriteStorage};
 
 /// Setup the next frames positions and velocities.
@@ -56,6 +58,8 @@ where
 {
     type SystemData = (
         Read<'a, D>,
+        Read<'a, WorldParameters<P::Diff, P::Scalar>>,
+        ReadStorage<'a, PhysicalEntity<P::Scalar>>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, T>,
@@ -64,17 +68,33 @@ where
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (time, masses, mut next_velocities, poses, mut next_poses, mut forces) = data;
+        let (
+            time,
+            params,
+            entities,
+            masses,
+            mut next_velocities,
+            poses,
+            mut next_poses,
+            mut forces,
+        ) = data;
 
         // Do force integration
         next_frame_integration(
-            (&mut next_velocities, &next_poses, &mut forces, &masses).join(),
+            (
+                &mut next_velocities,
+                &next_poses,
+                &mut forces,
+                &masses,
+                &entities,
+            ).join(),
+            &*params,
             time.delta_seconds(),
         );
 
         // Compute next frames position
         next_frame_pose(
-            (&next_velocities, &poses, &mut next_poses).join(),
+            (&next_velocities, &poses, &mut next_poses, &entities).join(),
             time.delta_seconds(),
         );
     }

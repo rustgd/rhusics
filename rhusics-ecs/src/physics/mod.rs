@@ -4,5 +4,5 @@ pub use self::setup::*;
 pub use self::systems::*;
 
 mod resources;
-mod systems;
 mod setup;
+mod systems;

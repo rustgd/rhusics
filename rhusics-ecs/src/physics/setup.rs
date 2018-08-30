@@ -1,12 +1,16 @@
 use std::fmt::Debug;
 use std::ops::{Add, Mul, Sub};
 
-use cgmath::{BaseFloat, Basis2, EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, Quaternion,
-             Rotation, Transform, Vector3, Zero};
-use collision::{Bound, ComputeBound, Contains, Discrete, HasBound, SurfaceArea, Union};
+use cgmath::{
+    BaseFloat, Basis2, EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, Quaternion, Rotation,
+    Transform, Vector3, Zero,
+};
 use collision::dbvt::TreeValue;
-use core::{ApplyAngular, BroadPhase, GetId, Inertia, NarrowPhase, PartialCrossProduct,
-           PhysicsTime, Pose, Primitive};
+use collision::{Bound, ComputeBound, Contains, Discrete, HasBound, SurfaceArea, Union};
+use core::{
+    ApplyAngular, BroadPhase, GetId, Inertia, NarrowPhase, PartialCrossProduct, PhysicsTime, Pose,
+    Primitive,
+};
 use specs::prelude::{Component, DispatcherBuilder, Entity, Tracked};
 
 /// Create systems and add to a `Dispatcher` graph.
@@ -43,12 +47,13 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
     P: Primitive + ComputeBound<B> + Send + Sync + 'static,
     P::Point: Debug + Send + Sync + 'static,
     <P::Point as EuclideanSpace>::Scalar: BaseFloat + Send + Sync + 'static,
-    <P::Point as EuclideanSpace>::Diff: InnerSpace
-        + PartialCrossProduct<<P::Point as EuclideanSpace>::Diff, Output = O>
-        + Debug
-        + Send
-        + Sync
-        + 'static,
+    <P::Point as EuclideanSpace>::Diff:
+        InnerSpace
+            + PartialCrossProduct<<P::Point as EuclideanSpace>::Diff, Output = O>
+            + Debug
+            + Send
+            + Sync
+            + 'static,
     T: Debug + Component + Pose<P::Point, R> + Transform<P::Point> + Send + Sync + Clone + 'static,
     T::Storage: Tracked,
     Y: Default + Send + Sync + 'static,
@@ -78,9 +83,9 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
     I: Inertia<Orientation = R> + Mul<A, Output = A> + Mul<O, Output = O> + Send + Sync + 'static,
     A: Mul<<P::Point as EuclideanSpace>::Scalar, Output = A>
         + PartialCrossProduct<
-        <P::Point as EuclideanSpace>::Diff,
-        Output = <P::Point as EuclideanSpace>::Diff,
-    >
+            <P::Point as EuclideanSpace>::Diff,
+            Output = <P::Point as EuclideanSpace>::Diff,
+        >
         + Zero
         + Clone
         + Copy
@@ -89,16 +94,18 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
         + 'static,
     DT: PhysicsTime<<P::Point as EuclideanSpace>::Scalar> + Default + Send + Sync + 'static,
     O: PartialCrossProduct<
-        <P::Point as EuclideanSpace>::Diff,
-        Output = <P::Point as EuclideanSpace>::Diff,
-    >
+            <P::Point as EuclideanSpace>::Diff,
+            Output = <P::Point as EuclideanSpace>::Diff,
+        >
         + Send
         + Sync
         + 'static,
     for<'c> &'c A: Sub<O, Output = A> + Add<O, Output = A>,
 {
-    use {BasicCollisionSystem, ContactResolutionSystem, CurrentFrameUpdateSystem,
-         NextFrameSetupSystem, SpatialCollisionSystem, SpatialSortingSystem};
+    use {
+        BasicCollisionSystem, ContactResolutionSystem, CurrentFrameUpdateSystem,
+        NextFrameSetupSystem, SpatialCollisionSystem, SpatialSortingSystem,
+    };
     dispatcher.add(
         CurrentFrameUpdateSystem::<P::Point, R, A, T>::new(),
         "physics_solver_system",
@@ -227,8 +234,8 @@ pub fn setup_dispatch_2d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
 /// - `V`: Broad phase algorithm
 /// - `N`: Narrow phase algorithm
 /// - `DT`: Time quantity, usually `DeltaTime`
-pub fn setup_dispatch_3d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
-    dispatcher: &mut DispatcherBuilder<'a, 'b>,
+pub fn setup_dispatch_3d<S, P, T, B, D, Y, V, N, DT>(
+    dispatcher: &mut DispatcherBuilder,
     broad_phase: V,
     narrow_phase: N,
     spatial: bool,
@@ -279,12 +286,12 @@ pub fn setup_dispatch_3d<'a, 'b, S, P, T, B, D, Y, V, N, DT>(
 mod tests {
 
     use super::*;
-    use DeltaTime;
     use collide2d::{BodyPose2, GJK2, SweepAndPrune2};
     use collide3d::{BodyPose3, GJK3, SweepAndPrune3};
-    use collision::{Aabb2, Aabb3};
     use collision::dbvt::TreeValueWrapped;
     use collision::primitive::{Primitive2, Primitive3};
+    use collision::{Aabb2, Aabb3};
+    use DeltaTime;
 
     #[test]
     fn test_dispatch() {

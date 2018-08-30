@@ -3,13 +3,13 @@
 pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
-pub use core::{CollisionMode, CollisionStrategy};
 pub use core::collide3d::*;
+pub use core::{CollisionMode, CollisionStrategy};
 
 use cgmath::Point3;
-use collision::Aabb3;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValueWrapped};
 use collision::primitive::Primitive3;
+use collision::Aabb3;
 use specs::prelude::Entity;
 
 use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};

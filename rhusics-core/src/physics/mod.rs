@@ -12,17 +12,68 @@ pub mod simple;
 
 mod resolution;
 
-mod volumes;
-mod mass;
-mod velocity;
 mod force;
+mod mass;
 mod util;
+mod velocity;
+mod volumes;
 
-use cgmath::BaseFloat;
+use cgmath::{BaseFloat, VectorSpace};
+
+/// Global parameters for the physics world
+pub struct WorldParameters<V, S> {
+    gravity: V,
+    damping: S,
+}
+
+impl<V, S> Default for WorldParameters<V, S>
+where
+    V: VectorSpace,
+    S: BaseFloat,
+{
+    fn default() -> Self {
+        WorldParameters::new(V::zero())
+    }
+}
+
+impl<V, S> WorldParameters<V, S>
+where
+    V: VectorSpace,
+    S: BaseFloat,
+{
+    /// Setup global parameters for the physics world
+    pub fn new(gravity: V) -> Self {
+        WorldParameters {
+            gravity,
+            damping: S::from(0.99).unwrap(),
+        }
+    }
+
+    /// Set global damping, can be overriden by individual physical entities
+    pub fn with_damping(mut self, damping: S) -> Self {
+        self.damping = damping;
+        self
+    }
+
+    /// Get gravity
+    pub fn gravity(&self) -> V {
+        self.gravity
+    }
+
+    /// Get global damping
+    pub fn damping(&self) -> S {
+        self.damping
+    }
+
+    /// Get damping for a specific physics entity
+    pub fn entity_damping(&self, body: Option<S>) -> S {
+        body.unwrap_or(self.damping)
+    }
+}
 
 /// Physics material
 ///
-/// Used to describe physical properties of rigid bodies, such as density and restitution.
+/// Used to describe physical properties of physical entities, such as density and restitution.
 ///
 /// The default material has density 1, such that only the volume affects its mass, and restitution
 /// 1, such that all energy is preserved in collisions.
@@ -101,33 +152,55 @@ impl Material {
     }
 }
 
-/// Rigid body
+/// Physical entity
 #[derive(Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
-pub struct RigidBody<S> {
+pub struct PhysicalEntity<S> {
     material: Material,
     gravity_scale: S,
+    damping: Option<S>,
+    active: bool,
 }
 
-impl<S> Default for RigidBody<S>
+impl<S> Default for PhysicalEntity<S>
 where
     S: BaseFloat,
 {
     fn default() -> Self {
-        RigidBody::new(Material::default(), S::one())
+        PhysicalEntity::new(Material::default())
     }
 }
 
-impl<S> RigidBody<S>
+impl<S> PhysicalEntity<S>
 where
     S: BaseFloat,
 {
-    /// Create new rigid body
-    pub fn new(material: Material, gravity_scale: S) -> Self {
+    /// Create new physical entity
+    ///
+    /// ## Parameters:
+    ///
+    /// - material: physical material (`Material`)
+    pub fn new(material: Material) -> Self {
         Self {
             material,
-            gravity_scale,
+            gravity_scale: S::one(),
+            damping: None,
+            active: true,
         }
+    }
+
+    /// Set the amount that gravity will affect this entity
+    /// The gravity constant is set globally for the physics world.
+    pub fn with_gravity_scale(mut self, gravity_scale: S) -> Self {
+        self.gravity_scale = gravity_scale;
+        self
+    }
+
+    /// Override the velocity damping for the entity
+    /// The physics world control have a global damping set which is overriden by this.
+    pub fn with_damping(mut self, damping: S) -> Self {
+        self.damping = Some(damping);
+        self
     }
 
     /// Get material
@@ -138,5 +211,25 @@ where
     /// Get gravity scale
     pub fn gravity_scale(&self) -> S {
         self.gravity_scale
+    }
+
+    /// Get entity specific damping
+    pub fn damping(&self) -> Option<S> {
+        self.damping
+    }
+
+    /// Is entity active ?
+    pub fn active(&self) -> bool {
+        self.active
+    }
+
+    /// Set entity to active, meaning physics will act on it
+    pub fn activate(&mut self) {
+        self.active = true;
+    }
+
+    /// Set entity to inactive, meaning physics will not act on it
+    pub fn deactivate(&mut self) {
+        self.active = false;
     }
 }

@@ -5,11 +5,13 @@ pub use core::physics3d::*;
 pub use physics::setup_dispatch_3d;
 
 use cgmath::{Matrix3, Point3, Quaternion, Vector3};
-use collision::Aabb3;
 use collision::primitive::Primitive3;
+use collision::Aabb3;
 
-use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
-              RigidBodyParts};
+use physics::{
+    ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
+    PhysicalEntityParts,
+};
 
 /// Current frame integrator system for 2D
 ///
@@ -45,7 +47,7 @@ pub type NextFrameSetupSystem3<S, T> =
 /// - `S`: Scalar type (f32 or f64)
 /// - `T`: Transform type (`BodyPose3` or similar)
 /// - `Y`: Collision shape type, see `Collider`
-pub type RigidBodyParts3<'a, S, T, Y> = RigidBodyParts<
+pub type PhysicalEntityParts3<'a, S, T, Y> = PhysicalEntityParts<
     'a,
     Primitive3<S>,
     Y,

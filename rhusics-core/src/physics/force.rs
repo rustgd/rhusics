@@ -2,7 +2,7 @@ use cgmath::{BaseFloat, EuclideanSpace, Transform, VectorSpace, Zero};
 
 use super::PartialCrossProduct;
 
-/// Force accumulator for a rigid body.
+/// Force accumulator for a physical entity.
 ///
 /// Will be consumed when doing force integration for the next frame.
 ///

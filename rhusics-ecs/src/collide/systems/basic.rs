@@ -5,8 +5,10 @@ use collision::prelude::*;
 use shrev::EventChannel;
 use specs::prelude::{Component, Entities, Entity, Join, ReadStorage, System, Write, WriteStorage};
 
-use core::{basic_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
-           NarrowPhase, NextFrame, Primitive};
+use core::{
+    basic_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId, NarrowPhase,
+    NextFrame, Primitive,
+};
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).

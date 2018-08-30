@@ -2,7 +2,7 @@ use std::fmt::Debug;
 use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use core::{NextFrame, Pose, Velocity};
+use core::{NextFrame, PhysicalEntity, Pose, Velocity};
 use specs::prelude::{Component, Join, ReadStorage, System, WriteStorage};
 
 /// Current frame update system.
@@ -50,6 +50,7 @@ where
     T: Pose<P, R> + Component + Clone + Send + Sync + 'static,
 {
     type SystemData = (
+        ReadStorage<'a, PhysicalEntity<P::Scalar>>,
         WriteStorage<'a, Velocity<P::Diff, A>>,
         ReadStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         WriteStorage<'a, T>,
@@ -57,15 +58,21 @@ where
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (mut velocities, next_velocities, mut poses, next_poses) = data;
+        let (entities, mut velocities, next_velocities, mut poses, next_poses) = data;
 
         // Update current pose
-        for (next, pose) in (&next_poses, &mut poses).join() {
+        for (_, next, pose) in (&entities, &next_poses, &mut poses)
+            .join()
+            .filter(|(e, ..)| e.active())
+        {
             *pose = next.value.clone();
         }
 
         // Update current velocity
-        for (next, velocity) in (&next_velocities, &mut velocities).join() {
+        for (_, next, velocity) in (&entities, &next_velocities, &mut velocities)
+            .join()
+            .filter(|(e, ..)| e.active())
+        {
             *velocity = next.value.clone();
         }
     }

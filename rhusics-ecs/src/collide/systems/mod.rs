@@ -5,5 +5,5 @@ pub use self::spatial_collision::SpatialCollisionSystem;
 pub use self::spatial_sort::SpatialSortingSystem;
 
 mod basic;
-mod spatial_sort;
 mod spatial_collision;
+mod spatial_sort;

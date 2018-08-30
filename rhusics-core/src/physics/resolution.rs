@@ -2,8 +2,8 @@ use std::fmt::Debug;
 use std::marker;
 use std::ops::{Add, Mul, Sub};
 
-use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, One, Rotation, Zero};
 use cgmath::num_traits::{Float, NumCast};
+use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, One, Rotation, Zero};
 use collision::Contact;
 
 use super::{Inertia, Mass, Material, PartialCrossProduct, Velocity};
@@ -326,8 +326,8 @@ mod tests {
     use collision::{CollisionStrategy, Contact};
 
     use super::*;
-    use BodyPose;
     use collide::ContactEvent;
+    use BodyPose;
 
     #[test]
     fn test_resolve_2d_f32() {
