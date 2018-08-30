@@ -5,11 +5,13 @@ pub use core::physics2d::*;
 pub use physics::setup_dispatch_2d;
 
 use cgmath::{Basis2, Point2, Vector2};
-use collision::Aabb2;
 use collision::primitive::Primitive2;
+use collision::Aabb2;
 
-use physics::{ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
-              RigidBodyParts};
+use physics::{
+    ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime, NextFrameSetupSystem,
+    PhysicalEntityParts,
+};
 
 /// Current frame integrator system for 2D
 ///
@@ -43,5 +45,5 @@ pub type NextFrameSetupSystem2<S, T> =
 /// - `S`: Scalar type (f32 or f64)
 /// - `T`: Transform type (`BodyPose2` or similar)
 /// - `Y`: Collision shape type, see `Collider`
-pub type RigidBodyParts2<'a, S, T, Y> =
-    RigidBodyParts<'a, Primitive2<S>, Y, Basis2<S>, Vector2<S>, S, S, Aabb2<S>, T>;
+pub type PhysicalEntityParts2<'a, S, T, Y> =
+    PhysicalEntityParts<'a, Primitive2<S>, Y, Basis2<S>, Vector2<S>, S, S, Aabb2<S>, T>;

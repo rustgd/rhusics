@@ -2,13 +2,14 @@ use std::collections::HashMap;
 use std::fmt::Debug;
 use std::marker::PhantomData;
 
-use cgmath::BaseFloat;
 use cgmath::prelude::*;
+use cgmath::BaseFloat;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
-use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, RemovedFlag, Resources, System, Tracked, Write,
-                     WriteStorage};
+use specs::prelude::{
+    BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag, ReadStorage, ReaderId,
+    RemovedFlag, Resources, System, Tracked, Write, WriteStorage,
+};
 
 use core::{CollisionShape, NextFrame, Primitive};
 

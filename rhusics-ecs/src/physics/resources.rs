@@ -2,11 +2,13 @@ use std::marker;
 
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
-use specs::prelude::{Builder, Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
 use specs::error::Error as SpecsError;
+use specs::prelude::{Builder, Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
 
-use core::{CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicsTime, Pose, Primitive,
-           RigidBody, Velocity};
+use core::{
+    CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicalEntity, PhysicsTime, Pose,
+    Primitive, Velocity,
+};
 
 /// Time step resource
 ///
@@ -43,9 +45,9 @@ where
     }
 }
 
-/// Adds rigid body builder functions to `EntityBuilder`
-pub trait WithRigidBody {
-    /// Add dynamic rigid body components to entity
+/// Adds physical entity builder functions to `EntityBuilder`
+pub trait WithPhysics {
+    /// Add dynamic physical entity components to entity
     ///
     /// ### Type parameters:
     ///
@@ -57,12 +59,12 @@ pub trait WithRigidBody {
     /// - `I`: Inertia
     /// - `B`: Bounding volume
     /// - `T`: Transform
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
+    fn with_dynamic_physical_entity<P, Y, R, V, A, I, B, T>(
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
         velocity: Velocity<V, A>,
-        body: RigidBody<V::Scalar>,
+        body: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
@@ -77,7 +79,7 @@ pub trait WithRigidBody {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static;
 
-    /// Add static rigid body components to entity
+    /// Add static physical entity components to entity
     ///
     /// ### Type parameters:
     ///
@@ -88,11 +90,11 @@ pub trait WithRigidBody {
     /// - `I`: Inertia
     /// - `B`: Bounding volume
     /// - `T`: Transform
-    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
+    fn with_static_physical_entity<S, P, Y, R, I, B, T>(
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
-        body: RigidBody<S>,
+        body: PhysicalEntity<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
@@ -106,13 +108,13 @@ pub trait WithRigidBody {
         I: Send + Sync + 'static;
 }
 
-impl<'a> WithRigidBody for EntityBuilder<'a> {
-    fn with_dynamic_rigid_body<P, Y, R, V, A, I, B, T>(
+impl<'a> WithPhysics for EntityBuilder<'a> {
+    fn with_dynamic_physical_entity<P, Y, R, V, A, I, B, T>(
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
         velocity: Velocity<V, A>,
-        body: RigidBody<V::Scalar>,
+        body: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
@@ -127,18 +129,18 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.with_static_rigid_body(shape, pose.clone(), body, mass)
+        self.with_static_physical_entity(shape, pose.clone(), body, mass)
             .with(NextFrame { value: pose })
             .with(velocity.clone())
             .with(NextFrame { value: velocity })
             .with(ForceAccumulator::<V, A>::new())
     }
 
-    fn with_static_rigid_body<S, P, Y, R, I, B, T>(
+    fn with_static_physical_entity<S, P, Y, R, I, B, T>(
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
-        body: RigidBody<S>,
+        body: PhysicalEntity<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
@@ -155,7 +157,7 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
     }
 }
 
-/// SystemData for easier creation of rigid bodies.
+/// SystemData for easier creation of physical entities.
 ///
 /// ### Type parameters:
 ///
@@ -168,7 +170,7 @@ impl<'a> WithRigidBody for EntityBuilder<'a> {
 /// - `B`: Bounding volume
 /// - `T`: Transform
 #[derive(SystemData)]
-pub struct RigidBodyParts<'a, P, Y, R, V, A, I, B, T>
+pub struct PhysicalEntityParts<'a, P, Y, R, V, A, I, B, T>
 where
     T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
     P: Primitive + Send + Sync + 'static,
@@ -185,8 +187,8 @@ where
     pub shapes: WriteStorage<'a, CollisionShape<P, T, B, Y>>,
     /// Body transforms
     pub poses: WriteStorage<'a, T>,
-    /// Bodies
-    pub bodies: WriteStorage<'a, RigidBody<V::Scalar>>,
+    /// Physical entities
+    pub entities: WriteStorage<'a, PhysicalEntity<V::Scalar>>,
     /// Mass
     pub masses: WriteStorage<'a, Mass<V::Scalar, I>>,
     /// Velocity
@@ -200,21 +202,21 @@ where
     m: marker::PhantomData<R>,
 }
 
-/// Error returned when rigid body setup fails
+/// Error returned when physical entity setup fails
 #[derive(Debug, Fail)]
-pub enum RigidBodyCreationError {
-    /// Error returned when attempted to initialise a rigid body on a dead entity
+pub enum PhysicalEntityCreationError {
+    /// Error returned when attempted to initialise a physical entity on a dead entity
     #[fail(display = "dead entity")]
     DeadEntity,
 }
 
-impl From<SpecsError> for RigidBodyCreationError {
+impl From<SpecsError> for PhysicalEntityCreationError {
     fn from(_: SpecsError) -> Self {
-        RigidBodyCreationError::DeadEntity
+        PhysicalEntityCreationError::DeadEntity
     }
 }
 
-impl<'a, P, Y, R, V, A, I, B, T> RigidBodyParts<'a, P, Y, R, V, A, I, B, T>
+impl<'a, P, Y, R, V, A, I, B, T> PhysicalEntityParts<'a, P, Y, R, V, A, I, B, T>
 where
     T: Pose<P::Point, R> + Clone + Component + Send + Sync + 'static,
     P: Primitive + Send + Sync + 'static,
@@ -227,38 +229,38 @@ where
     I: Send + Sync + 'static,
     R: Rotation<P::Point> + Send + Sync + 'static,
 {
-    /// Extract rigid body storage from `World`
+    /// Extract physical entity storage from `World`
     pub fn new(world: &'a World) -> Self {
         Self::fetch(&world.res)
     }
 
-    /// Setup static rigid body for given entity.
+    /// Setup static physical entity for given entity.
     pub fn static_body(
         &mut self,
         entity: Entity,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
-        body: RigidBody<V::Scalar>,
+        physical_entity: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
-    ) -> Result<(), RigidBodyCreationError> {
+    ) -> Result<(), PhysicalEntityCreationError> {
         self.shapes.insert(entity, shape)?;
         self.poses.insert(entity, pose)?;
-        self.bodies.insert(entity, body)?;
+        self.entities.insert(entity, physical_entity)?;
         self.masses.insert(entity, mass)?;
         Ok(())
     }
 
-    /// Setup dynamic rigid body for given entity.
+    /// Setup dynamic physical entity for given entity.
     pub fn dynamic_body(
         &mut self,
         entity: Entity,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
         velocity: Velocity<V, A>,
-        body: RigidBody<V::Scalar>,
+        physical_entity: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
-    ) -> Result<(), RigidBodyCreationError> {
-        self.static_body(entity, shape, pose.clone(), body, mass)?;
+    ) -> Result<(), PhysicalEntityCreationError> {
+        self.static_body(entity, shape, pose.clone(), physical_entity, mass)?;
         self.next_poses.insert(entity, NextFrame { value: pose })?;
         self.velocities.insert(entity, velocity.clone())?;
         self.next_velocities
@@ -270,14 +272,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::RigidBodyParts;
+    use super::PhysicalEntityParts;
     use cgmath::{Matrix3, Quaternion, Vector3};
-    use collision::Aabb3;
     use collision::primitive::Primitive3;
+    use collision::Aabb3;
     use core::collide3d::BodyPose3;
     use specs::prelude::{SystemData, World};
 
-    type RigidBodyPartsTest<'a> = RigidBodyParts<
+    type PhysicalEntityPartsTest<'a> = PhysicalEntityParts<
         'a,
         Primitive3<f32>,
         (),
@@ -292,7 +294,7 @@ mod tests {
     #[test]
     fn test() {
         let mut world = World::new();
-        RigidBodyPartsTest::setup(&mut world.res);
-        RigidBodyPartsTest::new(&world);
+        PhysicalEntityPartsTest::setup(&mut world.res);
+        PhysicalEntityPartsTest::new(&world);
     }
 }

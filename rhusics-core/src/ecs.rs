@@ -1,14 +1,14 @@
 //! ECS Component declarations for data structures in the crate, this needs to be here and not in
 //! rhusics-ecs because of the orphan rule.
 
-use cgmath::BaseFloat;
 use cgmath::prelude::*;
+use cgmath::BaseFloat;
 use collision::prelude::*;
 use specs::prelude::{Component, DenseVecStorage, FlaggedStorage};
 
-use {BodyPose, NextFrame};
 use collide::CollisionShape;
-use physics::{ForceAccumulator, Mass, RigidBody, Velocity};
+use physics::{ForceAccumulator, Mass, PhysicalEntity, Velocity};
+use {BodyPose, NextFrame};
 
 impl<P, R> Component for BodyPose<P, R>
 where
@@ -52,7 +52,7 @@ where
     type Storage = DenseVecStorage<Self>;
 }
 
-impl<S> Component for RigidBody<S>
+impl<S> Component for PhysicalEntity<S>
 where
     S: Send + Sync + 'static,
 {

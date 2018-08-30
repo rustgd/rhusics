@@ -5,11 +5,11 @@
 use std::fmt::Debug;
 use std::ops::Neg;
 
-use cgmath::BaseFloat;
 use cgmath::prelude::*;
-use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
+use cgmath::BaseFloat;
 use collision::algorithm::minkowski::{SimplexProcessor, EPA, GJK};
 use collision::prelude::*;
+use collision::{CollisionStrategy, Contact, Interpolate, Primitive};
 
 use collide::{Collider, CollisionData, CollisionMode, CollisionShape, ContactEvent};
 
@@ -99,7 +99,9 @@ where
         right: &CollisionShape<P, T, B, Y>,
         right_transform: &T,
     ) -> Option<Contact<P::Point>> {
-        if !left.enabled || !right.enabled || left.primitives.is_empty()
+        if !left.enabled
+            || !right.enabled
+            || left.primitives.is_empty()
             || right.primitives.is_empty()
             || !left.ty.should_generate_contacts(&right.ty)
         {
@@ -200,7 +202,9 @@ where
             let right_pose = data.get_pose(right);
             let left_next_pose = data.get_next_pose(left);
             let right_next_pose = data.get_next_pose(right);
-            if left_shape.is_none() || right_shape.is_none() || left_pose.is_none()
+            if left_shape.is_none()
+                || right_shape.is_none()
+                || left_pose.is_none()
                 || right_pose.is_none()
             {
                 None
@@ -224,12 +228,12 @@ where
 mod tests {
 
     use cgmath::{BaseFloat, Basis2, Decomposed, Rad, Rotation2, Vector2};
-    use collision::Aabb2;
     use collision::algorithm::minkowski::GJK2;
     use collision::primitive::Rectangle;
+    use collision::Aabb2;
 
-    use collide::*;
     use collide::narrow::NarrowPhase;
+    use collide::*;
 
     fn transform<S>(x: S, y: S, angle: S) -> Decomposed<Vector2<S>, Basis2<S>>
     where
@@ -259,23 +263,26 @@ mod tests {
         let right_transform = transform(15., 0., 0.);
         let gjk = GJK2::<f32>::new();
 
-        assert!(gjk.collide_continuous(
-            &left,
-            &left_start_transform,
-            Some(&left_start_transform),
-            &right,
-            &right_transform,
-            Some(&right_transform)
-        ).is_none());
+        assert!(
+            gjk.collide_continuous(
+                &left,
+                &left_start_transform,
+                Some(&left_start_transform),
+                &right,
+                &right_transform,
+                Some(&right_transform)
+            ).is_none()
+        );
 
-        let contact = gjk.collide_continuous(
-            &left,
-            &left_start_transform,
-            Some(&left_end_transform),
-            &right,
-            &right_transform,
-            Some(&right_transform),
-        ).unwrap();
+        let contact =
+            gjk.collide_continuous(
+                &left,
+                &left_start_transform,
+                Some(&left_end_transform),
+                &right,
+                &right_transform,
+                Some(&right_transform),
+            ).unwrap();
 
         assert_ulps_eq!(0.16666666666666666, contact.time_of_impact);
 
@@ -299,23 +306,26 @@ mod tests {
         let right_transform = transform(15., 0., 0.);
         let gjk = GJK2::<f64>::new();
 
-        assert!(gjk.collide_continuous(
-            &left,
-            &left_start_transform,
-            Some(&left_start_transform),
-            &right,
-            &right_transform,
-            Some(&right_transform)
-        ).is_none());
+        assert!(
+            gjk.collide_continuous(
+                &left,
+                &left_start_transform,
+                Some(&left_start_transform),
+                &right,
+                &right_transform,
+                Some(&right_transform)
+            ).is_none()
+        );
 
-        let contact = gjk.collide_continuous(
-            &left,
-            &left_start_transform,
-            Some(&left_end_transform),
-            &right,
-            &right_transform,
-            Some(&right_transform),
-        ).unwrap();
+        let contact =
+            gjk.collide_continuous(
+                &left,
+                &left_start_transform,
+                Some(&left_end_transform),
+                &right,
+                &right_transform,
+                Some(&right_transform),
+            ).unwrap();
 
         assert_ulps_eq!(0.16666666666666666, contact.time_of_impact);
 

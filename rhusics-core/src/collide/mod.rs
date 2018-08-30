@@ -1,10 +1,10 @@
 //! Generic data structures and algorithms for collision detection
 
-pub use collision::{CollisionStrategy, ComputeBound, Contact};
 pub use collision::prelude::Primitive;
+pub use collision::{CollisionStrategy, ComputeBound, Contact};
 
-pub mod narrow;
 pub mod broad;
+pub mod narrow;
 
 use std::collections::HashSet;
 use std::fmt::Debug;
@@ -377,7 +377,8 @@ where
         }
         None => {
             let dirty_entities = data.get_dirty_poses().into_iter().collect::<HashSet<I>>();
-            let dirty = tree.values()
+            let dirty = tree
+                .values()
                 .iter()
                 .map(|&(_, ref v)| dirty_entities.contains(&v.id()))
                 .collect::<Vec<_>>();

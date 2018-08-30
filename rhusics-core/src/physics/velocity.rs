@@ -1,5 +1,7 @@
-use cgmath::{BaseFloat, Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2,
-             Vector3, VectorSpace, Zero};
+use cgmath::{
+    BaseFloat, Basis2, EuclideanSpace, Euler, Quaternion, Rad, Rotation, Rotation2, Vector3,
+    VectorSpace, Zero,
+};
 
 use Pose;
 

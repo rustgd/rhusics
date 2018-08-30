@@ -6,17 +6,18 @@ extern crate shrev;
 extern crate specs;
 
 use cgmath::{Point2, Rad, Rotation2, Transform, Vector2};
-use collision::Ray2;
 use collision::dbvt::query_ray_closest;
+use collision::Ray2;
 use shrev::EventChannel;
 use specs::prelude::{Builder, ReadExpect, System, World};
 
-use rhusics_core::{Pose, RigidBody};
-use rhusics_ecs::WithRigidBody;
-use rhusics_ecs::physics2d::{BodyPose2, CollisionMode, CollisionShape2, CollisionStrategy,
-                             ContactEvent2, ContactResolutionSystem2, CurrentFrameUpdateSystem2,
-                             DynamicBoundingVolumeTree2, GJK2, Mass2, NextFrameSetupSystem2,
-                             Rectangle, SpatialCollisionSystem2, SpatialSortingSystem2};
+use rhusics_core::{PhysicalEntity, Pose};
+use rhusics_ecs::physics2d::{
+    BodyPose2, CollisionMode, CollisionShape2, CollisionStrategy, ContactEvent2,
+    ContactResolutionSystem2, CurrentFrameUpdateSystem2, DynamicBoundingVolumeTree2, GJK2, Mass2,
+    NextFrameSetupSystem2, Rectangle, SpatialCollisionSystem2, SpatialSortingSystem2,
+};
+use rhusics_ecs::WithPhysics;
 
 struct RayCastSystem;
 
@@ -51,28 +52,28 @@ pub fn main() {
 
     world
         .create_entity()
-        .with_static_rigid_body(
+        .with_static_physical_entity(
             CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Rectangle::new(10., 10.).into(),
             ),
             BodyPose2::<f32>::one(),
-            RigidBody::default(),
+            PhysicalEntity::default(),
             Mass2::new(1.),
         )
         .build();
 
     world
         .create_entity()
-        .with_static_rigid_body(
+        .with_static_physical_entity(
             CollisionShape2::<f32, BodyPose2<f32>, ()>::new_simple(
                 CollisionStrategy::FullResolution,
                 CollisionMode::Discrete,
                 Rectangle::new(10., 10.).into(),
             ),
             BodyPose2::<f32>::new(Point2::new(2., 2.), Rotation2::from_angle(Rad(0.))),
-            RigidBody::default(),
+            PhysicalEntity::default(),
             Mass2::new(1.),
         )
         .build();

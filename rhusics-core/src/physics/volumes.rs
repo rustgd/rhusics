@@ -1,7 +1,9 @@
-use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix,
-             Transform, Vector3, Zero};
-use collision::{Aabb, Aabb2, Aabb3, Bound, ComputeBound, Primitive, Union};
+use cgmath::{
+    BaseFloat, EuclideanSpace, InnerSpace, Matrix3, Point2, Point3, SquareMatrix, Transform,
+    Vector3, Zero,
+};
 use collision::primitive::*;
+use collision::{Aabb, Aabb2, Aabb3, Bound, ComputeBound, Primitive, Union};
 
 use super::{Inertia, Mass, Material, PartialCrossProduct};
 use collide::CollisionShape;
@@ -88,7 +90,11 @@ where
     fn get_mass(&self, material: &Material) -> Mass<S, Matrix3<S>> {
         use std::f64::consts::PI;
         let pi = S::from(PI).unwrap();
-        let mass = S::from(4. / 3.).unwrap() * pi * self.radius * self.radius * self.radius
+        let mass = S::from(4. / 3.).unwrap()
+            * pi
+            * self.radius
+            * self.radius
+            * self.radius
             * material.density();
         let inertia = S::from(2. / 5.).unwrap() * mass * self.radius * self.radius;
         Mass::new_with_inertia(mass, Matrix3::from_value(inertia))
@@ -152,7 +158,7 @@ const ONE_24: f64 = 1. / 24.;
 const ONE_60: f64 = 1. / 60.;
 const ONE_120: f64 = 1. / 120.;
 const POLY_SCALE: [f64; 10] = [
-    ONE_6, ONE_24, ONE_24, ONE_24, ONE_60, ONE_60, ONE_60, ONE_120, ONE_120, ONE_120
+    ONE_6, ONE_24, ONE_24, ONE_24, ONE_60, ONE_60, ONE_60, ONE_120, ONE_120, ONE_120,
 ];
 
 impl<S> Volume<S, Matrix3<S>> for ConvexPolyhedron<S>
@@ -293,7 +299,8 @@ where
     Y: Default,
 {
     fn get_mass(&self, material: &Material) -> Mass<S, S> {
-        let (mass, inertia) = self.primitives()
+        let (mass, inertia) = self
+            .primitives()
             .iter()
             .map(|p| (p.0.get_mass(material), &p.1))
             .fold((S::zero(), S::zero()), |(a_m, a_i), (m, t)| {
@@ -321,7 +328,8 @@ where
     Y: Default,
 {
     fn get_mass(&self, material: &Material) -> Mass<S, Matrix3<S>> {
-        let (mass, inertia) = self.primitives()
+        let (mass, inertia) = self
+            .primitives()
             .iter()
             .map(|p| (p.0.get_mass(material), &p.1))
             .fold((S::zero(), Matrix3::zero()), |(a_m, a_i), (m, t)| {

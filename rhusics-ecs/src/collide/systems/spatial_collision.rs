@@ -1,15 +1,19 @@
 use std::fmt::Debug;
 
-use cgmath::BaseFloat;
 use cgmath::prelude::*;
+use cgmath::BaseFloat;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
-use specs::prelude::{BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag,
-                     ReadStorage, ReaderId, Resources, System, Tracked, Write};
+use specs::prelude::{
+    BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag, ReadStorage, ReaderId,
+    Resources, System, Tracked, Write,
+};
 
-use core::{tree_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId,
-           NarrowPhase, NextFrame, Primitive};
+use core::{
+    tree_collide, BroadPhase, CollisionData, CollisionShape, ContactEvent, GetId, NarrowPhase,
+    NextFrame, Primitive,
+};
 
 /// Collision detection [system](https://docs.rs/specs/0.9.5/specs/trait.System.html) for use with
 /// [`specs`](https://docs.rs/specs/0.9.5/specs/).

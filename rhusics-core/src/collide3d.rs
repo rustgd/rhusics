@@ -4,12 +4,12 @@ pub use collision::algorithm::minkowski::GJK3;
 pub use collision::primitive::{ConvexPolyhedron, Cuboid, Particle3, Sphere};
 
 use cgmath::{Point3, Quaternion};
-use collision::Aabb3;
 use collision::algorithm::broad_phase::BruteForce;
 use collision::primitive::Primitive3;
+use collision::Aabb3;
 
-use BodyPose;
 use collide::*;
+use BodyPose;
 
 /// Collision shape for 3D, see [`CollisionShape`](../collide/struct.CollisionShape.html) for more
 /// information

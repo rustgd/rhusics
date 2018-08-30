@@ -21,8 +21,10 @@
 //! * Has support for all primitives in collision-rs
 //!
 
-#![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
-        unused_qualifications)]
+#![deny(
+    missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
+    unused_qualifications
+)]
 #![allow(unknown_lints, type_complexity, borrowed_box)]
 
 extern crate cgmath;
@@ -41,13 +43,17 @@ extern crate approx;
 extern crate serde;
 
 pub use body_pose::BodyPose;
-pub use collide::{basic_collide, tree_collide, Collider, CollisionData, CollisionMode,
-                  CollisionShape, CollisionStrategy, Contact, ContactEvent, GetId, Primitive};
 pub use collide::broad::{BroadPhase, BruteForce, SweepAndPrune2, SweepAndPrune3};
 pub use collide::narrow::NarrowPhase;
-pub use physics::{resolve_contact, ApplyAngular, ForceAccumulator, Inertia, Mass, Material,
-                  PartialCrossProduct, ResolveData, RigidBody, SingleChangeSet, Velocity, Volume};
+pub use collide::{
+    basic_collide, tree_collide, Collider, CollisionData, CollisionMode, CollisionShape,
+    CollisionStrategy, Contact, ContactEvent, GetId, Primitive,
+};
 pub use physics::simple::{next_frame_integration, next_frame_pose};
+pub use physics::{
+    resolve_contact, ApplyAngular, ForceAccumulator, Inertia, Mass, Material, PartialCrossProduct,
+    PhysicalEntity, ResolveData, SingleChangeSet, Velocity, Volume, WorldParameters,
+};
 pub use rhusics_transform::{PhysicsTime, Pose};
 
 pub mod collide2d;
@@ -57,9 +63,9 @@ pub mod physics3d;
 
 mod body_pose;
 mod collide;
-mod physics;
 #[cfg(feature = "specs")]
 mod ecs;
+mod physics;
 
 /// Wrapper for data computed for the next frame
 #[derive(Clone, Debug, PartialEq)]

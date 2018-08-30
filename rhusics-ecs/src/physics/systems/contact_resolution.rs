@@ -3,8 +3,10 @@ use std::marker;
 use std::ops::{Add, Mul, Sub};
 
 use cgmath::{BaseFloat, EuclideanSpace, InnerSpace, Rotation, VectorSpace, Zero};
-use core::{resolve_contact, ApplyAngular, ContactEvent, Inertia, Mass, PartialCrossProduct,
-           ResolveData, RigidBody, Velocity};
+use core::{
+    resolve_contact, ApplyAngular, ContactEvent, Inertia, Mass, PartialCrossProduct,
+    PhysicalEntity, ResolveData, Velocity,
+};
 use core::{NextFrame, Pose};
 use shrev::{EventChannel, ReaderId};
 use specs::prelude::{Component, Entity, Read, ReadStorage, Resources, System, WriteStorage};
@@ -23,7 +25,7 @@ use specs::prelude::{Component, Entity, Read, ReadStorage, Resources, System, Wr
 ///
 /// ### System function
 ///
-/// `fn(EventChannel<ContactEvent>, Mass, RigidBody, T, NextFrame<Velocity>, NextFrame<T>) -> (NextFrame<Velocity>, NextFrame<T>)`
+/// `fn(EventChannel<ContactEvent>, Mass, PhysicalEntity, T, NextFrame<Velocity>, NextFrame<T>) -> (NextFrame<Velocity>, NextFrame<T>)`
 ///
 pub struct ContactResolutionSystem<P, R, I, A, O, T>
 where
@@ -76,48 +78,52 @@ where
     type SystemData = (
         Read<'a, EventChannel<ContactEvent<Entity, P>>>,
         ReadStorage<'a, Mass<P::Scalar, I>>,
-        ReadStorage<'a, RigidBody<P::Scalar>>,
+        ReadStorage<'a, PhysicalEntity<P::Scalar>>,
         WriteStorage<'a, NextFrame<Velocity<P::Diff, A>>>,
         ReadStorage<'a, T>,
         WriteStorage<'a, NextFrame<T>>,
     );
 
     fn run(&mut self, data: Self::SystemData) {
-        let (contacts, masses, bodies, mut next_velocities, poses, mut next_poses) = data;
+        let (contacts, masses, entities, mut next_velocities, poses, mut next_poses) = data;
 
         // Process contacts since last run
         for contact in contacts.read(&mut self.contact_reader.as_mut().unwrap()) {
             // Resolve contact
-            let change_set = resolve_contact(
-                &contact.contact,
-                &ResolveData::new(
-                    next_velocities.get(contact.bodies.0),
-                    next_poses
-                        .get(contact.bodies.0)
-                        .map(|p| &p.value)
-                        .unwrap_or_else(|| poses.get(contact.bodies.0).unwrap()),
-                    masses.get(contact.bodies.0).unwrap(),
-                    bodies.get(contact.bodies.0).map(|b| b.material()).unwrap(),
+            let change_set = match (
+                from_storage(
+                    contact.bodies.0,
+                    &next_velocities,
+                    &next_poses,
+                    &poses,
+                    &masses,
+                    &entities,
                 ),
-                &ResolveData::new(
-                    next_velocities.get(contact.bodies.1),
-                    next_poses
-                        .get(contact.bodies.1)
-                        .map(|p| &p.value)
-                        .unwrap_or_else(|| poses.get(contact.bodies.1).unwrap()),
-                    masses.get(contact.bodies.1).unwrap(),
-                    bodies.get(contact.bodies.1).map(|b| b.material()).unwrap(),
+                from_storage(
+                    contact.bodies.1,
+                    &next_velocities,
+                    &next_poses,
+                    &poses,
+                    &masses,
+                    &entities,
                 ),
-            );
-            // Apply computed change sets
-            change_set.0.apply(
-                next_poses.get_mut(contact.bodies.0),
-                next_velocities.get_mut(contact.bodies.0),
-            );
-            change_set.1.apply(
-                next_poses.get_mut(contact.bodies.1),
-                next_velocities.get_mut(contact.bodies.1),
-            );
+            ) {
+                (Some(resolve_0), Some(resolve_1)) => {
+                    Some(resolve_contact(&contact.contact, &resolve_0, &resolve_1))
+                }
+                _ => None,
+            };
+            if let Some(cs) = change_set {
+                // Apply computed change sets
+                cs.0.apply(
+                    next_poses.get_mut(contact.bodies.0),
+                    next_velocities.get_mut(contact.bodies.0),
+                );
+                cs.1.apply(
+                    next_poses.get_mut(contact.bodies.1),
+                    next_velocities.get_mut(contact.bodies.1),
+                );
+            }
         }
     }
 
@@ -128,5 +134,33 @@ where
             res.fetch_mut::<EventChannel<ContactEvent<Entity, P>>>()
                 .register_reader(),
         );
+    }
+}
+
+fn from_storage<'a, P, T, R, A, I>(
+    entity: Entity,
+    next_velocities: &'a WriteStorage<NextFrame<Velocity<P::Diff, A>>>,
+    next_poses: &'a WriteStorage<NextFrame<T>>,
+    poses: &'a ReadStorage<T>,
+    masses: &'a ReadStorage<Mass<P::Scalar, I>>,
+    entities: &'a ReadStorage<PhysicalEntity<P::Scalar>>,
+) -> Option<ResolveData<'a, T, P, R, I, A>>
+where
+    P: EuclideanSpace + Send + Sync + 'static,
+    P::Scalar: BaseFloat + Send + Sync + 'static,
+    P::Diff: Send + Sync + 'static,
+    T: Pose<P, R> + Component + Send + Sync + 'static,
+    R: Rotation<P> + Send + Sync + 'static,
+    A: Clone + Send + Sync + 'static,
+    I: Clone + Send + Sync + 'static,
+{
+    match (entities.get(entity), masses.get(entity), poses.get(entity)) {
+        (Some(e), Some(mass), Some(pose)) if e.active() => Some(ResolveData::new(
+            next_velocities.get(entity),
+            next_poses.get(entity).map(|p| &p.value).unwrap_or(pose),
+            mass,
+            e.material(),
+        )),
+        _ => None,
     }
 }

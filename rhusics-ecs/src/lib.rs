@@ -21,8 +21,10 @@
 //! * Has support for all primitives in collision-rs
 //!
 
-#![deny(missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
-        unused_qualifications)]
+#![deny(
+    missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
+    unused_qualifications
+)]
 #![allow(unknown_lints, type_complexity, new_without_default_derive)]
 
 extern crate cgmath;
@@ -42,8 +44,10 @@ extern crate shred_derive;
 extern crate serde;
 
 pub use collide::{BasicCollisionSystem, SpatialCollisionSystem, SpatialSortingSystem};
-pub use physics::{setup_dispatch, ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
-                  NextFrameSetupSystem, RigidBodyCreationError, RigidBodyParts, WithRigidBody};
+pub use physics::{
+    setup_dispatch, ContactResolutionSystem, CurrentFrameUpdateSystem, DeltaTime,
+    NextFrameSetupSystem, PhysicalEntityCreationError, PhysicalEntityParts, WithPhysics,
+};
 
 pub mod collide2d;
 pub mod collide3d;
