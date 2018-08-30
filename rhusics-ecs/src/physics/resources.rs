@@ -64,7 +64,7 @@ pub trait WithPhysics {
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
         velocity: Velocity<V, A>,
-        body: PhysicalEntity<V::Scalar>,
+        physical_entity: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
@@ -94,7 +94,7 @@ pub trait WithPhysics {
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
-        body: PhysicalEntity<S>,
+        physical_entity: PhysicalEntity<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
@@ -114,7 +114,7 @@ impl<'a> WithPhysics for EntityBuilder<'a> {
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
         velocity: Velocity<V, A>,
-        body: PhysicalEntity<V::Scalar>,
+        physical_entity: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Self
     where
@@ -129,7 +129,7 @@ impl<'a> WithPhysics for EntityBuilder<'a> {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.with_static_physical_entity(shape, pose.clone(), body, mass)
+        self.with_static_physical_entity(shape, pose.clone(), physical_entity, mass)
             .with(NextFrame { value: pose })
             .with(velocity.clone())
             .with(NextFrame { value: velocity })
@@ -140,7 +140,7 @@ impl<'a> WithPhysics for EntityBuilder<'a> {
         self,
         shape: CollisionShape<P, T, B, Y>,
         pose: T,
-        body: PhysicalEntity<S>,
+        physical_entity: PhysicalEntity<S>,
         mass: Mass<S, I>,
     ) -> Self
     where
@@ -153,7 +153,7 @@ impl<'a> WithPhysics for EntityBuilder<'a> {
         Y: Send + Sync + 'static,
         I: Send + Sync + 'static,
     {
-        self.with(shape).with(body).with(mass).with(pose)
+        self.with(shape).with(physical_entity).with(mass).with(pose)
     }
 }
 
@@ -235,7 +235,7 @@ where
     }
 
     /// Setup static physical entity for given entity.
-    pub fn static_body(
+    pub fn static_entity(
         &mut self,
         entity: Entity,
         shape: CollisionShape<P, T, B, Y>,
@@ -251,7 +251,7 @@ where
     }
 
     /// Setup dynamic physical entity for given entity.
-    pub fn dynamic_body(
+    pub fn dynamic_entity(
         &mut self,
         entity: Entity,
         shape: CollisionShape<P, T, B, Y>,
@@ -260,7 +260,7 @@ where
         physical_entity: PhysicalEntity<V::Scalar>,
         mass: Mass<V::Scalar, I>,
     ) -> Result<(), PhysicalEntityCreationError> {
-        self.static_body(entity, shape, pose.clone(), physical_entity, mass)?;
+        self.static_entity(entity, shape, pose.clone(), physical_entity, mass)?;
         self.next_poses.insert(entity, NextFrame { value: pose })?;
         self.velocities.insert(entity, velocity.clone())?;
         self.next_velocities
