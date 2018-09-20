@@ -14,7 +14,7 @@ use super::{Material, Volume};
 /// ### Type parameters:
 ///
 /// - `I`: Inertia type, usually `Scalar` or `Matrix3`, see `Inertia` for more information.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Mass<S, I> {
     mass: S,
