@@ -1,8 +1,8 @@
 ## Changelog
 
-### Unreleased
+### v0.7
 
-- Update specs version to 0.12
+- Update specs version to 0.14
 
 ### v0.4
 
