@@ -11,7 +11,7 @@ use specs::prelude::{Builder, RunNow, World};
 use rhusics_core::Pose;
 use rhusics_ecs::collide2d::{
     BasicCollisionSystem2, BodyPose2, BroadBruteForce2, CollisionMode, CollisionShape2,
-    CollisionStrategy, ContactEvent2, GJK2, Rectangle,
+    CollisionStrategy, ContactEvent2, Rectangle, GJK2,
 };
 
 pub fn main() {
@@ -32,8 +32,7 @@ pub fn main() {
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
-        ))
-        .with(BodyPose2::<f32>::one())
+        )).with(BodyPose2::<f32>::one())
         .build();
 
     world
@@ -42,12 +41,10 @@ pub fn main() {
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Rectangle::new(10., 10.).into(),
-        ))
-        .with(BodyPose2::<f32>::new(
+        )).with(BodyPose2::<f32>::new(
             Point2::new(3., 2.),
             Rotation2::from_angle(Rad(0.)),
-        ))
-        .build();
+        )).build();
 
     system.run_now(&world.res);
     println!(

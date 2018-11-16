@@ -14,8 +14,8 @@ use specs::prelude::{Builder, ReadExpect, System, World};
 use rhusics_core::{PhysicalEntity, Pose};
 use rhusics_ecs::physics2d::{
     BodyPose2, CollisionMode, CollisionShape2, CollisionStrategy, ContactEvent2,
-    ContactResolutionSystem2, CurrentFrameUpdateSystem2, DynamicBoundingVolumeTree2, GJK2, Mass2,
-    NextFrameSetupSystem2, Rectangle, SpatialCollisionSystem2, SpatialSortingSystem2,
+    ContactResolutionSystem2, CurrentFrameUpdateSystem2, DynamicBoundingVolumeTree2, Mass2,
+    NextFrameSetupSystem2, Rectangle, SpatialCollisionSystem2, SpatialSortingSystem2, GJK2,
 };
 use rhusics_ecs::WithPhysics;
 
@@ -61,8 +61,7 @@ pub fn main() {
             BodyPose2::<f32>::one(),
             PhysicalEntity::default(),
             Mass2::new(1.),
-        )
-        .build();
+        ).build();
 
     world
         .create_entity()
@@ -75,8 +74,7 @@ pub fn main() {
             BodyPose2::<f32>::new(Point2::new(2., 2.), Rotation2::from_angle(Rad(0.))),
             PhysicalEntity::default(),
             Mass2::new(1.),
-        )
-        .build();
+        ).build();
 
     let mut reader_1 = world
         .write_resource::<EventChannel<ContactEvent2<f32>>>()

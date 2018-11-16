@@ -6,8 +6,8 @@ use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
 use specs::prelude::{
-    BitSet, Component, Entities, Entity, Join, ReadStorage, ReaderId, ComponentEvent,
-    Resources, System, Tracked, Write,
+    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, Resources,
+    System, Tracked, Write,
 };
 
 use core::{
@@ -50,7 +50,6 @@ where
     dirty: BitSet,
     pose_reader: Option<ReaderId<ComponentEvent>>,
     next_pose_reader: Option<ReaderId<ComponentEvent>>,
-
 }
 
 impl<P, T, D, B, Y> SpatialCollisionSystem<P, T, D, B, Y>
@@ -131,17 +130,28 @@ where
 
         for event in poses.channel().read(self.pose_reader.as_mut().unwrap()) {
             match event {
-                ComponentEvent::Inserted(index) => { self.dirty.add(*index); },
-                ComponentEvent::Modified(index) => { self.dirty.add(*index); },
+                ComponentEvent::Inserted(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.dirty.add(*index);
+                }
                 ComponentEvent::Removed(index) => {
                     self.dirty.remove(*index);
                 }
             }
         }
-        for event in next_poses.channel().read(self.next_pose_reader.as_mut().unwrap()) {
+        for event in next_poses
+            .channel()
+            .read(self.next_pose_reader.as_mut().unwrap())
+        {
             match event {
-                ComponentEvent::Inserted(index) => { self.dirty.add(*index); },
-                ComponentEvent::Modified(index) => { self.dirty.add(*index); },
+                ComponentEvent::Inserted(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.dirty.add(*index);
+                }
                 ComponentEvent::Removed(index) => {
                     self.dirty.remove(*index);
                 }

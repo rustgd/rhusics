@@ -217,11 +217,9 @@ where
                         right_shape.unwrap(),
                         right_pose.unwrap(),
                         right_next_pose,
-                    )
-                    .map(|contact| ContactEvent::new((left, right), contact))
+                    ).map(|contact| ContactEvent::new((left, right), contact))
             }
-        })
-        .collect::<Vec<_>>()
+        }).collect::<Vec<_>>()
 }
 
 #[cfg(test)]
@@ -274,8 +272,8 @@ mod tests {
             ).is_none()
         );
 
-        let contact =
-            gjk.collide_continuous(
+        let contact = gjk
+            .collide_continuous(
                 &left,
                 &left_start_transform,
                 Some(&left_end_transform),
@@ -317,8 +315,8 @@ mod tests {
             ).is_none()
         );
 
-        let contact =
-            gjk.collide_continuous(
+        let contact = gjk
+            .collide_continuous(
                 &left,
                 &left_start_transform,
                 Some(&left_end_transform),

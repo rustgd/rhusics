@@ -85,8 +85,7 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
         + PartialCrossProduct<
             <P::Point as EuclideanSpace>::Diff,
             Output = <P::Point as EuclideanSpace>::Diff,
-        >
-        + Zero
+        > + Zero
         + Clone
         + Copy
         + Send
@@ -96,8 +95,7 @@ pub fn setup_dispatch<'a, 'b, P, T, B, D, Y, V, N, R, A, I, DT, O>(
     O: PartialCrossProduct<
             <P::Point as EuclideanSpace>::Diff,
             Output = <P::Point as EuclideanSpace>::Diff,
-        >
-        + Send
+        > + Send
         + Sync
         + 'static,
     for<'c> &'c A: Sub<O, Output = A> + Add<O, Output = A>,
@@ -286,8 +284,8 @@ pub fn setup_dispatch_3d<S, P, T, B, D, Y, V, N, DT>(
 mod tests {
 
     use super::*;
-    use collide2d::{BodyPose2, GJK2, SweepAndPrune2};
-    use collide3d::{BodyPose3, GJK3, SweepAndPrune3};
+    use collide2d::{BodyPose2, SweepAndPrune2, GJK2};
+    use collide3d::{BodyPose3, SweepAndPrune3, GJK3};
     use collision::dbvt::TreeValueWrapped;
     use collision::primitive::{Primitive2, Primitive3};
     use collision::{Aabb2, Aabb3};

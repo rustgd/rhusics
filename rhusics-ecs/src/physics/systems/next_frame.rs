@@ -87,7 +87,8 @@ where
                 &mut forces,
                 &masses,
                 &entities,
-            ).join(),
+            )
+                .join(),
             &*params,
             time.delta_seconds(),
         );

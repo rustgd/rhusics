@@ -22,7 +22,11 @@
 //!
 
 #![deny(
-    missing_docs, trivial_casts, unsafe_code, unstable_features, unused_import_braces,
+    missing_docs,
+    trivial_casts,
+    unsafe_code,
+    unstable_features,
+    unused_import_braces,
     unused_qualifications
 )]
 #![allow(unknown_lints, type_complexity, borrowed_box)]

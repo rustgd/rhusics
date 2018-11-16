@@ -7,8 +7,8 @@ use cgmath::BaseFloat;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::prelude::{
-    BitSet, Component, Entities, Entity, Join, ReadStorage, ReaderId,
-    ComponentEvent, Resources, System, Tracked, Write, WriteStorage,
+    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, Resources,
+    System, Tracked, Write, WriteStorage,
 };
 
 use core::{CollisionShape, NextFrame, Primitive};
@@ -98,8 +98,12 @@ where
 
         for event in poses.channel().read(self.pose_reader.as_mut().unwrap()) {
             match event {
-                ComponentEvent::Inserted(index) => { self.updated.add(*index); },
-                ComponentEvent::Modified(index) => { self.updated.add(*index); },
+                ComponentEvent::Inserted(index) => {
+                    self.updated.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.updated.add(*index);
+                }
                 ComponentEvent::Removed(index) => {
                     self.updated.remove(*index);
                     self.removed.add(*index);
@@ -140,10 +144,17 @@ where
 
         self.updated.clear();
 
-        for event in next_poses.channel().read(self.next_pose_reader.as_mut().unwrap()) {
+        for event in next_poses
+            .channel()
+            .read(self.next_pose_reader.as_mut().unwrap())
+        {
             match event {
-                ComponentEvent::Inserted(index) => { self.updated.add(*index); },
-                ComponentEvent::Modified(index) => { self.updated.add(*index); },
+                ComponentEvent::Inserted(index) => {
+                    self.updated.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.updated.add(*index);
+                }
                 ComponentEvent::Removed(index) => {
                     self.updated.remove(*index);
                 }
