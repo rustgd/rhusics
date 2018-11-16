@@ -7,8 +7,8 @@ use cgmath::BaseFloat;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::prelude::{
-    BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag, ReadStorage, ReaderId,
-    RemovedFlag, Resources, System, Tracked, Write, WriteStorage,
+    BitSet, Component, Entities, Entity, Join, ReadStorage, ReaderId,
+    ComponentEvent, Resources, System, Tracked, Write, WriteStorage,
 };
 
 use core::{CollisionShape, NextFrame, Primitive};
@@ -42,11 +42,8 @@ pub struct SpatialSortingSystem<P, T, D, B, Y = ()> {
     dead: Vec<Entity>,
     updated: BitSet,
     removed: BitSet,
-    pose_inserted_id: Option<ReaderId<InsertedFlag>>,
-    pose_modified_id: Option<ReaderId<ModifiedFlag>>,
-    pose_removed_id: Option<ReaderId<RemovedFlag>>,
-    next_pose_inserted_id: Option<ReaderId<InsertedFlag>>,
-    next_pose_modified_id: Option<ReaderId<ModifiedFlag>>,
+    pose_reader: Option<ReaderId<ComponentEvent>>,
+    next_pose_reader: Option<ReaderId<ComponentEvent>>,
     marker: PhantomData<(P, T, Y, B, D)>,
 }
 
@@ -58,11 +55,8 @@ impl<P, T, D, B, Y> SpatialSortingSystem<P, T, D, B, Y> {
             marker: PhantomData,
             updated: BitSet::default(),
             removed: BitSet::default(),
-            pose_inserted_id: None,
-            pose_modified_id: None,
-            pose_removed_id: None,
-            next_pose_inserted_id: None,
-            next_pose_modified_id: None,
+            pose_reader: None,
+            next_pose_reader: None,
             dead: Vec::default(),
         }
     }
@@ -102,9 +96,16 @@ where
         self.updated.clear();
         self.removed.clear();
 
-        poses.populate_inserted(self.pose_inserted_id.as_mut().unwrap(), &mut self.updated);
-        poses.populate_modified(self.pose_modified_id.as_mut().unwrap(), &mut self.updated);
-        poses.populate_removed(self.pose_removed_id.as_mut().unwrap(), &mut self.removed);
+        for event in poses.channel().read(self.pose_reader.as_mut().unwrap()) {
+            match event {
+                ComponentEvent::Inserted(index) => { self.updated.add(*index); },
+                ComponentEvent::Modified(index) => { self.updated.add(*index); },
+                ComponentEvent::Removed(index) => {
+                    self.updated.remove(*index);
+                    self.removed.add(*index);
+                }
+            }
+        }
 
         // remove entities that are missing from the tree
         self.dead.clear();
@@ -139,14 +140,15 @@ where
 
         self.updated.clear();
 
-        next_poses.populate_inserted(
-            self.next_pose_inserted_id.as_mut().unwrap(),
-            &mut self.updated,
-        );
-        next_poses.populate_modified(
-            self.next_pose_modified_id.as_mut().unwrap(),
-            &mut self.updated,
-        );
+        for event in next_poses.channel().read(self.next_pose_reader.as_mut().unwrap()) {
+            match event {
+                ComponentEvent::Inserted(index) => { self.updated.add(*index); },
+                ComponentEvent::Modified(index) => { self.updated.add(*index); },
+                ComponentEvent::Removed(index) => {
+                    self.updated.remove(*index);
+                }
+            }
+        }
 
         // Check for updated next frame poses
         // Uses FlaggedStorage
@@ -172,11 +174,8 @@ where
         use specs::prelude::SystemData;
         Self::SystemData::setup(res);
         let mut poses = WriteStorage::<T>::fetch(res);
-        self.pose_inserted_id = Some(poses.track_inserted());
-        self.pose_modified_id = Some(poses.track_modified());
-        self.pose_removed_id = Some(poses.track_removed());
+        self.pose_reader = Some(poses.register_reader());
         let mut next_poses = WriteStorage::<NextFrame<T>>::fetch(res);
-        self.next_pose_inserted_id = Some(next_poses.track_inserted());
-        self.next_pose_modified_id = Some(next_poses.track_modified());
+        self.next_pose_reader = Some(next_poses.register_reader());
     }
 }

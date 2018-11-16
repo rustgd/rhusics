@@ -16,7 +16,7 @@ cgmath = "0.16"
 collision = { version = "0.18" }
 failure = "0.1"
 rhusics-core = { version = "0.6.0", path = "../rhusics-core", features = ["specs"] }
-specs = { version = "0.12" }
+specs = { version = "0.14" }
 shred = { version = "0.7" }
 shred-derive = { version = "0.5" }
 shrev = { version = "1.0" }
