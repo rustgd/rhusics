@@ -265,7 +265,8 @@ where
         self.velocities.insert(entity, velocity.clone())?;
         self.next_velocities
             .insert(entity, NextFrame { value: velocity })?;
-        self.forces.insert(entity, ForceAccumulator::<V, A>::new())?;
+        self.forces
+            .insert(entity, ForceAccumulator::<V, A>::new())?;
         Ok(())
     }
 }

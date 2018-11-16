@@ -31,8 +31,7 @@ pub fn main() {
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
-        ))
-        .with(BodyPose3::<f32>::one())
+        )).with(BodyPose3::<f32>::one())
         .build();
 
     world
@@ -41,12 +40,10 @@ pub fn main() {
             CollisionStrategy::FullResolution,
             CollisionMode::Discrete,
             Cuboid::new(10., 10., 10.).into(),
-        ))
-        .with(BodyPose3::<f32>::new(
+        )).with(BodyPose3::<f32>::new(
             Point3::new(3., 2., 0.),
             Quaternion::from_angle_z(Rad(0.)),
-        ))
-        .build();
+        )).build();
 
     system.run_now(&world.res);
     println!(

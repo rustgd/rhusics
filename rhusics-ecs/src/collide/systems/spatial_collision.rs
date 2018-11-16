@@ -6,8 +6,8 @@ use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
 use specs::prelude::{
-    BitSet, Component, Entities, Entity, InsertedFlag, Join, ModifiedFlag, ReadStorage, ReaderId,
-    Resources, System, Tracked, Write,
+    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, Resources,
+    System, Tracked, Write,
 };
 
 use core::{
@@ -48,10 +48,8 @@ where
     narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
     broad: Option<Box<BroadPhase<D>>>,
     dirty: BitSet,
-    pose_inserted_id: Option<ReaderId<InsertedFlag>>,
-    pose_modified_id: Option<ReaderId<ModifiedFlag>>,
-    next_pose_inserted_id: Option<ReaderId<InsertedFlag>>,
-    next_pose_modified_id: Option<ReaderId<ModifiedFlag>>,
+    pose_reader: Option<ReaderId<ComponentEvent>>,
+    next_pose_reader: Option<ReaderId<ComponentEvent>>,
 }
 
 impl<P, T, D, B, Y> SpatialCollisionSystem<P, T, D, B, Y>
@@ -77,10 +75,8 @@ where
             narrow: None,
             broad: None,
             dirty: BitSet::default(),
-            pose_inserted_id: None,
-            pose_modified_id: None,
-            next_pose_inserted_id: None,
-            next_pose_modified_id: None,
+            pose_reader: None,
+            next_pose_reader: None,
         }
     }
 
@@ -132,16 +128,35 @@ where
         let (entities, poses, next_poses, shapes, mut event_channel, mut tree) = system_data;
         self.dirty.clear();
 
-        poses.populate_inserted(self.pose_inserted_id.as_mut().unwrap(), &mut self.dirty);
-        poses.populate_modified(self.pose_modified_id.as_mut().unwrap(), &mut self.dirty);
-        next_poses.populate_inserted(
-            self.next_pose_inserted_id.as_mut().unwrap(),
-            &mut self.dirty,
-        );
-        next_poses.populate_modified(
-            self.next_pose_modified_id.as_mut().unwrap(),
-            &mut self.dirty,
-        );
+        for event in poses.channel().read(self.pose_reader.as_mut().unwrap()) {
+            match event {
+                ComponentEvent::Inserted(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Removed(index) => {
+                    self.dirty.remove(*index);
+                }
+            }
+        }
+        for event in next_poses
+            .channel()
+            .read(self.next_pose_reader.as_mut().unwrap())
+        {
+            match event {
+                ComponentEvent::Inserted(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Modified(index) => {
+                    self.dirty.add(*index);
+                }
+                ComponentEvent::Removed(index) => {
+                    self.dirty.remove(*index);
+                }
+            }
+        }
 
         event_channel.iter_write(tree_collide(
             &SpatialCollisionData {
@@ -161,11 +176,9 @@ where
         use specs::prelude::{SystemData, WriteStorage};
         Self::SystemData::setup(res);
         let mut poses = WriteStorage::<T>::fetch(res);
-        self.pose_inserted_id = Some(poses.track_inserted());
-        self.pose_modified_id = Some(poses.track_modified());
+        self.pose_reader = Some(poses.register_reader());
         let mut next_poses = WriteStorage::<NextFrame<T>>::fetch(res);
-        self.next_pose_inserted_id = Some(next_poses.track_inserted());
-        self.next_pose_modified_id = Some(next_poses.track_modified());
+        self.next_pose_reader = Some(next_poses.register_reader());
     }
 }
 

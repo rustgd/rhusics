@@ -333,8 +333,7 @@ where
             .iter()
             .map(|&(left, right)| {
                 ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
-            })
-            .collect::<Vec<_>>(),
+            }).collect::<Vec<_>>(),
     }
 }
 
@@ -395,7 +394,6 @@ where
             .iter()
             .map(|&(left, right)| {
                 ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
-            })
-            .collect::<Vec<_>>(),
+            }).collect::<Vec<_>>(),
     }
 }
