@@ -3,7 +3,7 @@ use std::marker;
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
 use specs::error::Error as SpecsError;
-use specs::prelude::{Builder, Component, Entity, EntityBuilder, SystemData, World, WriteStorage};
+use specs::prelude::{Builder, Component, Entity, SystemData, World, WriteStorage};
 
 use core::{
     CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicalEntity, PhysicsTime, Pose,
@@ -108,7 +108,7 @@ pub trait WithPhysics {
         I: Send + Sync + 'static;
 }
 
-impl<'a> WithPhysics for EntityBuilder<'a> {
+impl<U: Builder> WithPhysics for U {
     fn with_dynamic_physical_entity<P, Y, R, V, A, I, B, T>(
         self,
         shape: CollisionShape<P, T, B, Y>,
