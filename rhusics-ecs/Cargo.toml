@@ -12,8 +12,9 @@ description = "Physics library for use with `specs`"
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [dependencies]
-cgmath = "0.16"
-collision = { version = "0.18" }
+cgmath = "*"
+# collision = { version = "*" }
+collision = { version = "*", git = "https://github.com/rustgd/collision-rs" }
 failure = "0.1"
 rhusics-core = { version = "0.7.0", path = "../rhusics-core", features = ["specs"] }
 specs = { version = "0.14" }
@@ -23,8 +24,9 @@ shrev = { version = "1.0" }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 
 [target.'cfg(feature = "serde")'.dependencies]
-cgmath = { version = "0.16", features = ["serde"] }
-collision = { version = "0.18", features = ["serde"] }
+cgmath = { version = "*", features = ["serde"] }
+#collision = { version = "*", features = ["serde"] }
+collision = { version = "*", features = ["serde"], git = "https://github.com/rustgd/collision-rs" }
 rhusics-core = { version = "0.7.0", path = "../rhusics-core", features = ["specs", "serde"] }
 specs = { version = "0.12", features = ["serde"] }
 
