@@ -1,7 +1,10 @@
 [package]
 name = "rhusics-ecs"
-version = "0.7.1"
-authors = ["Simon Rönnberg <seamonr@gmail.com>"]
+version = "0.8.0"
+authors = [
+    "Simon Rönnberg <seamonr@gmail.com>",
+    "Thomas O'Dell <thomas_odell@trsolutions.biz>"
+    ]
 repository = "https://github.com/rustgd/rhusics.git"
 homepage = "https://github.com/rustgd/rhusics.git"
 
@@ -12,11 +15,10 @@ description = "Physics library for use with `specs`"
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [dependencies]
-cgmath = "*"
-# collision = { version = "*" }
-collision = { version = "*", git = "https://github.com/rustgd/collision-rs" }
+cgmath = "0.17"
+collision = { version = "0.20" }
 failure = "0.1"
-rhusics-core = { version = "0.7.0", path = "../rhusics-core", features = ["specs"] }
+rhusics-core = { version = "0.8.0", path = "../rhusics-core", features = ["specs"] }
 specs = { version = "0.14" }
 shred = { version = "0.7" }
 shred-derive = { version = "0.5" }
@@ -24,10 +26,9 @@ shrev = { version = "1.0" }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 
 [target.'cfg(feature = "serde")'.dependencies]
-cgmath = { version = "*", features = ["serde"] }
-#collision = { version = "*", features = ["serde"] }
-collision = { version = "*", features = ["serde"], git = "https://github.com/rustgd/collision-rs" }
-rhusics-core = { version = "0.7.0", path = "../rhusics-core", features = ["specs", "serde"] }
+cgmath = { version = "0.17", features = ["serde"] }
+collision = { version = "0.20", features = ["serde"] }
+rhusics-core = { version = "0.8.0", path = "../rhusics-core", features = ["specs", "serde"] }
 specs = { version = "0.12", features = ["serde"] }
 
 [[example]]

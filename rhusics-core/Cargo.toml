@@ -1,7 +1,10 @@
 [package]
 name = "rhusics-core"
-version = "0.7.0"
-authors = ["Simon Rönnberg <seamonr@gmail.com>"]
+version = "0.8.0"
+authors = [
+    "Simon Rönnberg <seamonr@gmail.com>",
+    "Thomas O'Dell <thomas_odell@trsolutions.biz>"
+    ]
 repository = "https://github.com/rustgd/rhusics.git"
 homepage = "https://github.com/rustgd/rhusics.git"
 
@@ -12,17 +15,15 @@ description = "Physics library for use with `specs`"
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
 [dependencies]
-cgmath = "*"
-# collision = "*"
-collision = { git = "https://github.com/rustgd/collision-rs" }
-rhusics-transform = { version = "0.4.0", path = "../rhusics-transform" }
+cgmath = "0.17"
+collision = "0.20"
+rhusics-transform = { version = "0.5.0", path = "../rhusics-transform" }
 specs = { version = "0.14", optional = true }
 serde = { version = "1.0", optional = true, features = ["derive"]}
 
 [target.'cfg(feature = "serde")'.dependencies]
 cgmath = { version = "*", features = ["serde"] }
-#collision = { version = "*", features = ["serde"] }
-collision = { git = "https://github.com/rustgd/collision-rs", features = ["serde"] }
+collision = { version = "0.20", features = ["serde"] }
 
 [dev-dependencies]
 approx = "0.3"
