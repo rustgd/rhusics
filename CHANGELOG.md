@@ -1,5 +1,11 @@
 ## Changelog
 
+### v0.8 [0.5 for rhusics-transform]
+- Update cgmath to 0.17
+- Update collision to 0.20
+- Update approx to 0.3
+- No API changes, but recompilation necessary as supporting traits changed.
+
 ### v0.7
 
 - Update specs version to 0.14
