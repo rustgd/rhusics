@@ -37,8 +37,8 @@ where
     P: Primitive,
     B: Bound,
 {
-    narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
-    broad: Option<Box<BroadPhase<D>>>,
+    narrow: Option<Box<dyn NarrowPhase<P, T, B, Y>>>,
+    broad: Option<Box<dyn BroadPhase<D>>>,
 }
 
 impl<P, T, D, B, Y> BasicCollisionSystem<P, T, D, B, Y>

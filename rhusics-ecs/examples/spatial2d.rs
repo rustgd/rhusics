@@ -9,7 +9,7 @@ use cgmath::{Point2, Rad, Rotation2, Transform, Vector2};
 use collision::dbvt::query_ray_closest;
 use collision::Ray2;
 use shrev::EventChannel;
-use specs::prelude::{Builder, ReadExpect, System, World};
+use specs::prelude::{Builder, ReadExpect, System, World, WorldExt};
 
 use rhusics_core::{PhysicalEntity, Pose};
 use rhusics_ecs::physics2d::{
@@ -43,12 +43,12 @@ pub fn main() {
     let mut next_frame = NextFrameSetupSystem2::<f32, BodyPose2<f32>>::new();
     let mut contact_resolution = ContactResolutionSystem2::<f32, BodyPose2<f32>>::new();
 
-    sort.setup(&mut world.res);
-    collide.setup(&mut world.res);
-    raycast.setup(&mut world.res);
-    impulse_solver.setup(&mut world.res);
-    next_frame.setup(&mut world.res);
-    contact_resolution.setup(&mut world.res);
+    sort.setup(&mut world);
+    collide.setup(&mut world);
+    raycast.setup(&mut world);
+    impulse_solver.setup(&mut world);
+    next_frame.setup(&mut world);
+    contact_resolution.setup(&mut world);
 
     world
         .create_entity()
@@ -82,8 +82,8 @@ pub fn main() {
 
     {
         use specs::prelude::RunNow;
-        sort.run_now(&world.res);
-        collide.run_now(&world.res);
+        sort.run_now(&world);
+        collide.run_now(&world);
 
         println!(
             "Contacts: {:?}",
@@ -93,9 +93,9 @@ pub fn main() {
                 .collect::<Vec<_>>()
         );
 
-        raycast.run_now(&world.res);
-        impulse_solver.run_now(&world.res);
-        next_frame.run_now(&world.res);
-        contact_resolution.run_now(&world.res);
+        raycast.run_now(&world);
+        impulse_solver.run_now(&world);
+        next_frame.run_now(&world);
+        contact_resolution.run_now(&world);
     }
 }

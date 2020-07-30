@@ -9,7 +9,7 @@ use core::{
 };
 use core::{NextFrame, Pose};
 use shrev::{EventChannel, ReaderId};
-use specs::prelude::{Component, Entity, Read, ReadStorage, Resources, System, WriteStorage};
+use specs::prelude::{Component, Entity, Read, ReadStorage, World, System, WriteStorage};
 
 /// Do single contact, forward resolution.
 ///
@@ -127,7 +127,7 @@ where
         }
     }
 
-    fn setup(&mut self, res: &mut Resources) {
+    fn setup(&mut self, res: &mut World) {
         use specs::prelude::SystemData;
         Self::SystemData::setup(res);
         self.contact_reader = Some(

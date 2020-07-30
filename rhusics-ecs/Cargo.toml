@@ -1,6 +1,6 @@
 [package]
 name = "rhusics-ecs"
-version = "0.8.0"
+version = "0.9.0"
 authors = [
     "Simon Rönnberg <seamonr@gmail.com>",
     "Thomas O'Dell <thomas_odell@trsolutions.biz>"
@@ -14,22 +14,19 @@ description = "Physics library for use with `specs`"
 
 keywords = ["gamedev", "cgmath", "specs", "physics"]
 
+[features]
+serializable = ["serde", "cgmath/serde", "collision/serde", "rhusics-core/serializable"]
+
 [dependencies]
 cgmath = "0.17"
 collision = { version = "0.20" }
 failure = "0.1"
-rhusics-core = { version = "0.8.0", path = "../rhusics-core", features = ["specs"] }
-specs = { version = "0.14" }
-shred = { version = "0.7" }
-shred-derive = { version = "0.5" }
-shrev = { version = "1.0" }
-serde = { version = "1.0", optional = true, features = ["derive"]}
-
-[target.'cfg(feature = "serde")'.dependencies]
-cgmath = { version = "0.17", features = ["serde"] }
-collision = { version = "0.20", features = ["serde"] }
-rhusics-core = { version = "0.8.0", path = "../rhusics-core", features = ["specs", "serde"] }
-specs = { version = "0.12", features = ["serde"] }
+rhusics-core = { version = "0.9.0", path = "../rhusics-core", features = ["specs"] }
+specs = { version = "0.16" }
+shred = { version = "0.10" }
+shred-derive = { version = "0.6" }
+shrev = { version = "1.1" }
+serde = { version = "1.0", optional = true, features = ["derive"] }
 
 [[example]]
 name = "basic2d"

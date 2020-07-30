@@ -3,12 +3,13 @@ use std::marker;
 use cgmath::{BaseFloat, EuclideanSpace, Rotation, VectorSpace, Zero};
 use collision::Bound;
 use specs::error::Error as SpecsError;
-use specs::prelude::{Builder, Component, Entity, SystemData, World, WriteStorage};
+use specs::prelude::{Builder, Component, Entity, SystemData, World, WriteStorage, ResourceId};
 
 use core::{
     CollisionShape, ForceAccumulator, Mass, NextFrame, PhysicalEntity, PhysicsTime, Pose,
     Primitive, Velocity,
 };
+use failure::Fail;
 
 /// Time step resource
 ///
@@ -16,7 +17,7 @@ use core::{
 ///
 /// - `S`: Scalar
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct DeltaTime<S>
 where
     S: BaseFloat,
@@ -231,7 +232,7 @@ where
 {
     /// Extract physical entity storage from `World`
     pub fn new(world: &'a World) -> Self {
-        Self::fetch(&world.res)
+        Self::fetch(&world)
     }
 
     /// Setup static physical entity for given entity.
@@ -278,7 +279,7 @@ mod tests {
     use collision::primitive::Primitive3;
     use collision::Aabb3;
     use core::collide3d::BodyPose3;
-    use specs::prelude::{SystemData, World};
+    use specs::prelude::{SystemData, World, WorldExt};
 
     type PhysicalEntityPartsTest<'a> = PhysicalEntityParts<
         'a,
@@ -295,7 +296,7 @@ mod tests {
     #[test]
     fn test() {
         let mut world = World::new();
-        PhysicalEntityPartsTest::setup(&mut world.res);
+        PhysicalEntityPartsTest::setup(&mut world);
         PhysicalEntityPartsTest::new(&world);
     }
 }

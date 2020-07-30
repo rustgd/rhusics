@@ -52,7 +52,7 @@ where
 /// - `B`: Bounding volume
 /// - `Y`: Collider, see `Collider` for more information
 /// - `D`: Broad phase data
-pub fn broad_collide<C, I, P, T, B, Y, D>(data: &C, broad: &mut Box<BroadPhase<D>>) -> Vec<(I, I)>
+pub fn broad_collide<C, I, P, T, B, Y, D>(data: &C, broad: &mut Box<dyn BroadPhase<D>>) -> Vec<(I, I)>
 where
     C: CollisionData<I, P, T, B, Y, D>,
     P: Primitive,

@@ -22,7 +22,7 @@ use cgmath::{BaseFloat, VectorSpace};
 
 /// Global parameters for the physics world
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct WorldParameters<V, S> {
     gravity: V,
     damping: S,
@@ -80,7 +80,7 @@ where
 /// The default material has density 1, such that only the volume affects its mass, and restitution
 /// 1, such that all energy is preserved in collisions.
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct Material {
     density: f32,
     restitution: f32,
@@ -156,7 +156,7 @@ impl Material {
 
 /// Physical entity
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct PhysicalEntity<S> {
     material: Material,
     gravity_scale: S,

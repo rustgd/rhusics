@@ -33,17 +33,15 @@
 
 extern crate cgmath;
 extern crate collision;
-#[macro_use]
 extern crate failure;
 extern crate rhusics_core as core;
 extern crate shred;
 extern crate shrev;
 extern crate specs;
 
-#[macro_use]
 extern crate shred_derive;
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serializable")]
 #[macro_use]
 extern crate serde;
 

@@ -31,7 +31,7 @@ impl<'a> Collider for () {
 
 /// Control continuous mode for shapes
 #[derive(Debug, Clone, PartialOrd, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub enum CollisionMode {
     /// Discrete collision mode
     Discrete,
@@ -97,7 +97,7 @@ where
 /// - `B`: Bounding volume type
 /// - `Y`: Shape type (see `Collider`)
 #[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct CollisionShape<P, T, B, Y = ()>
 where
     P: Primitive,
@@ -312,8 +312,8 @@ where
 /// - `D`: Broad phase data
 pub fn basic_collide<C, I, P, T, B, Y, D>(
     data: &C,
-    broad: &mut Box<BroadPhase<D>>,
-    narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
+    broad: &mut Box<dyn BroadPhase<D>>,
+    narrow: &Option<Box<dyn NarrowPhase<P, T, B, Y>>>,
 ) -> Vec<ContactEvent<I, P::Point>>
 where
     C: CollisionData<I, P, T, B, Y, D>,
@@ -351,8 +351,8 @@ where
 pub fn tree_collide<C, I, P, T, B, Y, D>(
     data: &C,
     tree: &mut DynamicBoundingVolumeTree<D>,
-    broad: &mut Option<Box<BroadPhase<(usize, D)>>>,
-    narrow: &Option<Box<NarrowPhase<P, T, B, Y>>>,
+    broad: &mut Option<Box<dyn BroadPhase<(usize, D)>>>,
+    narrow: &Option<Box<dyn NarrowPhase<P, T, B, Y>>>,
 ) -> Vec<ContactEvent<I, P::Point>>
 where
     C: CollisionData<I, P, T, B, Y, D>,
@@ -395,5 +395,22 @@ where
             .map(|&(left, right)| {
                 ContactEvent::new_simple(CollisionStrategy::CollisionOnly, (left, right))
             }).collect::<Vec<_>>(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature="serializable")]
+    use CollisionMode;
+
+    #[cfg(feature="serializable")]
+    #[test]
+    fn test_serialization() {
+        let p = CollisionMode::Continuous;
+        let j = serde_json::to_string(&p);
+        assert!(j.is_ok());
+        let q = serde_json::from_str(j.unwrap().as_str());
+        assert!(q.is_ok());
+        assert_eq!(p, q.unwrap());
     }
 }

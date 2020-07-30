@@ -6,7 +6,7 @@ extern crate specs;
 
 use cgmath::{Point2, Rad, Rotation2, Transform};
 use shrev::EventChannel;
-use specs::prelude::{Builder, RunNow, World};
+use specs::prelude::{Builder, RunNow, World, WorldExt};
 
 use rhusics_core::Pose;
 use rhusics_ecs::collide2d::{
@@ -20,7 +20,7 @@ pub fn main() {
     let mut system = BasicCollisionSystem2::<f32, BodyPose2<f32>, ()>::new()
         .with_broad_phase(BroadBruteForce2::default())
         .with_narrow_phase(GJK2::new());
-    system.setup(&mut world.res);
+    system.setup(&mut world);
 
     let mut reader_1 = world
         .write_resource::<EventChannel<ContactEvent2<f32>>>()
@@ -46,7 +46,7 @@ pub fn main() {
             Rotation2::from_angle(Rad(0.)),
         )).build();
 
-    system.run_now(&world.res);
+    system.run_now(&world);
     println!(
         "Contacts: {:?}",
         world
