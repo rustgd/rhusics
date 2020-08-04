@@ -6,7 +6,7 @@ use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use shrev::EventChannel;
 use specs::prelude::{
-    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, Resources,
+    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, World,
     System, Tracked, Write,
 };
 
@@ -45,8 +45,8 @@ where
     P: Primitive,
     B: Bound,
 {
-    narrow: Option<Box<NarrowPhase<P, T, B, Y>>>,
-    broad: Option<Box<BroadPhase<D>>>,
+    narrow: Option<Box<dyn NarrowPhase<P, T, B, Y>>>,
+    broad: Option<Box<dyn BroadPhase<D>>>,
     dirty: BitSet,
     pose_reader: Option<ReaderId<ComponentEvent>>,
     next_pose_reader: Option<ReaderId<ComponentEvent>>,
@@ -172,7 +172,7 @@ where
         ));
     }
 
-    fn setup(&mut self, res: &mut Resources) {
+    fn setup(&mut self, res: &mut World) {
         use specs::prelude::{SystemData, WriteStorage};
         Self::SystemData::setup(res);
         let mut poses = WriteStorage::<T>::fetch(res);

@@ -5,7 +5,7 @@ use Pose;
 
 /// Transform component used throughout the library
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(target_feature = "serializable", derive(Serialize, Deserialize))]
 pub struct BodyPose<P, R> {
     dirty: bool,
     position: P,

@@ -42,7 +42,7 @@ extern crate specs;
 #[macro_use]
 extern crate approx;
 
-#[cfg(feature = "serde")]
+#[cfg(feature = "serializable")]
 #[macro_use]
 extern crate serde;
 
@@ -73,7 +73,7 @@ mod physics;
 
 /// Wrapper for data computed for the next frame
 #[derive(Clone, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(feature = "serializable", derive(Serialize, Deserialize))]
 pub struct NextFrame<T> {
     /// Wrapped value
     pub value: T,

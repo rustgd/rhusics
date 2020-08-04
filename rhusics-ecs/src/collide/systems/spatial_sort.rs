@@ -7,7 +7,7 @@ use cgmath::BaseFloat;
 use collision::dbvt::{DynamicBoundingVolumeTree, TreeValue};
 use collision::prelude::*;
 use specs::prelude::{
-    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, Resources,
+    BitSet, Component, ComponentEvent, Entities, Entity, Join, ReadStorage, ReaderId, World,
     System, Tracked, Write, WriteStorage,
 };
 
@@ -181,7 +181,7 @@ where
         tree.do_refit();
     }
 
-    fn setup(&mut self, res: &mut Resources) {
+    fn setup(&mut self, res: &mut World) {
         use specs::prelude::SystemData;
         Self::SystemData::setup(res);
         let mut poses = WriteStorage::<T>::fetch(res);
